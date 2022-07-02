@@ -1,4 +1,4 @@
-package com.mwiacek.poczytaj.mi.tato;
+package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.app.ActivityManager;
 import android.content.Context;
@@ -6,8 +6,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.util.LruCache;
-import android.widget.ImageView;
-import android.widget.TextView;
+
+import com.mwiacek.poczytaj.mi.tato.Utils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -15,43 +15,36 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-class ImageCacheForListView {
+public class ImageCacheForListView {
     private static LruCache<String, Bitmap> mMemoryCache;
 
-    ImageCacheForListView(Context context) {
+    public ImageCacheForListView(Context context) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         int memClassBytes = am.getMemoryClass() * 1024 * 1024;
         int cacheSize = memClassBytes / 8;
         mMemoryCache = new LruCache<>(cacheSize);
     }
 
-    public static String getDiskCacheFolder(Context context) {
-        return context.getExternalCacheDir() == null ?
-                context.getCacheDir().getPath() : context.getExternalCacheDir().getPath();
-    }
-
     /**
      * Generates cache file name for thumbnail
      */
     private static String getDiskCacheFileName(Context context, String uniqueName) {
-        return getDiskCacheFolder(context) + File.separator + uniqueName;
+        return Utils.getDiskCacheFolder(context) + File.separator + uniqueName;
     }
 
-
-    void getImageFromCache(Context context, String name, ViewHolder holder,
-                           int position) {
+    public void getImageFromCache(Context context, String name,
+                                  BookListListViewAdapter.ViewHolder holder,
+                                  int position) {
         String cacheName = name.replaceAll("[:/\\[\\]]+", "");
 
         // Check if we have bitmap in memory cache
         if (mMemoryCache.get(cacheName) != null) {
-            holder.thumbnailPicture.setImageBitmap(
-                    mMemoryCache.get(cacheName));
+            holder.thumbnailPicture.setImageBitmap(mMemoryCache.get(cacheName));
             return;
         }
 
         // Check if we have bitmap in disk cache
-        File file = new File(getDiskCacheFileName(context, cacheName));
-        if (file.exists()) {
+        if ((new File(getDiskCacheFileName(context, cacheName)).exists())) {
             Bitmap bitmap = BitmapFactory.decodeFile(getDiskCacheFileName(
                     context,
                     cacheName));
@@ -61,7 +54,6 @@ class ImageCacheForListView {
         }
 
         holder.thumbnailPicture.setImageBitmap(null);
-
         new DownloadThumbnailTask(position, holder).executeOnExecutor(
                 AsyncTask.THREAD_POOL_EXECUTOR,
                 name,
@@ -69,23 +61,14 @@ class ImageCacheForListView {
                 context);
     }
 
-    public static class ViewHolder {
-        public int position;
-
-        public TextView titleText;
-        public TextView authorText;
-        public ImageView thumbnailPicture;
-        public TextView priceText;
-    }
-
     /**
      * Task for downloading book thumbnail
      */
-    private class DownloadThumbnailTask extends AsyncTask<Object, Void, String> {
+    private static class DownloadThumbnailTask extends AsyncTask<Object, Void, String> {
         final int mPosition;
-        final ViewHolder mViewHolder;
+        final BookListListViewAdapter.ViewHolder mViewHolder;
 
-        DownloadThumbnailTask(int position, ViewHolder viewHolder) {
+        DownloadThumbnailTask(int position, BookListListViewAdapter.ViewHolder viewHolder) {
             mViewHolder = viewHolder;
             mPosition = position;
         }
