@@ -12,9 +12,11 @@ import android.os.Environment;
 import android.os.Handler;
 import android.text.Html;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +26,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -47,20 +51,45 @@ public class Utils {
         }
     }
 
+    static public void contactMe(Context context) {
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        String subject = "";
+        try {
+            subject = "Poczytaj mi tato " +
+                    context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName +
+                    " / Android " +
+                    Build.VERSION.RELEASE;
+        } catch (Exception ignored) {
+        }
+        String[] extra = new String[]{"marcin@mwiacek.com"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, extra);
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+        emailIntent.setType("message/rfc822");
+        try {
+            context.startActivity(emailIntent);
+        } catch (Exception e) {
+            AlertDialog alertDialog;
+            alertDialog = new AlertDialog.Builder(context).create();
+            alertDialog.setTitle("Informacja");
+            alertDialog.setMessage("Błąd stworzenia maila");
+            alertDialog.show();
+        }
+    }
+
     static public String readFile(File f) {
-        String r = "";
+        StringBuilder r = new StringBuilder();
         try {
             FileInputStream fIn = new FileInputStream(f);
             BufferedReader myReader = new BufferedReader(new InputStreamReader(fIn));
             String aDataRow = "";
             while ((aDataRow = myReader.readLine()) != null) {
-                r += aDataRow;
+                r.append(aDataRow);
             }
             myReader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return r;
+        return r.toString();
     }
 
     static public void notifyResult(final StringBuilder result,
@@ -72,6 +101,26 @@ public class Utils {
     public static String getDiskCacheFolder(Context context) {
         return context.getExternalCacheDir() == null ?
                 context.getCacheDir().getPath() : context.getExternalCacheDir().getPath();
+    }
+
+    static public void addZipFile(String name, ZipOutputStream out, File f) throws IOException {
+        byte[] data = new byte[1000];
+
+        FileInputStream fi = new FileInputStream(f);
+        BufferedInputStream origin = new BufferedInputStream(fi, 1000);
+        ZipEntry entry = new ZipEntry(name);
+        out.putNextEntry(entry);
+        int count;
+        while ((count = origin.read(data, 0, 1000)) != -1) {
+            out.write(data, 0, count);
+        }
+        origin.close();
+    }
+
+    static public void addZipFile(String name, ZipOutputStream out, String content) throws IOException {
+        ZipEntry entry = new ZipEntry(name);
+        out.putNextEntry(entry);
+        out.write(content.getBytes());
     }
 
     static public void downloadFileWithDownloadManager(String url, String title, Context context) {
@@ -157,10 +206,8 @@ public class Utils {
             throw new Exception("Empty URL");
         }
         URL url = new URL(address);
-
         HttpURLConnection connection = url.getProtocol().equals("https") ?
-                (HttpsURLConnection) url.openConnection() :
-                (HttpURLConnection) url.openConnection();
+                (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
         connection.setReadTimeout(5000); // 5 seconds
         connection.connect();
         if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {

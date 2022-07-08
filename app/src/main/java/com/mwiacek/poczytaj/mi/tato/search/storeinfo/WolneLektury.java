@@ -17,8 +17,7 @@ public class WolneLektury extends StoreInfo {
     public boolean doesItMatch(String name, String url, StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock) {
         String formattedName = name.toLowerCase().replaceAll("\\s", "-");
         formattedName = Normalizer.normalize(formattedName, Normalizer.Form.NFD);
-        formattedName = formattedName.replaceAll("\\p{InCombiningDiacriticalMarks}+",
-                "");
+        formattedName = formattedName.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
 
         int startSearchPosition, fromPosition, toPosition, sortOrder = 1;
         Book book;

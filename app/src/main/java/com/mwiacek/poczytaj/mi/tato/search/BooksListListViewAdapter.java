@@ -1,7 +1,6 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -14,10 +13,10 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.BookRage;
-import com.mwiacek.poczytaj.mi.tato.search.storeinfo.Bookto;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.EbookiSwiatCzytnikow;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.IBUK;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
@@ -55,7 +54,7 @@ public class BooksListListViewAdapter extends BaseAdapter {
      * Method for starting books search
      */
     public void BooksListListViewAdapterSearch(String searchText, Context context,
-                                               SharedPreferences sharedPref) {
+                                               FragmentConfig config) {
         ConnectivityManager cm = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -75,22 +74,19 @@ public class BooksListListViewAdapter extends BaseAdapter {
         }
 
         mList.clear();
-        if (sharedPref.getBoolean("wolnelektury.pl", true)) {
+        if (config.storeInfoForSearchFragment.contains(StoreInfo.StoreInfoTyp.WOLNE_LEKTURY)) {
             mList.add(new WolneLektury());
         }
-        if (sharedPref.getBoolean("ebooki.swiatczytnikow.pl", true)) {
+        if (config.storeInfoForSearchFragment.contains(StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW)) {
             mList.add(new EbookiSwiatCzytnikow());
         }
-        if (sharedPref.getBoolean("upolujebooka.pl", true)) {
+        if (config.storeInfoForSearchFragment.contains(StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA)) {
             mList.add(new UpolujEbooka());
         }
-        if (sharedPref.getBoolean("bookto.pl", true)) {
-            mList.add(new Bookto());
-        }
-        if (sharedPref.getBoolean("bookrage.org", true)) {
+        if (config.storeInfoForSearchFragment.contains(StoreInfo.StoreInfoTyp.BOOKRAGE)) {
             mList.add(new BookRage());
         }
-        if (sharedPref.getBoolean("ibuk.pl", true)) {
+        if (config.storeInfoForSearchFragment.contains(StoreInfo.StoreInfoTyp.IBUK)) {
             mList.add(new IBUK());
         }
         if (mList.size() == 0) {

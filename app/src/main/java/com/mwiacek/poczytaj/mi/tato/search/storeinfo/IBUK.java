@@ -11,8 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class IBUK extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
         return new String[]{"https://www.ibuk.pl/szukaj/ala.html?pid=4&co=" + name +
-                "&od=" + ((pageNumber - 1) * 15) + "&limit=15" +
-                "&typ_publikacji=epub,mobi,pdf"};
+                "&od=" + ((pageNumber - 1) * 15) + "&limit=15" + "&typ_publikacji=epub,mobi,pdf"};
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock) {

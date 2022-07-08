@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.R;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 public class PageListListViewAdapter extends
@@ -22,8 +23,8 @@ public class PageListListViewAdapter extends
     private ArrayList<Page> mData = new ArrayList<>();
     private OnItemClicked mOnClick; // Callback used after clicking on entry
 
-    public void update(DBHelper mydb) {
-        mData = mydb.getAllPages();
+    public void update(DBHelper mydb, boolean hidden, Page.PagesTyp[] typ) {
+        mData = mydb.getAllPages(hidden, typ);
         this.notifyDataSetChanged();
     }
 
@@ -55,9 +56,15 @@ public class PageListListViewAdapter extends
         WordtoSpan.setSpan(o, 0, b.author.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.titleAuthor.setText(WordtoSpan);
 
-        WordtoSpan = new SpannableString(b.dt.toString());
-        WordtoSpan.setSpan(o, 0, b.dt.toString().length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        SimpleDateFormat df = new SimpleDateFormat("dd.MM.yy hh:mm");
+        String time = " | " + df.format(b.dt);
+        WordtoSpan = new SpannableString(time);
+        WordtoSpan.setSpan(o, 0, time.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.when.setText(WordtoSpan);
+
+        WordtoSpan = new SpannableString(b.tags);
+        WordtoSpan.setSpan(o, 0, b.tags.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        holder.desc.setText(WordtoSpan);
     }
 
     @Override
@@ -80,6 +87,7 @@ public class PageListListViewAdapter extends
         public TextView titleText;
         public TextView titleAuthor;
         public TextView when;
+        public TextView desc;
 
         TaskListRecyclerViewHolder(View view) {
             super(view);
@@ -87,6 +95,7 @@ public class PageListListViewAdapter extends
             titleText = view.findViewById(R.id.taskTitle);
             titleAuthor = view.findViewById(R.id.taskAuthor);
             when = view.findViewById(R.id.taskDate);
+            desc = view.findViewById(R.id.taskDesc);
 
             view.setOnClickListener(v -> mOnClick.onItemClick(getAbsoluteAdapterPosition()));
         }

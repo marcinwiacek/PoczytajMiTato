@@ -42,9 +42,8 @@ public class UpolujEbooka extends StoreInfo {
                     Utils.findBetween(s, "<meta itemprop=\"url\" content=\"", "\"", 0);
 
             book.volumeInfo.authors = new String[1];
-            book.volumeInfo.authors[0] =
-                    Utils.stripHtml(Utils.findBetween(s, "itemprop=\"author\"  >", "</a>", 0))
-                            .trim();
+            book.volumeInfo.authors[0] = Utils.stripHtml(Utils.findBetween(s,
+                    "itemprop=\"author\"  >", "</a>", 0)).trim();
 
             s2 = Utils.findBetween(s, "<span itemprop=\"price\">", "</span>", 0);
             if (book.downloadUrl.isEmpty() || book.volumeInfo.smallThumbnail.isEmpty() ||
@@ -58,7 +57,6 @@ public class UpolujEbooka extends StoreInfo {
             }
             sortOrder++;
         }
-        return (pageContent.indexOf("rel=\"next\">następna</a></li>") != -1) &&
-                added;
+        return (pageContent.indexOf("rel=\"next\">następna</a></li>") != -1) && added;
     }
 }

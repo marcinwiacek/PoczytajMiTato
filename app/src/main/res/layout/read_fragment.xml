@@ -20,10 +20,41 @@
             tools:layout_editor_absoluteX="8dp"
             tools:layout_editor_absoluteY="8dp">
 
+            <AutoCompleteTextView
+                android:id="@+id/searchTextView2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignBottom="@+id/searchButton2"
+                android:layout_toLeftOf="@+id/searchButton2"
+                android:hint="Szukaj w pobranych"
+                android:inputType="text"
+                android:maxLines="1"
+                android:text=""
+                android:layout_toStartOf="@+id/searchButton2" />
+
+            <Button
+                android:id="@+id/searchButton2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_toLeftOf="@+id/menuButton2"
+                android:text="Szukaj"
+                android:layout_toStartOf="@+id/menuButton2" />
+
+            <Button
+                android:id="@+id/menuButton2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentRight="true"
+                android:text="Menu" />
+
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                 android:id="@+id/swiperefresh"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:layout_below="@+id/menuButton2">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/pagesRecyclerView"

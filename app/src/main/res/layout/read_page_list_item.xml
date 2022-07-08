@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:background="?android:selectableItemBackground"
+   >
 
     <ImageView
         android:id="@+id/startTaskImageView"
         android:layout_width="0dp"
         android:layout_height="32dp"
         android:layout_centerVertical="true"
-        android:background="#DC143C" />
+         />
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:layout_toRightOf="@id/startTaskImageView"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_toEndOf="@id/startTaskImageView">
 
         <TextView
             android:id="@+id/taskTitle"
@@ -25,6 +31,7 @@
 
         <TextView
             android:id="@+id/taskAuthor"
+            android:layout_below="@id/taskTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall" />
@@ -33,6 +40,19 @@
             android:id="@+id/taskDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignTop="@id/taskAuthor"
+            android:layout_alignParentRight="true"
+            android:layout_alignBottom="@id/taskAuthor"
+            android:layout_toRightOf="@id/taskAuthor"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:layout_alignParentEnd="true"
+            android:layout_toEndOf="@id/taskAuthor" />
+
+        <TextView
+            android:id="@+id/taskDesc"
+            android:layout_below="@id/taskAuthor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceSmall" />
-    </LinearLayout>
+    </RelativeLayout>
 </RelativeLayout>

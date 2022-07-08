@@ -37,13 +37,11 @@ public class BookRage extends StoreInfo {
         while (true) {
             startSearchPosition = toPosition;
 
-            fromPosition = pageContent.indexOf("<article class=\"book\"",
-                    startSearchPosition);
+            fromPosition = pageContent.indexOf("<article class=\"book\"", startSearchPosition);
             if (fromPosition == -1) {
                 break;
             }
-            fromPosition2 = pageContent.indexOf("<h5",
-                    startSearchPosition);
+            fromPosition2 = pageContent.indexOf("<h5", startSearchPosition);
 
             if (fromPosition2 != -1 && fromPosition2 < fromPosition) {
                 toPosition = pageContent.indexOf("</h5>", fromPosition2);
@@ -68,7 +66,6 @@ public class BookRage extends StoreInfo {
 
             toPosition = pageContent.indexOf("</article>", fromPosition);
             s = pageContent.substring(fromPosition, toPosition);
-
 
             book = new Book();
 

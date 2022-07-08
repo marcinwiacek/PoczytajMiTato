@@ -8,21 +8,19 @@ import com.mwiacek.poczytaj.mi.tato.search.VolumeInfo;
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Bookto extends StoreInfo {
+public class __DeletedBookto extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
         return new String[]{"http://bookto.pl/szukaj/" + name + "/t-e0/p-c0/" + pageNumber};
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock) {
-
         int startSearchPosition, fromPosition, toPosition = 0, sortOrder = 1;
         String s, s2;
         Book book;
         boolean added = false;
         while (true) {
             startSearchPosition = toPosition;
-            fromPosition = pageContent.indexOf("<div class=\"cover\">",
-                    startSearchPosition);
+            fromPosition = pageContent.indexOf("<div class=\"cover\">", startSearchPosition);
             if (fromPosition == -1) {
                 break;
             }

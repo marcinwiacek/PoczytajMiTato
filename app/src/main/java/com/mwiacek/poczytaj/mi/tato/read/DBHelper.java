@@ -13,66 +13,88 @@ import java.util.Date;
 
 public class DBHelper extends SQLiteOpenHelper {
 
-    public static final String DATABASE_NAME = "pages.db";
-    public static final String CONTACTS_COLUMN_NAME = "name";
-    public static final String CONTACTS_COLUMN_AUTHOR = "author";
-    public static final String CONTACTS_COLUMN_COMMENTS = "comments";
-    public static final String CONTACTS_COLUMN_URL = "url";
-    public static final String CONTACTS_COLUMN_TOP = "top";
-    public static final String CONTACTS_COLUMN_DATETIME = "dt";
+    private static final String PAGES_TABLE_NAME = "pages";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_AUTHOR = "author";
+    private static final String COLUMN_COMMENTS = "comments";
+    private static final String COLUMN_URL = "url";
+    private static final String COLUMN_TOP = "top";
+    private static final String COLUMN_DATETIME = "dt";
+    private static final String COLUMN_TYP = "typ";
+    private static final String COLUMN_HIDDEN = "hidden";
 
     public DBHelper(Context context) {
-        super(context, DATABASE_NAME, null, 1);
+        super(context, "pages.db", null, 1);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL(
-                "create table pages " +
-                        "(tabnr integer, typ integer,name text,author text, dt real, " +
-                        "comments text, url text, top integer, UNIQUE(url))"
+        db.execSQL("create table " + PAGES_TABLE_NAME + " " +
+                "(" + COLUMN_TYP + " integer, " + COLUMN_NAME + " text," +
+                COLUMN_AUTHOR + " text, " + COLUMN_DATETIME + " real, " +
+                COLUMN_HIDDEN + " integer, " + COLUMN_COMMENTS + " text, " +
+                COLUMN_URL + " text, " + COLUMN_TOP + " integer, " +
+                "UNIQUE(" + COLUMN_URL + "))"
         );
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS pages");
-        onCreate(db);
     }
 
-    public void insertPage(String name, String author, String comments, String url, Date d) {
-        SQLiteDatabase db = this.getWritableDatabase();
+    public void updateTop(String url, int top) {
+        this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
+                " set " + COLUMN_TOP + "=" + top +
+                " where " + COLUMN_URL + "='" + url + "'");
+    }
+
+    public void setPageVisible(String url, boolean hidden) {
+        this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
+                " set " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
+                " where " + COLUMN_URL + "='" + url + "'");
+    }
+
+    public void insertPage(Page.PagesTyp typ, String name, String author, String comments, String url, Date d) {
         ContentValues contentValues = new ContentValues();
-        contentValues.put("tabnr", 1);
-        contentValues.put("typ", 1);
-        contentValues.put("name", name);
-        contentValues.put("author", author);
-        contentValues.put("comments", comments);
-        contentValues.put("url", url);
-        contentValues.put("top", 0);
-        contentValues.put("dt", d.getTime());
+        contentValues.put(COLUMN_TYP, typ.ordinal());
+        contentValues.put(COLUMN_NAME, name);
+        contentValues.put(COLUMN_AUTHOR, author);
+        contentValues.put(COLUMN_COMMENTS, comments);
+        contentValues.put(COLUMN_URL, url);
+        contentValues.put(COLUMN_TOP, 0);
+        contentValues.put(COLUMN_DATETIME, d.getTime());
+        contentValues.put(COLUMN_HIDDEN, 0);
         try {
-            db.insertOrThrow("pages", null, contentValues);
+            this.getWritableDatabase().insertOrThrow(PAGES_TABLE_NAME, null, contentValues);
         } catch (SQLException ignore) {
         }
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages() {
+    public ArrayList<Page> getAllPages(boolean hidden, Page.PagesTyp[] typ) {
         ArrayList<Page> array_list = new ArrayList<>();
 
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor res = db.rawQuery("select * from pages", null);
+        StringBuilder types = new StringBuilder();
+        for (Page.PagesTyp t : typ) {
+            if (types.length() > 0) types.append(",");
+            types.append("").append(t.ordinal());
+        }
+
+        Cursor res = this.getReadableDatabase().rawQuery("select * from " + PAGES_TABLE_NAME +
+                " where " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
+                " and " + COLUMN_TYP + " IN (" + types + ") " +
+                " order by " + COLUMN_DATETIME + " desc", null);
         res.moveToFirst();
 
         while (!res.isAfterLast()) {
             array_list.add(new Page(
-                    res.getString(res.getColumnIndex(CONTACTS_COLUMN_NAME)),
-                    res.getString(res.getColumnIndex(CONTACTS_COLUMN_AUTHOR)),
-                    res.getString(res.getColumnIndex(CONTACTS_COLUMN_COMMENTS)),
-                    res.getString(res.getColumnIndex(CONTACTS_COLUMN_URL)),
-                    res.getInt(res.getColumnIndex(CONTACTS_COLUMN_TOP)),
-                    new Date(res.getLong(res.getColumnIndex(CONTACTS_COLUMN_DATETIME)))));
+                    res.getString(res.getColumnIndex(COLUMN_NAME)),
+                    res.getString(res.getColumnIndex(COLUMN_AUTHOR)),
+                    res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
+                    res.getString(res.getColumnIndex(COLUMN_URL)),
+                    res.getInt(res.getColumnIndex(COLUMN_TOP)),
+                    new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
+                    Page.PagesTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]));
             res.moveToNext();
         }
         return array_list;

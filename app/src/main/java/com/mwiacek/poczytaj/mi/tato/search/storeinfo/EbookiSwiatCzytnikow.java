@@ -62,11 +62,8 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
             if (s2.equals("")) {
                 s2 = Utils.findBetween(s, "<strong id=\"\">", "</strong>", 0);
             }
-            if (s2.equals("")) {
-                book.price = (float) 0.0;
-            } else {
-                book.price = Float.parseFloat(s2.replace(",", "."));
-            }
+            book.price = s2.equals("") ?
+                    (float) 0.0 : Float.parseFloat(s2.replace(",", "."));
 
             if (addBook(book, books, sortOrder, lock)) {
                 added = true;

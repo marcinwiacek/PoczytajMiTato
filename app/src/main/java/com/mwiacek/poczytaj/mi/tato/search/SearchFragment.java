@@ -1,8 +1,7 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
-import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -17,22 +16,30 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 
+import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
+import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 public class SearchFragment extends Fragment {
+    public final FragmentConfig config;
 
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter adapter;
     private AutoCompleteTextView mSearchTextView;
     private BooksListListViewAdapter customAdapter;
     private BookListListViewAdapter customAdapter2;
     private Button mSearchButton;
     private ViewSwitcher mViewSwitcher;
+
+    public SearchFragment(FragmentConfig config) {
+        this.config = config;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -44,13 +51,12 @@ public class SearchFragment extends Fragment {
         ListView mBooksListListView = view.findViewById(R.id.booksListListView);
         ListView mBooksList2ListView = view.findViewById(R.id.bookListListView);
         ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
+        TextView titleTextView = view.findViewById(R.id.titleTextView);
         mSearchButton = view.findViewById(R.id.searchButton);
         mSearchTextView = view.findViewById(R.id.searchTextView);
         mViewSwitcher = view.findViewById(R.id.viewSwitcher);
-        final TextView titleTextView = view.findViewById(R.id.titleTextView);
 
-        customAdapter = new BooksListListViewAdapter(mImageCache,
-                mSearchButton,
+        customAdapter = new BooksListListViewAdapter(mImageCache, mSearchButton,
                 mProgressBar, mSearchTextView);
         customAdapter2 = new BookListListViewAdapter(mImageCache);
 
@@ -75,31 +81,12 @@ public class SearchFragment extends Fragment {
             mSearchButton.setEnabled(false);
             mSearchTextView.setEnabled(false);
 
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(view.getContext());
-            ArrayList<String> l = new ArrayList<>();
-            String s;
-            l.add(mSearchTextView.getText().toString());
-            for (int i = 0; i < 10; i++) {
-                s = sharedPref.getString("history" + i, "");
-                if (!s.isEmpty() && !s.equals(mSearchTextView.getText().toString())) {
-                    l.add(s);
-                }
-            }
-            if (l.size() > 10) {
-                l.remove(0);
-            }
-            SharedPreferences.Editor editor = sharedPref.edit();
-            for (int i = 0; i < l.size(); i++) {
-                editor.putString("history" + i, l.get(i));
-            }
-            editor.commit();
-            adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, l);
+            config.searchHistory.add(mSearchTextView.getText().toString());
+            adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, config.searchHistory);
             mSearchTextView.setAdapter(adapter);
 
             customAdapter.BooksListListViewAdapterSearch(
-                    mSearchTextView.getText().toString(),
-                    getContext(),
-                    sharedPref);
+                    mSearchTextView.getText().toString(), getContext(), config);
         });
 
         mBooksList2ListView.setAdapter(customAdapter2);
@@ -112,16 +99,7 @@ public class SearchFragment extends Fragment {
 
         mBackButton.setOnClickListener(v -> mViewSwitcher.showPrevious());
 
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
-        ArrayList<String> l = new ArrayList<>();
-        String s;
-        for (int i = 0; i < 10; i++) {
-            s = sharedPref.getString("history" + i, "");
-            if (!s.isEmpty()) {
-                l.add(s);
-            }
-        }
-        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, l);
+        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, config.searchHistory);
         mSearchTextView.setAdapter(adapter);
         mSearchTextView.setThreshold(0);
 
@@ -185,6 +163,57 @@ public class SearchFragment extends Fragment {
         };
 
         (new Thread(r)).start();
+
+        Button menu = view.findViewById(R.id.menuButton);
+        menu.setOnClickListener(view1 -> {
+            LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String, StoreInfo.StoreInfoTyp>() {{
+                put("artrage.pl/bookrage", StoreInfo.StoreInfoTyp.BOOKRAGE);
+                put("ebooki.swiatczytnikow.pl", StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW);
+                put("ibook.pl", StoreInfo.StoreInfoTyp.IBUK);
+                put("upolujebooka.pl", StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA);
+                put("wolnelektury.pl", StoreInfo.StoreInfoTyp.WOLNE_LEKTURY);
+            }};
+            int i = 0;
+            int mainIndex = 0;
+            PopupMenu popupMenu = new PopupMenu(getContext(), menu);
+            popupMenu.getMenu().add(2, i++, mainIndex++, "Używaj TOR")
+                    .setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(config.useTOR);
+            for (String s : hm.keySet()) {
+                popupMenu.getMenu().add(2, i++, mainIndex++, s).
+                        setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(
+                                config.readInfoForReadFragment.contains(hm.get(s)));
+            }
+            popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
+            popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");
+            popupMenu.getMenu().add(5, i++, mainIndex++, "Napisz maila do autora");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                popupMenu.getMenu().setGroupDividerEnabled(true);
+            }
+
+            popupMenu.setOnMenuItemClickListener(item -> {
+                for (String s : hm.keySet()) {
+                    if (!item.getTitle().equals(s)) continue;
+                    item.setChecked(!item.isChecked());
+                    if (item.isChecked()) {
+                        config.storeInfoForSearchFragment.add(hm.get(s));
+                    } else {
+                        config.storeInfoForSearchFragment.remove(hm.get(s));
+                    }
+                    config.saveToInternalStorage(getContext());
+                    return true;
+                }
+                if (item.isCheckable()) {
+                    item.setChecked(!item.isChecked());
+                    config.saveToInternalStorage(getContext());
+                    return true;
+                }
+                if (item.getTitle().equals("Napisz maila do autora")) {
+                    Utils.contactMe(getContext());
+                }
+                return false;
+            });
+            popupMenu.show();
+        });
 
         return view;
     }

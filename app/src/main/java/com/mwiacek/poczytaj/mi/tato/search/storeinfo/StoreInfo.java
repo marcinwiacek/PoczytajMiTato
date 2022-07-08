@@ -48,4 +48,12 @@ public abstract class StoreInfo {
             lock.unlock();
         }
     }
+
+    public enum StoreInfoTyp {
+        BOOKRAGE,
+        EBOOKI_SWIAT_CZYTNIKOW,
+        IBUK,
+        UPOLUJ_EBOOKA,
+        WOLNE_LEKTURY
+    }
 }
