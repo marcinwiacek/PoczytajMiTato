@@ -87,8 +87,17 @@ public class Fantastyka extends ReadInfo {
                         Notifications.setupNotification(Notifications.Channels.CZYTANIE, context,
                                 "Czytanie listy - strona " + index).build());
 
-                url = "https://www.fantastyka.pl/opowiadania/wszystkie" +
-                        (index == 1 ? "" : "/w/w/w/0/d/" + index);
+                if (typ == Page.PagesTyp.FANTASTYKA_POCZEKALNIA) {
+                    url = "https://www.fantastyka.pl/opowiadania/wszystkie" +
+                            (index == 1 ? "" : "/w/w/w/0/d/" + index);
+                } else if (typ == Page.PagesTyp.FANTASTYKA_BIBLIOTEKA) {
+                    url = "https://www.fantastyka.pl/opowiadania/biblioteka" +
+                            (index == 1 ? "" : "/w/w/w/0/d/" + index);
+                } else if (typ == Page.PagesTyp.FANTASTYKA_ARCHIWUM) {
+                    url = "https://www.fantastyka.pl/opowiadania/archiwum/d" +
+                            (index == 1 ? "" : "/" + index);
+                }
+
                 String result = Utils.getPageContent(url).toString();
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 while (true) {

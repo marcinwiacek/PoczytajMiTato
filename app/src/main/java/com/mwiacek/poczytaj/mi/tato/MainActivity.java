@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 
 public class MainActivity extends AppCompatActivity {
     ViewPager2 viewPager;
+    ViewPagerAdapter adapter;
 
     @Override
     public void onBackPressed() {
@@ -34,8 +35,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         viewPager = findViewById(R.id.pager);
-        ViewPagerAdapter adapter = new ViewPagerAdapter(this,
-                getApplicationContext());
+        adapter = new ViewPagerAdapter(this, getApplicationContext());
         viewPager.setAdapter(adapter);
         new TabLayoutMediator(findViewById(R.id.tab_layout), viewPager,
                 (tab, position) -> tab.setText(adapter.getPageTitle(position))
@@ -44,17 +44,15 @@ public class MainActivity extends AppCompatActivity {
         Notifications.setupNotifications(getApplicationContext());
 
         //https://stackoverflow.com/questions/61772241/how-to-make-viewpager2-less-sensitive-to-swipe
+        //https://issuetracker.google.com/issues/123006042
         try {
             final Field recyclerViewField = ViewPager2.class.getDeclaredField("pagesRecyclerView");
             recyclerViewField.setAccessible(true);
-
             final RecyclerView recyclerView = (RecyclerView) recyclerViewField.get(viewPager);
-
             final Field touchSlopField = RecyclerView.class.getDeclaredField("mTouchSlop");
             touchSlopField.setAccessible(true);
-
             final int touchSlop = (int) touchSlopField.get(recyclerView);
-            touchSlopField.set(recyclerView, touchSlop * 5);//6 is empirical value
+            touchSlopField.set(recyclerView, touchSlop * 6);//6 is empirical value
         } catch (Exception ignore) {
         }
     }

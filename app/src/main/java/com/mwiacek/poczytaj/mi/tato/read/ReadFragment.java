@@ -49,6 +49,7 @@ import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.Notifications;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
+import com.mwiacek.poczytaj.mi.tato.ViewPagerAdapter;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -62,6 +63,7 @@ import java.util.zip.ZipOutputStream;
 
 public class ReadFragment extends Fragment {
     public final FragmentConfig config;
+    private final ViewPagerAdapter topPagrAdapter;
     private PageListListViewAdapter mTaskListAdapter;
     private SwipeRefreshLayout refresh;
     private ThreadPoolExecutor threadPoolExecutor;
@@ -73,13 +75,14 @@ public class ReadFragment extends Fragment {
     private String url;
     private int top;
 
-    public ReadFragment(FragmentConfig config) {
+    public ReadFragment(FragmentConfig config, ViewPagerAdapter topPagrAdapter) {
+        this.topPagrAdapter = topPagrAdapter;
         this.config = config;
     }
 
     public void setupRefresh() {
         WorkManager.getInstance(this.getContext()).cancelAllWorkByTag("poczytajmitato" + config.tabNum);
-        if (config.coIleGodzin == -1) return;
+        if (config.howOftenRefreshTabInHours == -1) return;
         Constraints constraints = new Constraints.Builder()
                 //        .setRequiredNetworkType(NetworkType.UNMETERED)
 //                .setRequiresBatteryNotLow(true)
@@ -100,7 +103,7 @@ public class ReadFragment extends Fragment {
     public void onBackPressed() {
         if (list.isShown()) System.exit(0);
         mydb.updateTop(url, vw.getScrollY());
-        ((PageListListViewAdapter) list.getAdapter()).update(mydb, config.showHidden,
+        ((PageListListViewAdapter) list.getAdapter()).update(mydb, config.showHiddenTexts,
                 config.readInfoForReadFragment.toArray(
                         new Page.PagesTyp[config.readInfoForReadFragment.size()])
         );
@@ -152,7 +155,7 @@ public class ReadFragment extends Fragment {
                         "text/html; charset=UTF-8",
                         "UFT-8", null);
                 Utils.getPage(p.url, result -> {
-                            mTaskListAdapter.update(mydb, config.showHidden,
+                            mTaskListAdapter.update(mydb, config.showHiddenTexts,
                                     config.readInfoForReadFragment.toArray(
                                             new Page.PagesTyp[config.readInfoForReadFragment.size()])
                             );
@@ -166,7 +169,7 @@ public class ReadFragment extends Fragment {
             mViewSwitcher.showNext();
         });
         list.setAdapter(mTaskListAdapter);
-        mTaskListAdapter.update(mydb, config.showHidden, config.readInfoForReadFragment.
+        mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment.
                 toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()]));
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
@@ -181,8 +184,8 @@ public class ReadFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 mydb.setPageVisible(((Page) ((PageListListViewAdapter) list.getAdapter())
-                        .getItem(viewHolder.getAbsoluteAdapterPosition())).url, !config.showHidden);
-                mTaskListAdapter.update(mydb, config.showHidden,
+                        .getItem(viewHolder.getAbsoluteAdapterPosition())).url, !config.showHiddenTexts);
+                mTaskListAdapter.update(mydb, config.showHiddenTexts,
                         config.readInfoForReadFragment.toArray(
                                 new Page.PagesTyp[config.readInfoForReadFragment.size()]));
             }
@@ -217,7 +220,7 @@ public class ReadFragment extends Fragment {
             for (Page.PagesTyp pt : config.readInfoForReadFragment) {
                 refresh.setRefreshing(true);
                 Page.getReadInfo(pt).getList(
-                        result -> mTaskListAdapter.update(mydb, config.showHidden, config.readInfoForReadFragment
+                        result -> mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
                                 .toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()])),
                         result -> refresh.setRefreshing(false),
                         mainThreadHandler, threadPoolExecutor, mydb, this.getContext(), pt);
@@ -251,7 +254,6 @@ public class ReadFragment extends Fragment {
         menu.setOnClickListener(view1 -> {
             LinkedHashMap<String, Page.PagesTyp> hm = new LinkedHashMap<String, Page.PagesTyp>() {{
                 put("fantastyka.pl, archiwum", Page.PagesTyp.FANTASTYKA_ARCHIWUM);
-                put("fantastyka.pl, autorzy", Page.PagesTyp.FANTASTYKA_AUTORZY);
                 put("fantastyka.pl, biblioteka", Page.PagesTyp.FANTASTYKA_BIBLIOTEKA);
                 put("fantastyka.pl, poczekalnia", Page.PagesTyp.FANTASTYKA_POCZEKALNIA);
                 put("opowi.pl, autorzy", Page.PagesTyp.OPOWI_AUTORZY);
@@ -261,11 +263,11 @@ public class ReadFragment extends Fragment {
             int mainIndex = 0;
             PopupMenu popupMenu = new PopupMenu(getContext(), menu);
             popupMenu.getMenu().add(1, i++, mainIndex++, "Pokaż ukryte").setCheckable(true)
-                    .setChecked(config.showHidden);
+                    .setChecked(config.showHiddenTexts);
             popupMenu.getMenu().add(2, i++, mainIndex++, "Używaj TOR")
                     .setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(config.useTOR);
             popupMenu.getMenu().add(2, i++, mainIndex++, "Zawsze pobieraj teksty")
-                    .setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(config.pobierajTekstyZIndeksem);
+                    .setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(config.getTextsWhenRefreshingIndex);
             for (String s : hm.keySet()) {
                 popupMenu.getMenu().add(2, i++, mainIndex++, s).
                         setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(
@@ -278,23 +280,23 @@ public class ReadFragment extends Fragment {
             popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
             popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");
             popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Pobierz co " + (config.coIleGodzin == -1 ? "x" : config.coIleGodzin) + " godzin").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setChecked(config.coIleGodzin != -1);
+                            "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ? "x" : config.howOftenRefreshTabInHours) + " godzin").setActionView(R.layout.checkbox_layout).setCheckable(true)
+                    .setChecked(config.howOftenRefreshTabInHours != -1);
             popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Przy błędzie co " + (config.przyBledzieCoMinut == -1 ? "x" : config.przyBledzieCoMinut) + " minut").setActionView(R.layout.checkbox_layout)
-                    .setCheckable(true).setChecked(config.przyBledzieCoMinut != -1).setEnabled(config.coIleGodzin != -1);
+                            "Przy błędzie co " + (config.howOftenTryToRefreshTabAfterErrorInMinutes == -1 ? "x" : config.howOftenTryToRefreshTabAfterErrorInMinutes) + " minut").setActionView(R.layout.checkbox_layout)
+                    .setCheckable(true).setChecked(config.howOftenTryToRefreshTabAfterErrorInMinutes != -1).setEnabled(config.howOftenRefreshTabInHours != -1);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na Wifi").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.pobierzPrzyWifi);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyWifi);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na GSM").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.pobierzPrzyGSM);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyGSM);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na innej sieci").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.pobierzPrzyInnejSieci);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyInnejSieci);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz tylko przy ładowaniu").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.pobierzTylkoPrzyLadowaniu);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzTylkoPrzyLadowaniu);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Nie pobieraj przy niskiej baterii").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.niePobierajPrzyNiskiejBaterii);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.niePobierajPrzyNiskiejBaterii);
             popupMenu.getMenu().add(4, i++, mainIndex++, "Sieć musi być bez limitu").setActionView(R.layout.checkbox_layout).setCheckable(true)
-                    .setEnabled(config.coIleGodzin != -1).setChecked(config.networkWithoutLimit);
+                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.networkWithoutLimit);
             popupMenu.getMenu().add(5, i++, mainIndex++, "Napisz maila do autora");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 popupMenu.getMenu().setGroupDividerEnabled(true);
@@ -310,7 +312,7 @@ public class ReadFragment extends Fragment {
                         config.readInfoForReadFragment.remove(hm.get(s));
                     }
                     config.saveToInternalStorage(getContext());
-                    mTaskListAdapter.update(mydb, config.showHidden, config.readInfoForReadFragment
+                    mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
                             .toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()]));
                     return true;
                 }
@@ -325,19 +327,19 @@ public class ReadFragment extends Fragment {
                                 .setMessage("Co ile godzin zakładka ma być odświeżana")
                                 .setView(input)
                                 .setPositiveButton("OK", (dialog, which) -> {
-                                    config.coIleGodzin = Integer.parseInt(String.valueOf(input.getText()));
+                                    config.howOftenRefreshTabInHours = Integer.parseInt(String.valueOf(input.getText()));
                                     setupRefresh();
                                     config.saveToInternalStorage(getContext());
                                 })
                                 .setNegativeButton("Cancel", (dialog, which) -> {
                                     dialog.dismiss();
-                                    config.coIleGodzin = -1;
+                                    config.howOftenRefreshTabInHours = -1;
                                     setupRefresh();
                                     config.saveToInternalStorage(getContext());
                                 })
                                 .show();
                     } else {
-                        config.coIleGodzin = -1;
+                        config.howOftenRefreshTabInHours = -1;
                         setupRefresh();
                         config.saveToInternalStorage(getContext());
                     }
@@ -354,24 +356,58 @@ public class ReadFragment extends Fragment {
                                 .setMessage("Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu")
                                 .setView(input)
                                 .setPositiveButton("OK", (dialog, which) -> {
-                                    config.przyBledzieCoMinut = Integer.parseInt(String.valueOf(input.getText()));
+                                    config.howOftenTryToRefreshTabAfterErrorInMinutes = Integer.parseInt(String.valueOf(input.getText()));
                                     config.saveToInternalStorage(getContext());
                                 })
                                 .setNegativeButton("Cancel", (dialog, which) -> {
                                     dialog.dismiss();
-                                    config.przyBledzieCoMinut = -1;
+                                    config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
                                     config.saveToInternalStorage(getContext());
                                 })
                                 .show();
                     } else {
-                        config.przyBledzieCoMinut = -1;
+                        config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
                         config.saveToInternalStorage(getContext());
                     }
                     return true;
                 }
+                if (item.getTitle().equals("Klonuj zakładkę")) {
+                    EditText input = new EditText(this.getContext());
+                    new AlertDialog.Builder(this.getContext())
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle("Poczytaj mi tato")
+                            .setMessage("Nazwa nowej zakładki")
+                            .setView(input)
+                            .setPositiveButton("OK", (dialog, which) -> {
+                                try {
+                                    topPagrAdapter.addTab(config, input.getText().toString());
+                                } catch (CloneNotSupportedException e) {
+                                    e.printStackTrace();
+                                }
+                            })
+                            .setNegativeButton("Cancel", (dialog, which) -> {
+                                dialog.dismiss();
+                            })
+                            .show();
+                    return true;
+                }
+                if (item.getTitle().equals("Usuń zakładkę")) {
+                    new AlertDialog.Builder(this.getContext())
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle("Poczytaj mi tato")
+                            .setMessage("Czy chcesz usunąć zakładkę?")
+                            .setPositiveButton("OK", (dialog, which) -> {
+                                topPagrAdapter.deleteTab(config);
+                            })
+                            .setNegativeButton("Cancel", (dialog, which) -> {
+                                dialog.dismiss();
+                            })
+                            .show();
+                    return true;
+                }
                 if (item.getTitle().equals("Pokaż ukryte")) {
-                    config.showHidden = !config.showHidden;
-                    mTaskListAdapter.update(mydb, config.showHidden, config.readInfoForReadFragment
+                    config.showHiddenTexts = !config.showHiddenTexts;
+                    mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
                             .toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()]));
                     config.saveToInternalStorage(getContext());
                 }
@@ -410,7 +446,7 @@ public class ReadFragment extends Fragment {
                         if (f.exists()) continue;
                         Utils.getPage(p.url, result -> {
                                     Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
-                                    mTaskListAdapter.update(mydb, config.showHidden,
+                                    mTaskListAdapter.update(mydb, config.showHiddenTexts,
                                             config.readInfoForReadFragment
                                                     .toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()]));
                                 },
@@ -418,6 +454,19 @@ public class ReadFragment extends Fragment {
                     }
                 }
                 if (item.getTitle().equals("EPUB z pokazanych i pobranych")) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (ContextCompat.checkSelfPermission(getContext(),
+                                android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                == PackageManager.PERMISSION_DENIED) {
+                            ActivityCompat.requestPermissions((Activity) getContext(),
+                                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                        }
+                        if (ContextCompat.checkSelfPermission(getContext(),
+                                android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                == PackageManager.PERMISSION_DENIED) {
+                            return true;
+                        }
+                    }
                     NotificationCompat.Builder builder =
                             Notifications.setupNotification(Notifications.Channels.ZAPIS, getContext(),
                                     "Tworzenie pliku EPUB");
@@ -435,20 +484,6 @@ public class ReadFragment extends Fragment {
                             File f = new File(longFileName);
                             if (!f.exists()) break;
                             z++;
-                        }
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            if (ContextCompat.checkSelfPermission(getContext(),
-                                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                    == PackageManager.PERMISSION_DENIED) {
-                                ActivityCompat.requestPermissions((Activity) getContext(),
-                                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-                            }
-                            if (ContextCompat.checkSelfPermission(getContext(),
-                                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                    == PackageManager.PERMISSION_DENIED) {
-                                return true;
-                            }
                         }
 
                         shortFileName = config.tabName.replaceAll("[^A-Za-z0-9]", "") +
@@ -605,16 +640,4 @@ public class ReadFragment extends Fragment {
         });
         return view;
     }
-
-    public void doRefresh() {
-        for (Page.PagesTyp pt : config.readInfoForReadFragment) {
-            Page.getReadInfo(pt).getList(
-                    result -> mTaskListAdapter.update(mydb, config.showHidden, config.readInfoForReadFragment
-                            .toArray(new Page.PagesTyp[config.readInfoForReadFragment.size()])),
-                    result -> {
-                    },
-                    mainThreadHandler, threadPoolExecutor, mydb, getContext(), pt);
-        }
-    }
-
 }

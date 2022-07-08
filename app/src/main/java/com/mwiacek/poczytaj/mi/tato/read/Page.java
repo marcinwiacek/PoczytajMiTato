@@ -43,7 +43,6 @@ public class Page {
 
     public enum PagesTyp {
         FANTASTYKA_ARCHIWUM,
-        FANTASTYKA_AUTORZY,
         FANTASTYKA_BIBLIOTEKA,
         FANTASTYKA_POCZEKALNIA,
         OPOWI_FANTASTYKA,

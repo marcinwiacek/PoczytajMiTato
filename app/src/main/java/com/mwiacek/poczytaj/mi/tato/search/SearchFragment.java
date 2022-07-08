@@ -181,7 +181,7 @@ public class SearchFragment extends Fragment {
             for (String s : hm.keySet()) {
                 popupMenu.getMenu().add(2, i++, mainIndex++, s).
                         setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(
-                                config.readInfoForReadFragment.contains(hm.get(s)));
+                                config.storeInfoForSearchFragment.contains(hm.get(s)));
             }
             popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
             popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");

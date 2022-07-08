@@ -2,6 +2,8 @@ package com.mwiacek.poczytaj.mi.tato;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
 
@@ -13,24 +15,24 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public class FragmentConfig implements Serializable {
-    static final long serialVersionUID = 5L; // Version of the structure for serialization
+public class FragmentConfig implements Serializable, Cloneable {
+    static final long serialVersionUID = 8L; // Version of the structure for serialization
 
     public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
     public List<String> searchHistory = new ArrayList<>();
 
     public HashSet<Page.PagesTyp> readInfoForReadFragment = new HashSet<>();
-    public boolean showHidden = false;
+    public boolean showHiddenTexts = false;
     public boolean useTOR = false;
-    public boolean pobierajTekstyZIndeksem = false;
-    public int coIleGodzin = -1;
-    public int przyBledzieCoMinut = -1;
+    public boolean getTextsWhenRefreshingIndex = false;
     public boolean pobierzPrzyWifi = true;
     public boolean pobierzPrzyGSM = true;
     public boolean pobierzPrzyInnejSieci = true;
     public boolean pobierzTylkoPrzyLadowaniu = false;
     public boolean niePobierajPrzyNiskiejBaterii = true;
     public boolean networkWithoutLimit = false;
+    public int howOftenRefreshTabInHours = -1;
+    public int howOftenTryToRefreshTabAfterErrorInMinutes = -1;
 
     public int tabNum;
     public String tabName;
@@ -51,6 +53,12 @@ public class FragmentConfig implements Serializable {
         }
     }
 
+    @NonNull
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
     public void saveToInternalStorage(Context context) {
         try {
             ObjectOutputStream outputStream = new ObjectOutputStream(
@@ -58,6 +66,7 @@ public class FragmentConfig implements Serializable {
             outputStream.writeObject(this);
             outputStream.close();
         } catch (Exception ignored) {
+            ignored.printStackTrace();
         }
     }
 
