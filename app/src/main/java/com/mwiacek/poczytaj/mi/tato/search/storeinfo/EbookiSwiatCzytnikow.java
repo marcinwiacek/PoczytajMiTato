@@ -1,9 +1,9 @@
 package com.mwiacek.poczytaj.mi.tato.search.storeinfo;
 
 import com.mwiacek.poczytaj.mi.tato.Utils;
-import com.mwiacek.poczytaj.mi.tato.search.Book;
-import com.mwiacek.poczytaj.mi.tato.search.Books;
-import com.mwiacek.poczytaj.mi.tato.search.VolumeInfo;
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooks;
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooksRecyclerViewAdapter;
+import com.mwiacek.poczytaj.mi.tato.search.SingleBook;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,10 +15,11 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
                 name + "?strona=" + pageNumber};
     }
 
-    public boolean doesItMatch(String name, String url, StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock) {
+    public boolean doesItMatch(String name, String url, StringBuilder pageContent,
+                               ArrayList<ManyBooks> books, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
         int startSearchPosition, fromPosition, toPosition = 0, sortOrder = 1;
         String s, s2;
-        Book book;
+        SingleBook singleBook;
         boolean added = false;
 
         while (true) {
@@ -35,26 +36,24 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
                 continue;
             }
 
-            book = new Book();
+            singleBook = new SingleBook();
 
-            book.offerExpiryDate = null;
-
-            book.volumeInfo = new VolumeInfo();
-            book.volumeInfo.smallThumbnail = "https://" +
+            singleBook.offerExpiryDate = null;
+            singleBook.smallThumbnailUrl = "https://" +
                     Utils.findBetween(s, "<img src=\"", "\"", 0);
 
             s2 = Utils.findBetween(s, "<div class=\"title\">", "</div>", 0);
-            book.volumeInfo.title = Utils.findBetween(s2, "\">", "</a>", s2.indexOf("<a href=\""));
-            book.downloadUrl = "https://ebooki.swiatczytnikow.pl/" +
+            singleBook.title = Utils.findBetween(s2, "\">", "</a>", s2.indexOf("<a href=\""));
+            singleBook.downloadUrl = "https://ebooki.swiatczytnikow.pl" +
                     Utils.findBetween(s2, "<a href=\"", "\">", 0);
 
-            book.volumeInfo.authors = new String[1];
-            book.volumeInfo.authors[0] =
+            singleBook.authors = new String[1];
+            singleBook.authors[0] =
                     Utils.stripHtml(Utils.findBetween(s, "<div class=\"author\">", "</div>", 0))
                             .trim();
 
-            if (book.downloadUrl.isEmpty() || book.volumeInfo.smallThumbnail.isEmpty() ||
-                    book.volumeInfo.title.isEmpty()) {
+            if (singleBook.downloadUrl.isEmpty() || singleBook.smallThumbnailUrl.isEmpty() ||
+                    singleBook.title.isEmpty()) {
                 break;
             }
 
@@ -62,10 +61,10 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
             if (s2.equals("")) {
                 s2 = Utils.findBetween(s, "<strong id=\"\">", "</strong>", 0);
             }
-            book.price = s2.equals("") ?
+            singleBook.price = s2.equals("") ?
                     (float) 0.0 : Float.parseFloat(s2.replace(",", "."));
 
-            if (addBook(book, books, sortOrder, lock)) {
+            if (addBook(singleBook, books, sortOrder, lock, adapter)) {
                 added = true;
             }
             sortOrder++;

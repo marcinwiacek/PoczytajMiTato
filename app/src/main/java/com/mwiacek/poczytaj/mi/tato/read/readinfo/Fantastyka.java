@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class Fantastyka extends ReadInfo {
 
-    private static void processOneEntry(String s, DBHelper mydb, Page.PagesTyp typ) {
+    private static void processOneEntry(String s, DBHelper mydb, Page.PageTyp typ) {
         int indeks = Utils.Szukaj(s, "<div class=\"autor\">", 0);
         indeks = Utils.Szukaj(s, ">", indeks);
         int indeks2 = s.indexOf(":</a>", indeks);
@@ -77,23 +77,23 @@ public class Fantastyka extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callback,
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
-            final DBHelper mydb, final Context context, Page.PagesTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ) {
 
         try {
             String url = "";
             int index = 1;
             while (true) {
                 Notifications.notificationManager(context).notify(1,
-                        Notifications.setupNotification(Notifications.Channels.CZYTANIE, context,
+                        Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU, context,
                                 "Czytanie listy - strona " + index).build());
 
-                if (typ == Page.PagesTyp.FANTASTYKA_POCZEKALNIA) {
+                if (typ == Page.PageTyp.FANTASTYKA_POCZEKALNIA) {
                     url = "https://www.fantastyka.pl/opowiadania/wszystkie" +
                             (index == 1 ? "" : "/w/w/w/0/d/" + index);
-                } else if (typ == Page.PagesTyp.FANTASTYKA_BIBLIOTEKA) {
+                } else if (typ == Page.PageTyp.FANTASTYKA_BIBLIOTEKA) {
                     url = "https://www.fantastyka.pl/opowiadania/biblioteka" +
                             (index == 1 ? "" : "/w/w/w/0/d/" + index);
-                } else if (typ == Page.PagesTyp.FANTASTYKA_ARCHIWUM) {
+                } else if (typ == Page.PageTyp.FANTASTYKA_ARCHIWUM) {
                     url = "https://www.fantastyka.pl/opowiadania/archiwum/d" +
                             (index == 1 ? "" : "/" + index);
                 }
@@ -125,7 +125,7 @@ public class Fantastyka extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
-            final DBHelper mydb, final Context context, Page.PagesTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ) {
         executor.execute(() -> {
             getList(callback, callbackOnTheEnd, resultHandler, mydb, context, typ);
         });

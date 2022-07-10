@@ -7,6 +7,8 @@ import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
 
+import java.util.Objects;
+
 public class Notifications {
     public static NotificationManager notificationManager(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -17,15 +19,17 @@ public class Notifications {
 
     public static void setupNotifications(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(Channels.CZYTANIE.name(),
-                    Channels.CZYTANIE.name(), NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(Channels.CZYTANIE_Z_INTERNETU.name(),
+                    Channels.CZYTANIE_Z_INTERNETU.name(),
+                    NotificationManager.IMPORTANCE_DEFAULT);
             channel.setDescription("Czytanie plików z Internetu");
-            notificationManager(context).createNotificationChannel(channel);
+            Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
 
-            channel = new NotificationChannel(Channels.ZAPIS.name(),
-                    Channels.ZAPIS.name(), NotificationManager.IMPORTANCE_DEFAULT);
+            channel = new NotificationChannel(Channels.ZAPIS_W_URZADZENIU.name(),
+                    Channels.ZAPIS_W_URZADZENIU.name(),
+                    NotificationManager.IMPORTANCE_DEFAULT);
             channel.setDescription("Zapis plików w urządzeniu");
-            notificationManager(context).createNotificationChannel(channel);
+            Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
         }
     }
 
@@ -37,7 +41,7 @@ public class Notifications {
     }
 
     public enum Channels {
-        CZYTANIE,
-        ZAPIS
+        CZYTANIE_Z_INTERNETU,
+        ZAPIS_W_URZADZENIU
     }
 }

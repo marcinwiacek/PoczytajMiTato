@@ -1,9 +1,9 @@
 package com.mwiacek.poczytaj.mi.tato.search.storeinfo;
 
 import com.mwiacek.poczytaj.mi.tato.Utils;
-import com.mwiacek.poczytaj.mi.tato.search.Book;
-import com.mwiacek.poczytaj.mi.tato.search.Books;
-import com.mwiacek.poczytaj.mi.tato.search.VolumeInfo;
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooks;
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooksRecyclerViewAdapter;
+import com.mwiacek.poczytaj.mi.tato.search.SingleBook;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -14,13 +14,14 @@ public class WolneLektury extends StoreInfo {
         return new String[]{"https://wolnelektury.pl/szukaj/?q=" + name};
     }
 
-    public boolean doesItMatch(String name, String url, StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock) {
+    public boolean doesItMatch(String name, String url, StringBuilder pageContent,
+                               ArrayList<ManyBooks> books, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
         String formattedName = name.toLowerCase().replaceAll("\\s", "-");
         formattedName = Normalizer.normalize(formattedName, Normalizer.Form.NFD);
         formattedName = formattedName.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
 
         int startSearchPosition, fromPosition, toPosition, sortOrder = 1;
-        Book book;
+        SingleBook singleBook;
         String s;
 
         fromPosition = pageContent.indexOf("<div class=\"book-box-inner\"><p>Znalezione w treści</p></div>");
@@ -39,28 +40,31 @@ public class WolneLektury extends StoreInfo {
             toPosition = pageContent.indexOf("</div></li>", fromPosition);
             s = pageContent.substring(fromPosition, toPosition);
 
-            book = new Book();
-
-            book.offerExpiryDate = null;
-
-            book.price = 0;
-            book.volumeInfo = new VolumeInfo();
-            book.volumeInfo.title =
-                    Utils.stripHtml(Utils.findBetween(s, "<div class=\"title\">", "</div>", 0))
-                            .trim();
-            book.volumeInfo.authors = new String[1];
-            book.volumeInfo.authors[0] = Utils.findBetween(s, "/\">", "</a>",
+            singleBook = new SingleBook();
+            singleBook.offerExpiryDate = null;
+            singleBook.price = 0;
+            singleBook.title = Utils.stripHtml(Utils.findBetween(s,
+                    "<div class=\"title\">", "</div>", 0)).trim();
+            singleBook.authors = new String[1];
+            singleBook.authors[0] = Utils.findBetween(s, "/\">", "</a>",
                     s.indexOf("<div class=\"author\">"));
-            book.volumeInfo.smallThumbnail = "https://wolnelektury.pl" +
+            singleBook.smallThumbnailUrl =
                     Utils.findBetween(s, "<img src=\"", "\" alt=\"Cover\"", 0);
-            book.downloadUrl = "https://wolnelektury.pl/media/book/epub/" +
+            if (singleBook.smallThumbnailUrl.isEmpty()) {
+                singleBook.smallThumbnailUrl =
+                        Utils.findBetween(s, "<img class=\"cover\" src=\"", "\"", 0);
+            }
+            if (!singleBook.smallThumbnailUrl.isEmpty()) {
+                singleBook.smallThumbnailUrl = "https://wolnelektury.pl" + singleBook.smallThumbnailUrl;
+            }
+
+            singleBook.downloadUrl = "https://wolnelektury.pl/media/book/epub/" +
                     formattedName + ".epub";
 
-            if (book.downloadUrl.isEmpty() || book.volumeInfo.smallThumbnail.isEmpty() ||
-                    book.volumeInfo.title.isEmpty()) {
+            if (singleBook.smallThumbnailUrl.isEmpty() || singleBook.title.isEmpty()) {
                 break;
             }
-            addBook(book, books, sortOrder, lock);
+            addBook(singleBook, books, sortOrder, lock, adapter);
             sortOrder++;
         }
         return false;

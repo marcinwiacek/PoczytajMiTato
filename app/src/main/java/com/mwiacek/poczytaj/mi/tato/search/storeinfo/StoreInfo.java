@@ -1,48 +1,70 @@
 package com.mwiacek.poczytaj.mi.tato.search.storeinfo;
 
-import com.mwiacek.poczytaj.mi.tato.search.Book;
-import com.mwiacek.poczytaj.mi.tato.search.Books;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooks;
+import com.mwiacek.poczytaj.mi.tato.search.ManyBooksRecyclerViewAdapter;
+import com.mwiacek.poczytaj.mi.tato.search.SingleBook;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class StoreInfo {
-    public abstract boolean doesItMatch(String name, String url,
-                                        StringBuilder pageContent, ArrayList<Books> books, ReentrantLock lock);
+    public abstract boolean doesItMatch(
+            String name, String url, StringBuilder pageContent,
+            ArrayList<ManyBooks> books, ReentrantLock lock,
+            ManyBooksRecyclerViewAdapter adapter);
 
     public abstract String[] getSearchUrl(String name, int pageNumber);
 
-    public boolean addBook(Book book, ArrayList<Books> allBooks, int sortOrder, ReentrantLock lock) {
-        Book b2;
+    public boolean addBook(SingleBook singleBook, ArrayList<ManyBooks> allBooks,
+                           int sortOrder, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
+        SingleBook b2;
         lock.lock();
         try {
-            for (Books books : allBooks) {
-                for (Book b : books.items) {
-                    if (book.volumeInfo.title.equalsIgnoreCase(b.volumeInfo.title) &&
-                            book.volumeInfo.authors[0].equalsIgnoreCase(b.volumeInfo.authors[0]) &&
-                            book.downloadUrl.equals(b.downloadUrl)) {
+            for (int i = 0; i < allBooks.size(); i++) {
+                ManyBooks manyBooks = allBooks.get(i);
+                for (SingleBook b : manyBooks.items) {
+                    if (singleBook.title.equalsIgnoreCase(b.title) &&
+                            singleBook.authors[0].equalsIgnoreCase(b.authors[0]) &&
+                            singleBook.downloadUrl.equals(b.downloadUrl)) {
                         return false;
                     }
                 }
-                b2 = books.items.get(books.positionInMainList);
-                if (book.volumeInfo.title.equalsIgnoreCase(b2.volumeInfo.title) &&
-                        book.volumeInfo.authors[0].equalsIgnoreCase(b2.volumeInfo.authors[0])) {
-                    books.items.add(book);
-                    if (book.price < b2.price || book.downloadUrl.contains(".epub")) {
-                        books.positionInMainList = books.items.size() - 1;
+                b2 = manyBooks.items.get(manyBooks.itemsPositionForManyBooksList);
+                if (singleBook.title.equalsIgnoreCase(b2.title) &&
+                        singleBook.authors[0].equalsIgnoreCase(b2.authors[0])) {
+                    manyBooks.items.add(singleBook);
+                    if (singleBook.price < b2.price || singleBook.downloadUrl.contains(".epub")) {
+                        manyBooks.itemsPositionForManyBooksList = manyBooks.items.size() - 1;
+                        int finalI = i;
+                        Handler handler = new Handler(Looper.getMainLooper()) {
+                            @Override
+                            public void handleMessage(Message msg) {
+                                adapter.notifyItemChanged(finalI);
+                            }
+                        };
+                        handler.sendEmptyMessage(1);
                         //books.sortOrderInMainList = sortOrder;
                     }
 
                     return true;
                 }
-
             }
-            Books nb = new Books();
+            ManyBooks nb = new ManyBooks();
             nb.items = new ArrayList<>();
-            nb.items.add(book);
-            nb.positionInMainList = 0;
-            //nb.sortOrderInMainList = sortOrder;
+            nb.items.add(singleBook);
+            nb.itemsPositionForManyBooksList = 0;
             allBooks.add(nb);
+            Handler handler = new Handler(Looper.getMainLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+                    adapter.notifyItemRangeInserted(allBooks.size() - 2, 1);
+                }
+            };
+            handler.sendEmptyMessage(1);
             return true;
         } finally {
             lock.unlock();

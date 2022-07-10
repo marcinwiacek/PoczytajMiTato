@@ -1,5 +1,6 @@
 package com.mwiacek.poczytaj.mi.tato.read;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -13,17 +14,18 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.R;
+import com.mwiacek.poczytaj.mi.tato.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
-public class PageListListViewAdapter extends
-        RecyclerView.Adapter<PageListListViewAdapter.TaskListRecyclerViewHolder> {
+public class PageListRecyclerViewAdapter extends
+        RecyclerView.Adapter<PageListRecyclerViewAdapter.TaskListRecyclerViewHolder> {
 
     private ArrayList<Page> mData = new ArrayList<>();
-    private OnItemClicked mOnClick; // Callback used after clicking on entry
+    private Utils.OnItemClicked mOnClick;
 
-    public void update(DBHelper mydb, boolean hidden, Page.PagesTyp[] typ) {
+    public void update(DBHelper mydb, boolean hidden, Page.PageTyp[] typ) {
         mData = mydb.getAllPages(hidden, typ);
         this.notifyDataSetChanged();
     }
@@ -36,34 +38,38 @@ public class PageListListViewAdapter extends
                         R.layout.read_page_list_item, parent, false));
     }
 
-    Object getItem(int position) {
+    Page getItem(int position) {
         return mData.get(position);
+    }
+
+    ArrayList<Page> getAllItems() {
+        return mData;
     }
 
     @Override
     public void onBindViewHolder(@NonNull TaskListRecyclerViewHolder holder, int position) {
-        Page b = ((Page) getItem(position));
+        Page page = mData.get(position);
 
-        Object o = b.getCacheFileName(holder.itemView.getContext()).exists() ?
+        Object o = page.getCacheFileName(holder.itemView.getContext()).exists() ?
                 new ForegroundColorSpan(Color.BLUE) :
                 new ForegroundColorSpan(Color.GRAY);
 
-        Spannable WordtoSpan = new SpannableString(b.name);
-        WordtoSpan.setSpan(o, 0, b.name.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Spannable WordtoSpan = new SpannableString(page.name);
+        WordtoSpan.setSpan(o, 0, page.name.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.titleText.setText(WordtoSpan);
 
-        WordtoSpan = new SpannableString(b.author);
-        WordtoSpan.setSpan(o, 0, b.author.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        WordtoSpan = new SpannableString(page.author);
+        WordtoSpan.setSpan(o, 0, page.author.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.titleAuthor.setText(WordtoSpan);
 
-        SimpleDateFormat df = new SimpleDateFormat("dd.MM.yy hh:mm");
-        String time = " | " + df.format(b.dt);
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("dd.MM.yy hh:mm");
+        String time = " | " + df.format(page.dt);
         WordtoSpan = new SpannableString(time);
         WordtoSpan.setSpan(o, 0, time.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.when.setText(WordtoSpan);
 
-        WordtoSpan = new SpannableString(b.tags);
-        WordtoSpan.setSpan(o, 0, b.tags.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        WordtoSpan = new SpannableString(page.tags);
+        WordtoSpan.setSpan(o, 0, page.tags.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.desc.setText(WordtoSpan);
     }
 
@@ -72,15 +78,8 @@ public class PageListListViewAdapter extends
         return mData.size();
     }
 
-    /**
-     * Setting callback for handling click on single task list entry
-     */
-    void setOnClick(OnItemClicked onClick) {
+    void setOnClick(Utils.OnItemClicked onClick) {
         this.mOnClick = onClick;
-    }
-
-    public interface OnItemClicked {
-        void onItemClick(int position);
     }
 
     class TaskListRecyclerViewHolder extends RecyclerView.ViewHolder {

@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class Opowi extends ReadInfo {
 
-    private static void processOneEntry(String s, DBHelper mydb, Page.PagesTyp typ) {
+    private static void processOneEntry(String s, DBHelper mydb, Page.PageTyp typ) {
         if (!s.contains("<div class=\"list-box-cat\">Fantastyka</div>")) return;
 
         int indeks = Utils.Szukaj(s, "<div class=\"list-box-author\">", 0);
@@ -59,13 +59,13 @@ public class Opowi extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callback,
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
-            final DBHelper mydb, final Context context, Page.PagesTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ) {
         try {
             String url = "";
             int index = 1;
             while (true) {
                 Notifications.notificationManager(context).notify(1,
-                        Notifications.setupNotification(Notifications.Channels.CZYTANIE, context,
+                        Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU, context,
                                 "Czytanie listy - strona " + index).build());
 
                 url = "https://www.opowi.pl/spis" +
@@ -96,7 +96,7 @@ public class Opowi extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
-            final DBHelper mydb, final Context context, Page.PagesTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ) {
         executor.execute(() -> {
             getList(callback, callbackOnTheEnd, resultHandler, mydb, context, typ);
         });

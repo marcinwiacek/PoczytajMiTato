@@ -1,7 +1,11 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -11,13 +15,16 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
@@ -28,110 +35,146 @@ import java.io.File;
 import java.util.LinkedHashMap;
 
 public class SearchFragment extends Fragment {
-    public final FragmentConfig config;
+    private final FragmentConfig config;
+    private final ImageCache imageCache;
+    private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;
+    private SingleBookRecyclerViewAdapter singleBookRecyclerViewAdapter;
+    private ArrayAdapter searchTextAdapter;
+    private ViewSwitcher viewSwitcher;
+    private boolean isLoadingMoreBooks = false;
 
-    private ArrayAdapter adapter;
-    private AutoCompleteTextView mSearchTextView;
-    private BooksListListViewAdapter customAdapter;
-    private BookListListViewAdapter customAdapter2;
-    private Button mSearchButton;
-    private ViewSwitcher mViewSwitcher;
-
-    public SearchFragment(FragmentConfig config) {
+    public SearchFragment(FragmentConfig config, ImageCache imageCache) {
         this.config = config;
+        this.imageCache = imageCache;
+    }
+
+    private void loadMoreBooks(Context context) {
+        NetworkInfo activeNetwork = ((ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        if (!isConnected) {
+            Toast.makeText(context, "Lepiej działa z siecią!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // rowsArrayList.add(null);
+        //  manyBooksRecyclerView.post(() -> manyBooksRecyclerViewAdapter.notifyItemInserted(rowsArrayList.size() - 1));
+
+        new Handler().postDelayed(() -> {
+            //    rowsArrayList.remove(rowsArrayList.size() - 1);
+            //     int scrollPosition = rowsArrayList.size();
+            //     manyBooksRecyclerViewAdapter.notifyItemRemoved(scrollPosition);
+            manyBooksRecyclerViewAdapter.makeSearch(true);
+            //  manyBooksRecyclerViewAdapter.notifyDataSetChanged();
+            isLoadingMoreBooks = false;
+        }, 1000);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.search_fragment, container, false);
+        viewSwitcher = view.findViewById(R.id.viewSwitcher);
 
-        ImageCacheForListView mImageCache = new ImageCacheForListView(view.getContext());
-
-        Button mBackButton = view.findViewById(R.id.backButton);
-        ListView mBooksListListView = view.findViewById(R.id.booksListListView);
-        ListView mBooksList2ListView = view.findViewById(R.id.bookListListView);
-        ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
+        /* Page with single book */
         TextView titleTextView = view.findViewById(R.id.titleTextView);
-        mSearchButton = view.findViewById(R.id.searchButton);
-        mSearchTextView = view.findViewById(R.id.searchTextView);
-        mViewSwitcher = view.findViewById(R.id.viewSwitcher);
+        RecyclerView singleBookRecyclerView = view.findViewById(R.id.bookListListView);
+        Button mBackButton = view.findViewById(R.id.backButton);
 
-        customAdapter = new BooksListListViewAdapter(mImageCache, mSearchButton,
-                mProgressBar, mSearchTextView);
-        customAdapter2 = new BookListListViewAdapter(mImageCache);
+        singleBookRecyclerViewAdapter = new SingleBookRecyclerViewAdapter(imageCache, getContext(),
+                position -> {
+                    SingleBook singleBook = singleBookRecyclerViewAdapter.getItem(position);
+                    Utils.downloadFileWithDownloadManager(singleBook.downloadUrl,
+                            singleBook.title, getContext());
+                });
+        singleBookRecyclerView.setAdapter(singleBookRecyclerViewAdapter);
+        singleBookRecyclerView.setItemAnimator(null);
 
-        mBooksListListView.setAdapter(customAdapter);
-        mBooksListListView.setOnItemClickListener((parent, view12, position, id) -> {
-            Books books = (Books) parent.getAdapter().getItem(position);
-            Book book = books.items.get(books.positionInMainList);
+        mBackButton.setOnClickListener(v -> viewSwitcher.showPrevious());
+
+        /* Page with many books */
+        Button searchButton = view.findViewById(R.id.searchButton);
+        AutoCompleteTextView searchTextView = view.findViewById(R.id.searchTextView);
+        ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
+        RecyclerView manyBooksRecyclerView = view.findViewById(R.id.booksListListView);
+        Button menu = view.findViewById(R.id.menuButton);
+
+        manyBooksRecyclerViewAdapter = new ManyBooksRecyclerViewAdapter(config, searchButton,
+                searchTextView, mProgressBar, imageCache, position -> {
+            ManyBooks books = manyBooksRecyclerViewAdapter.getItem(position);
+            SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
             if (books.items.size() != 1) {
-                customAdapter2.BookListListViewAdapterDisplay(books.items);
-                titleTextView.setText(book.volumeInfo.title);
-                mViewSwitcher.showNext();
+                singleBookRecyclerViewAdapter.refreshData(books.items);
+                titleTextView.setText(book.title);
+                viewSwitcher.showNext();
                 return;
             }
             Utils.downloadFileWithDownloadManager(book.downloadUrl,
-                    book.volumeInfo.title, getContext());
+                    book.title, getContext());
+        });
+        manyBooksRecyclerView.setAdapter(manyBooksRecyclerViewAdapter);
+        manyBooksRecyclerView.setItemAnimator(null);
+        manyBooksRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (isLoadingMoreBooks) return;
+                LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (linearLayoutManager != null &&
+                        linearLayoutManager.findLastCompletelyVisibleItemPosition() > manyBooksRecyclerViewAdapter.getItemCount() - 7) {
+                    isLoadingMoreBooks = true;
+                    loadMoreBooks(requireContext());
+                }
+            }
         });
 
-        mSearchButton.setOnClickListener(v -> {
+        searchButton.setOnClickListener(v -> {
 //                InputMethodManager imm = (InputMethodManager) view.getSystemService(Context.INPUT_METHOD_SERVICE);
             //              imm.hideSoftInputFromWindow(mSearchTextView.getWindowToken(), 0);
 
-            mSearchButton.setEnabled(false);
-            mSearchTextView.setEnabled(false);
-
-            config.searchHistory.add(mSearchTextView.getText().toString());
-            adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, config.searchHistory);
-            mSearchTextView.setAdapter(adapter);
-
-            customAdapter.BooksListListViewAdapterSearch(
-                    mSearchTextView.getText().toString(), getContext(), config);
+            searchButton.setEnabled(false);
+            searchTextView.setEnabled(false);
+            config.searchHistory.add(searchTextView.getText().toString());
+            searchTextAdapter = new ArrayAdapter<>(getActivity(),
+                    android.R.layout.simple_dropdown_item_1line, config.searchHistory);
+            searchTextView.setAdapter(searchTextAdapter);
+            manyBooksRecyclerViewAdapter.makeSearch(false);
         });
-
-        mBooksList2ListView.setAdapter(customAdapter2);
-        mBooksList2ListView.setOnItemClickListener((parent, view13, position, id) -> {
-            Book book = (Book) parent.getAdapter().getItem(position);
-
-            Utils.downloadFileWithDownloadManager(book.downloadUrl,
-                    book.volumeInfo.title, getContext());
-        });
-
-        mBackButton.setOnClickListener(v -> mViewSwitcher.showPrevious());
-
-        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_dropdown_item_1line, config.searchHistory);
-        mSearchTextView.setAdapter(adapter);
-        mSearchTextView.setThreshold(0);
 
         // mSearchTextView.setText("warszawo naprzód");
         // mSearchButton.callOnClick();
 
-        mSearchTextView.setOnTouchListener((paramView, paramMotionEvent) -> {
-            adapter.getFilter().filter(null);
-            mSearchTextView.showDropDown();
+        searchTextAdapter = new ArrayAdapter<>(getActivity(),
+                android.R.layout.simple_dropdown_item_1line, config.searchHistory);
+        searchTextView.setAdapter(searchTextAdapter);
+        searchTextView.setThreshold(0);
+        searchTextView.setOnTouchListener((paramView, paramMotionEvent) -> {
+            searchTextAdapter.getFilter().filter(null);
+            searchTextView.showDropDown();
             return false;
         });
-
-        mSearchTextView.setOnKeyListener((v, keyCode, event) -> {
+        searchTextView.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN &&
                     keyCode == KeyEvent.KEYCODE_ENTER) {
-                mSearchTextView.dismissDropDown();
-                mSearchButton.callOnClick();
+                searchTextView.dismissDropDown();
+                searchButton.callOnClick();
                 return true;
             }
             return false;
         });
-
-        mSearchTextView.setOnItemClickListener(
-                (parent, view1, position, id) -> mSearchButton.callOnClick());
-
-        mSearchTextView.addTextChangedListener(new TextWatcher() {
+        searchTextView.setOnItemClickListener(
+                (parent, view1, position, id) -> searchButton.callOnClick());
+        searchTextView.addTextChangedListener(new TextWatcher() {
             public void afterTextChanged(Editable s) {
-                adapter.getFilter().filter(null);
-                if (mSearchTextView.isShown()) {
-                    mSearchTextView.showDropDown();
+                searchTextAdapter.getFilter().filter(null);
+                if (searchTextView.isShown()) {
+                    searchTextView.showDropDown();
                 }
-                mSearchButton.setEnabled(mSearchTextView.length() != 0);
+                searchButton.setEnabled(searchTextView.length() != 0);
             }
 
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -141,30 +184,6 @@ public class SearchFragment extends Fragment {
             }
         });
 
-        Runnable r = () -> {
-            while (true) {
-                File dirList = new File(Utils.getDiskCacheFolder(getContext()));
-                File[] files = dirList.listFiles();
-                if (files.length < 500) {
-                    break;
-                }
-                long lmod = Long.MAX_VALUE;
-                File f = null;
-                for (File file : files) {
-                    if (file.lastModified() < lmod) {
-                        lmod = file.lastModified();
-                        f = file;
-                    }
-                }
-                if (lmod != Long.MAX_VALUE) {
-                    f.delete();
-                }
-            }
-        };
-
-        (new Thread(r)).start();
-
-        Button menu = view.findViewById(R.id.menuButton);
         menu.setOnClickListener(view1 -> {
             LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String, StoreInfo.StoreInfoTyp>() {{
                 put("artrage.pl/bookrage", StoreInfo.StoreInfoTyp.BOOKRAGE);
@@ -175,17 +194,17 @@ public class SearchFragment extends Fragment {
             }};
             int i = 0;
             int mainIndex = 0;
-            PopupMenu popupMenu = new PopupMenu(getContext(), menu);
+            PopupMenu popupMenu = new PopupMenu(requireContext(), menu);
             popupMenu.getMenu().add(2, i++, mainIndex++, "Używaj TOR")
-                    .setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(config.useTOR);
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(config.useTOR);
             for (String s : hm.keySet()) {
                 popupMenu.getMenu().add(2, i++, mainIndex++, s).
-                        setActionView(R.layout.checkbox_layout).setCheckable(true).setChecked(
+                        setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
                                 config.storeInfoForSearchFragment.contains(hm.get(s)));
             }
             popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
             popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");
-            popupMenu.getMenu().add(5, i++, mainIndex++, "Napisz maila do autora");
+            popupMenu.getMenu().add(5, i, mainIndex, "Napisz maila do autora");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 popupMenu.getMenu().setGroupDividerEnabled(true);
             }
@@ -214,6 +233,23 @@ public class SearchFragment extends Fragment {
             });
             popupMenu.show();
         });
+
+        /* Delete files if we have more than 500 */
+        (new Thread(() -> {
+            while (true) {
+                File[] files = new File(Utils.getDiskCacheFolder(requireContext())).listFiles();
+                if (files == null || files.length < 500) break;
+                long lastModified = Long.MAX_VALUE;
+                File f = null;
+                for (File file : files) {
+                    if (file.lastModified() < lastModified) {
+                        lastModified = file.lastModified();
+                        f = file;
+                    }
+                }
+                if (lastModified != Long.MAX_VALUE) f.delete();
+            }
+        })).start();
 
         return view;
     }

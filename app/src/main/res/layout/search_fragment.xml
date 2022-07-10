@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -24,29 +25,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_alignBottom="@+id/searchButton"
+                android:layout_toStartOf="@+id/searchButton"
                 android:layout_toLeftOf="@+id/searchButton"
                 android:hint="Szukaj"
                 android:inputType="text"
                 android:maxLines="1"
-                android:text=""
-                android:layout_toStartOf="@+id/searchButton" />
+                android:text="" />
 
             <Button
                 android:id="@+id/searchButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/menuButton"
                 android:layout_toLeftOf="@+id/menuButton"
-                android:text="Szukaj"
-                android:layout_toStartOf="@+id/menuButton" />
+                android:text="Szukaj" />
 
             <Button
                 android:id="@+id/menuButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentRight="true"
-                android:layout_alignParentTop="true"
                 android:text="Menu" />
 
             <ProgressBar
@@ -76,11 +77,13 @@
                 android:textSize="16sp"
                 android:visibility="gone" />
 
-            <ListView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/booksListListView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/resultTypeTextView" />
+                android:layout_below="@+id/resultTypeTextView"
+                android:paddingBottom="?attr/actionBarSize"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
         </RelativeLayout>
 
         <RelativeLayout
@@ -93,28 +96,30 @@
                 android:id="@+id/backButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
                 android:layout_alignParentLeft="true"
                 android:layout_alignParentTop="true"
-                android:text="&lt;&lt;"
-                android:layout_alignParentStart="true" />
+                android:text="&lt;&lt;" />
 
             <TextView
                 android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_alignBottom="@+id/backButton"
+                android:layout_toEndOf="@+id/backButton"
                 android:layout_toRightOf="@+id/backButton"
                 android:gravity="center_vertical"
                 android:maxLines="1"
                 android:text=""
-                android:textSize="16sp"
-                android:layout_toEndOf="@+id/backButton" />
+                android:textSize="16sp" />
 
-            <ListView
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/bookListListView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/backButton" />
+                android:layout_below="@+id/backButton"
+                android:paddingBottom="?attr/actionBarSize"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
         </RelativeLayout>
     </ViewSwitcher>
 </androidx.constraintlayout.widget.ConstraintLayout>

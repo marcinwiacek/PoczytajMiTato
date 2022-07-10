@@ -13,15 +13,15 @@ import java.util.Date;
 
 public class DBHelper extends SQLiteOpenHelper {
 
-    private static final String PAGES_TABLE_NAME = "pages";
-    private static final String COLUMN_NAME = "name";
-    private static final String COLUMN_AUTHOR = "author";
-    private static final String COLUMN_COMMENTS = "comments";
-    private static final String COLUMN_URL = "url";
-    private static final String COLUMN_TOP = "top";
-    private static final String COLUMN_DATETIME = "dt";
-    private static final String COLUMN_TYP = "typ";
-    private static final String COLUMN_HIDDEN = "hidden";
+    private final static String PAGES_TABLE_NAME = "pages";
+    private final static String COLUMN_NAME = "name";
+    private final static String COLUMN_AUTHOR = "author";
+    private final static String COLUMN_COMMENTS = "comments";
+    private final static String COLUMN_URL = "url";
+    private final static String COLUMN_TOP = "top";
+    private final static String COLUMN_DATETIME = "dt";
+    private final static String COLUMN_TYP = "typ";
+    private final static String COLUMN_HIDDEN = "hidden";
 
     public DBHelper(Context context) {
         super(context, "pages.db", null, 1);
@@ -54,7 +54,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 " where " + COLUMN_URL + "='" + url + "'");
     }
 
-    public void insertPage(Page.PagesTyp typ, String name, String author, String comments, String url, Date d) {
+    public void insertPage(Page.PageTyp typ, String name, String author, String comments, String url, Date d) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_TYP, typ.ordinal());
         contentValues.put(COLUMN_NAME, name);
@@ -71,11 +71,11 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages(boolean hidden, Page.PagesTyp[] typ) {
+    public ArrayList<Page> getAllPages(boolean hidden, Page.PageTyp[] typ) {
         ArrayList<Page> array_list = new ArrayList<>();
 
         StringBuilder types = new StringBuilder();
-        for (Page.PagesTyp t : typ) {
+        for (Page.PageTyp t : typ) {
             if (types.length() > 0) types.append(",");
             types.append("").append(t.ordinal());
         }
@@ -94,7 +94,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     res.getString(res.getColumnIndex(COLUMN_URL)),
                     res.getInt(res.getColumnIndex(COLUMN_TOP)),
                     new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
-                    Page.PagesTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]));
+                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]));
             res.moveToNext();
         }
         return array_list;

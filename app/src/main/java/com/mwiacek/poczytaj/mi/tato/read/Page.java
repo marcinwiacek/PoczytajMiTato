@@ -17,9 +17,9 @@ public class Page {
     String url;
     int top;
     Date dt;
-    PagesTyp typ;
+    PageTyp typ;
 
-    Page(String name, String author, String comments, String url, int top, Date dt, PagesTyp typ) {
+    Page(String name, String author, String comments, String url, int top, Date dt, PageTyp typ) {
         this.name = name;
         this.author = author;
         this.tags = comments;
@@ -29,11 +29,8 @@ public class Page {
         this.typ = typ;
     }
 
-    public static ReadInfo getReadInfo(Page.PagesTyp typ) {
-        if (typ.name().toLowerCase().startsWith("fantastyka_")) {
-            return new Fantastyka();
-        }
-        return new Opowi();
+    public static ReadInfo getReadInfo(PageTyp typ) {
+        return typ.name().toLowerCase().startsWith("fantastyka_") ? new Fantastyka() : new Opowi();
     }
 
     public File getCacheFileName(Context context) {
@@ -41,7 +38,7 @@ public class Page {
                 url.replaceAll("[^A-Za-z0-9]", ""));
     }
 
-    public enum PagesTyp {
+    public enum PageTyp {
         FANTASTYKA_ARCHIWUM,
         FANTASTYKA_BIBLIOTEKA,
         FANTASTYKA_POCZEKALNIA,

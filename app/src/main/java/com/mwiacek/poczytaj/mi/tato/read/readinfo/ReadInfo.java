@@ -17,11 +17,11 @@ public abstract class ReadInfo {
                                  final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
                                  final Handler resultHandler,
                                  final ThreadPoolExecutor executor,
-                                 final DBHelper mydb, final Context context, Page.PagesTyp typ);
+                                 final DBHelper mydb, final Context context, Page.PageTyp typ);
 
     public abstract void getList(final Utils.RepositoryCallback<StringBuilder> callback,
                                  final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
                                  final Handler resultHandler,
-                                 final DBHelper mydb, final Context context, Page.PagesTyp typ);
+                                 final DBHelper mydb, final Context context, Page.PageTyp typ);
 
 }

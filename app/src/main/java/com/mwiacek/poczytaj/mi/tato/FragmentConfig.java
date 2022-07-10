@@ -15,13 +15,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+/* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
     static final long serialVersionUID = 8L; // Version of the structure for serialization
 
+    /* Search Fragment */
     public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
     public List<String> searchHistory = new ArrayList<>();
 
-    public HashSet<Page.PagesTyp> readInfoForReadFragment = new HashSet<>();
+    /* Read Fragment */
+    public HashSet<Page.PageTyp> readInfoForReadFragment = new HashSet<>();
     public boolean showHiddenTexts = false;
     public boolean useTOR = false;
     public boolean getTextsWhenRefreshingIndex = false;
@@ -34,11 +37,12 @@ public class FragmentConfig implements Serializable, Cloneable {
     public int howOftenRefreshTabInHours = -1;
     public int howOftenTryToRefreshTabAfterErrorInMinutes = -1;
 
-    public int tabNum;
+    /* tab related info */
+    public int tabNumForFileForSerialization;
     public String tabName;
 
     FragmentConfig(int tabNum, String tabName) {
-        this.tabNum = tabNum;
+        this.tabNumForFileForSerialization = tabNum;
         this.tabName = tabName;
     }
 
@@ -62,11 +66,11 @@ public class FragmentConfig implements Serializable, Cloneable {
     public void saveToInternalStorage(Context context) {
         try {
             ObjectOutputStream outputStream = new ObjectOutputStream(
-                    context.openFileOutput("tab" + tabNum, Context.MODE_PRIVATE));
+                    context.openFileOutput("tab" + tabNumForFileForSerialization, Context.MODE_PRIVATE));
             outputStream.writeObject(this);
             outputStream.close();
-        } catch (Exception ignored) {
-            ignored.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

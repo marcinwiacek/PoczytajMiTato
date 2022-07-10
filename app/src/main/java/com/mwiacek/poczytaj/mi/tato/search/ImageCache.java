@@ -15,14 +15,13 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class ImageCacheForListView {
+public class ImageCache {
     private static LruCache<String, Bitmap> mMemoryCache;
 
-    public ImageCacheForListView(Context context) {
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        int memClassBytes = am.getMemoryClass() * 1024 * 1024;
-        int cacheSize = memClassBytes / 8;
-        mMemoryCache = new LruCache<>(cacheSize);
+    public ImageCache(Context context) {
+        mMemoryCache = new LruCache<>(((ActivityManager) context
+                .getSystemService(Context.ACTIVITY_SERVICE))
+                .getMemoryClass() * 1024 * 1024 / 8);
     }
 
     /**
@@ -33,17 +32,16 @@ public class ImageCacheForListView {
     }
 
     public void getImageFromCache(Context context, String name,
-                                  BookListListViewAdapter.ViewHolder holder,
+                                  Utils.ItemViewHolder holder,
                                   int position) {
+        if (name == null || name.isEmpty()) return;
         String cacheName = name.replaceAll("[:/\\[\\]]+", "");
 
-        // Check if we have bitmap in memory cache
         if (mMemoryCache.get(cacheName) != null) {
             holder.thumbnailPicture.setImageBitmap(mMemoryCache.get(cacheName));
             return;
         }
 
-        // Check if we have bitmap in disk cache
         if ((new File(getDiskCacheFileName(context, cacheName)).exists())) {
             Bitmap bitmap = BitmapFactory.decodeFile(getDiskCacheFileName(
                     context,
@@ -58,7 +56,8 @@ public class ImageCacheForListView {
                 AsyncTask.THREAD_POOL_EXECUTOR,
                 name,
                 cacheName,
-                context);
+                context,
+                holder.titleText.getText().toString());
     }
 
     /**
@@ -66,9 +65,9 @@ public class ImageCacheForListView {
      */
     private static class DownloadThumbnailTask extends AsyncTask<Object, Void, String> {
         final int mPosition;
-        final BookListListViewAdapter.ViewHolder mViewHolder;
+        final Utils.ItemViewHolder mViewHolder;
 
-        DownloadThumbnailTask(int position, BookListListViewAdapter.ViewHolder viewHolder) {
+        DownloadThumbnailTask(int position, Utils.ItemViewHolder viewHolder) {
             mViewHolder = viewHolder;
             mPosition = position;
         }
@@ -77,21 +76,19 @@ public class ImageCacheForListView {
         protected String doInBackground(Object... params) {
             try {
                 URL url = new URL((String) params[0]);
-
+                System.out.println(params[0] + " " + params[1] + " " + params[3]);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setReadTimeout(5000); // 5 seconds
                 connection.connect();
                 try {
                     Bitmap bitmap = BitmapFactory.decodeStream(connection.getInputStream());
-
+                    if (bitmap == null) return null;
                     mMemoryCache.put((String) params[1], bitmap);
-
                     try {
-                        String s = getDiskCacheFileName((Context) params[2], (String) params[1]);
-
-                        FileOutputStream fos = new FileOutputStream(s);
+                        FileOutputStream fos = new FileOutputStream(
+                                getDiskCacheFileName((Context) params[2], (String) params[1])
+                        );
                         bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-
                         fos.close();
                     } catch (IOException ignored) {
                     }
@@ -105,12 +102,8 @@ public class ImageCacheForListView {
         }
 
         protected void onPostExecute(String id) {
-            if (id == null) {
-                return;
-            }
-            if (mViewHolder.position == mPosition) {
-                mViewHolder.thumbnailPicture.setImageBitmap(mMemoryCache.get(id));
-            }
+            if (id == null || mViewHolder.getAbsoluteAdapterPosition() != mPosition) return;
+            mViewHolder.thumbnailPicture.setImageBitmap(mMemoryCache.get(id));
         }
     }
 }
