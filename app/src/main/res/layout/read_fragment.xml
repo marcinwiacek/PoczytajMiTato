@@ -16,29 +16,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:inAnimation="@android:anim/slide_in_left"
-            android:outAnimation="@android:anim/slide_out_right"
-            >
+            android:outAnimation="@android:anim/slide_out_right">
 
             <AutoCompleteTextView
                 android:id="@+id/searchTextView2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_alignBottom="@+id/searchButton2"
+                android:layout_toStartOf="@+id/searchButton2"
                 android:layout_toLeftOf="@+id/searchButton2"
                 android:hint="Szukaj w pobranych"
                 android:inputType="text"
                 android:maxLines="1"
-                android:text=""
-                android:layout_toStartOf="@+id/searchButton2" />
+                android:text="" />
 
             <Button
                 android:id="@+id/searchButton2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/menuButton2"
                 android:layout_toLeftOf="@+id/menuButton2"
-                android:text="Szukaj"
-                android:layout_toStartOf="@+id/menuButton2" />
+                android:text="Szukaj" />
 
             <Button
                 android:id="@+id/menuButton2"
@@ -57,31 +56,35 @@
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/pagesRecyclerView"
-                    android:layout_below="@+id/menuButton2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-android:paddingBottom="?attr/actionBarSize"
+                    android:layout_below="@+id/menuButton2"
+                    android:paddingBottom="?attr/actionBarSize"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
         </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:layout_editor_absoluteX="8dp"
-            tools:layout_editor_absoluteY="8dp">
+            android:layout_height="match_parent">
 
-            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                android:id="@+id/swiperefresh2"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:paddingBottom="?attr/actionBarSize">
 
-                <WebView
-                    android:id="@+id/webview"
-                    android:paddingBottom="?attr/actionBarSize"
+                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                    android:id="@+id/swiperefresh2"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                    android:layout_height="match_parent">
+
+                    <WebView
+                        android:id="@+id/webview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            </FrameLayout>
         </RelativeLayout>
     </ViewSwitcher>
 

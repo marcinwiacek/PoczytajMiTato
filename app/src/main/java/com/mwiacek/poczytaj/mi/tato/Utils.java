@@ -45,14 +45,27 @@ import java.util.zip.ZipOutputStream;
 import javax.net.ssl.HttpsURLConnection;
 
 public class Utils {
+
+    public static void dialog(Context context, String message, View view,
+                              android.content.DialogInterface.OnClickListener OKListener,
+                              android.content.DialogInterface.OnClickListener CancelListener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .setTitle("Poczytaj mi tato")
+                .setMessage(message)
+                .setPositiveButton("OK", OKListener)
+                .setNegativeButton("Cancel", CancelListener);
+        if (view != null) builder.setView(view);
+        builder.show();
+    }
+
     public static void contactMe(Context context) {
         Intent emailIntent = new Intent(Intent.ACTION_SEND);
         String subject = "";
         try {
             subject = "Poczytaj mi tato " +
                     context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName +
-                    " / Android " +
-                    Build.VERSION.RELEASE;
+                    " / Android " + Build.VERSION.RELEASE;
         } catch (Exception ignored) {
         }
         String[] extra = new String[]{"marcin@mwiacek.com"};
@@ -104,12 +117,6 @@ public class Utils {
                 context.getCacheDir().getPath() : context.getExternalCacheDir().getPath();
     }
 
-    public static void notifyResult(final StringBuilder result,
-                                    final RepositoryCallback<StringBuilder> callback,
-                                    final Handler resultHandler) {
-        resultHandler.post(() -> callback.onComplete(result));
-    }
-
     public static StringBuilder getPageContent(String address) throws Exception {
         StringBuilder content = new StringBuilder();
         if (address.isEmpty()) {
@@ -144,9 +151,8 @@ public class Utils {
         executor.execute(() -> {
             try {
                 StringBuilder result = Utils.getPageContent(URL);
-                notifyResult(result, callback, resultHandler);
-            } catch (Exception e) {
-//                    notifyResult(new StringBuilder(), callback, resultHandler);
+                resultHandler.post(() -> callback.onComplete(result));
+            } catch (Exception ignore) {
             }
         });
     }
@@ -243,7 +249,8 @@ public class Utils {
 
             shortFileName = tabName.replaceAll("[^A-Za-z0-9]", "") +
                     (z == 0 ? "" : z) + ".zip";
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(longFileName)));
+            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(
+                    new FileOutputStream(longFileName)));
 
             for (int j = 0; j < list.size(); j++) {
                 File f = list.get(j).getCacheFileName(context);
@@ -394,17 +401,11 @@ public class Utils {
     }
 
     public static String findBetween(String s, String start, String stop, int startIndex) {
-        if (startIndex == -1) {
-            return "";
-        }
+        if (startIndex == -1) return "";
         int fromPosition = s.indexOf(start, startIndex);
-        if (fromPosition == -1) {
-            return "";
-        }
+        if (fromPosition == -1) return "";
         int toPosition = s.indexOf(stop, fromPosition + start.length());
-        if (toPosition == -1) {
-            return "";
-        }
+        if (toPosition == -1) return "";
         return s.substring(fromPosition + start.length(), toPosition);
     }
 

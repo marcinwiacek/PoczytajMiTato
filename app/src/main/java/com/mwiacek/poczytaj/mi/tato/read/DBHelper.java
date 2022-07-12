@@ -10,9 +10,11 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 
 public class DBHelper extends SQLiteOpenHelper {
 
+    private final static String COMPLETED_TABLE_NAME = "completed";
     private final static String PAGES_TABLE_NAME = "pages";
     private final static String COLUMN_NAME = "name";
     private final static String COLUMN_AUTHOR = "author";
@@ -36,13 +38,35 @@ public class DBHelper extends SQLiteOpenHelper {
                 COLUMN_URL + " text, " + COLUMN_TOP + " integer, " +
                 "UNIQUE(" + COLUMN_URL + "))"
         );
+        db.execSQL("create table " + COMPLETED_TABLE_NAME + " " +
+                "(" + COLUMN_TYP + " integer, " +
+                "UNIQUE(" + COLUMN_TYP + "))"
+        );
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
     }
 
-    public void updateTop(String url, int top) {
+    public boolean checkIfTypIsCompletelyRead(Page.PageTyp typ) {
+        Cursor res = this.getReadableDatabase().rawQuery(
+                "select * from " + COMPLETED_TABLE_NAME +
+                        " where " + COLUMN_TYP + "=" + typ.ordinal(), null);
+        res.moveToFirst();
+        return !res.isAfterLast();
+    }
+
+    public void setTypCompletelyRead(Page.PageTyp typ) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(COLUMN_TYP, typ.ordinal());
+        try {
+            this.getWritableDatabase().insertOrThrow(COMPLETED_TABLE_NAME,
+                    null, contentValues);
+        } catch (SQLException ignore) {
+        }
+    }
+
+    public void setPageTop(String url, int top) {
         this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
                 " set " + COLUMN_TOP + "=" + top +
                 " where " + COLUMN_URL + "='" + url + "'");
@@ -71,19 +95,20 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages(boolean hidden, Page.PageTyp[] typ) {
+    public ArrayList<Page> getAllPages(boolean hidden, Iterator<Page.PageTyp> typ) {
         ArrayList<Page> array_list = new ArrayList<>();
 
         StringBuilder types = new StringBuilder();
-        for (Page.PageTyp t : typ) {
+        while (typ.hasNext()) {
             if (types.length() > 0) types.append(",");
-            types.append("").append(t.ordinal());
+            types.append("").append(typ.next().ordinal());
         }
 
-        Cursor res = this.getReadableDatabase().rawQuery("select * from " + PAGES_TABLE_NAME +
-                " where " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
-                " and " + COLUMN_TYP + " IN (" + types + ") " +
-                " order by " + COLUMN_DATETIME + " desc", null);
+        Cursor res = this.getReadableDatabase().rawQuery(
+                "select * from " + PAGES_TABLE_NAME +
+                        " where " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
+                        " and " + COLUMN_TYP + " IN (" + types + ") " +
+                        " order by " + COLUMN_DATETIME + " desc", null);
         res.moveToFirst();
 
         while (!res.isAfterLast()) {

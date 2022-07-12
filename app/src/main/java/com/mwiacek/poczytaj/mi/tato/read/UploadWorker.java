@@ -26,7 +26,7 @@ public class UploadWorker extends ListenableWorker {
             try {
                 new Fantastyka().getList(null, null, null,
                         new DBHelper(getApplicationContext()), getApplicationContext(),
-                        Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
+                        Page.PageTyp.FANTASTYKA_BIBLIOTEKA, 3);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -20,7 +20,7 @@ public abstract class StoreInfo {
     public abstract String[] getSearchUrl(String name, int pageNumber);
 
     public boolean addBook(SingleBook singleBook, ArrayList<ManyBooks> allBooks,
-                           int sortOrder, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
+                           ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
         SingleBook b2;
         lock.lock();
         try {
@@ -40,16 +40,13 @@ public abstract class StoreInfo {
                     if (singleBook.price < b2.price || singleBook.downloadUrl.contains(".epub")) {
                         manyBooks.itemsPositionForManyBooksList = manyBooks.items.size() - 1;
                         int finalI = i;
-                        Handler handler = new Handler(Looper.getMainLooper()) {
+                        new Handler(Looper.getMainLooper()) {
                             @Override
                             public void handleMessage(Message msg) {
                                 adapter.notifyItemChanged(finalI);
                             }
-                        };
-                        handler.sendEmptyMessage(1);
-                        //books.sortOrderInMainList = sortOrder;
+                        }.sendEmptyMessage(1);
                     }
-
                     return true;
                 }
             }

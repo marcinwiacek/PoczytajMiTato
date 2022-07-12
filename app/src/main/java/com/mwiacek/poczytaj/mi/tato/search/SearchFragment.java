@@ -101,14 +101,14 @@ public class SearchFragment extends Fragment {
                 searchTextView, mProgressBar, imageCache, position -> {
             ManyBooks books = manyBooksRecyclerViewAdapter.getItem(position);
             SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
-            if (books.items.size() != 1) {
-                singleBookRecyclerViewAdapter.refreshData(books.items);
-                titleTextView.setText(book.title);
-                viewSwitcher.showNext();
+            if (books.items.size() == 1) {
+                Utils.downloadFileWithDownloadManager(book.downloadUrl,
+                        book.title, getContext());
                 return;
             }
-            Utils.downloadFileWithDownloadManager(book.downloadUrl,
-                    book.title, getContext());
+            singleBookRecyclerViewAdapter.refreshData(books.items);
+            titleTextView.setText(book.title);
+            viewSwitcher.showNext();
         });
         manyBooksRecyclerView.setAdapter(manyBooksRecyclerViewAdapter);
         manyBooksRecyclerView.setItemAnimator(null);
@@ -125,7 +125,8 @@ public class SearchFragment extends Fragment {
                 if (isLoadingMoreBooks) return;
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 if (linearLayoutManager != null &&
-                        linearLayoutManager.findLastCompletelyVisibleItemPosition() > manyBooksRecyclerViewAdapter.getItemCount() - 7) {
+                        linearLayoutManager.findLastCompletelyVisibleItemPosition() >
+                                manyBooksRecyclerViewAdapter.getItemCount() - 7) {
                     isLoadingMoreBooks = true;
                     loadMoreBooks(requireContext());
                 }
@@ -171,9 +172,7 @@ public class SearchFragment extends Fragment {
         searchTextView.addTextChangedListener(new TextWatcher() {
             public void afterTextChanged(Editable s) {
                 searchTextAdapter.getFilter().filter(null);
-                if (searchTextView.isShown()) {
-                    searchTextView.showDropDown();
-                }
+                if (searchTextView.isShown()) searchTextView.showDropDown();
                 searchButton.setEnabled(searchTextView.length() != 0);
             }
 
@@ -185,7 +184,8 @@ public class SearchFragment extends Fragment {
         });
 
         menu.setOnClickListener(view1 -> {
-            LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String, StoreInfo.StoreInfoTyp>() {{
+            LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String,
+                    StoreInfo.StoreInfoTyp>() {{
                 put("artrage.pl/bookrage", StoreInfo.StoreInfoTyp.BOOKRAGE);
                 put("ebooki.swiatczytnikow.pl", StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW);
                 put("ibook.pl", StoreInfo.StoreInfoTyp.IBUK);
@@ -195,38 +195,39 @@ public class SearchFragment extends Fragment {
             int i = 0;
             int mainIndex = 0;
             PopupMenu popupMenu = new PopupMenu(requireContext(), menu);
-            popupMenu.getMenu().add(2, i++, mainIndex++, "Używaj TOR")
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(config.useTOR);
+            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_USE_TOR)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setChecked(config.useTOR);
             for (String s : hm.keySet()) {
                 popupMenu.getMenu().add(2, i++, mainIndex++, s).
                         setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
                                 config.storeInfoForSearchFragment.contains(hm.get(s)));
             }
-            popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
-            popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");
-            popupMenu.getMenu().add(5, i, mainIndex, "Napisz maila do autora");
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_CLONE_TAB);
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_DELETE_TAB);
+            popupMenu.getMenu().add(5, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 popupMenu.getMenu().setGroupDividerEnabled(true);
             }
 
             popupMenu.setOnMenuItemClickListener(item -> {
+                if (item.isCheckable()) {
+                    item.setChecked(!item.isChecked());
+                }
                 for (String s : hm.keySet()) {
                     if (!item.getTitle().equals(s)) continue;
-                    item.setChecked(!item.isChecked());
                     if (item.isChecked()) {
                         config.storeInfoForSearchFragment.add(hm.get(s));
                     } else {
                         config.storeInfoForSearchFragment.remove(hm.get(s));
                     }
-                    config.saveToInternalStorage(getContext());
-                    return true;
+                    break;
                 }
                 if (item.isCheckable()) {
-                    item.setChecked(!item.isChecked());
                     config.saveToInternalStorage(getContext());
                     return true;
                 }
-                if (item.getTitle().equals("Napisz maila do autora")) {
+                if (item.getTitle().equals(getString(R.string.MENU_WRITE_MAIL_TO_AUTHOR))) {
                     Utils.contactMe(getContext());
                 }
                 return false;

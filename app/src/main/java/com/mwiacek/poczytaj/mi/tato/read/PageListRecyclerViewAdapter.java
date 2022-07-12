@@ -1,6 +1,8 @@
 package com.mwiacek.poczytaj.mi.tato.read;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -18,14 +20,21 @@ import com.mwiacek.poczytaj.mi.tato.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class PageListRecyclerViewAdapter extends
         RecyclerView.Adapter<PageListRecyclerViewAdapter.TaskListRecyclerViewHolder> {
 
     private ArrayList<Page> mData = new ArrayList<>();
     private Utils.OnItemClicked mOnClick;
+    private final Context context;
 
-    public void update(DBHelper mydb, boolean hidden, Page.PageTyp[] typ) {
+    public PageListRecyclerViewAdapter(Context context) {
+        this.context = context;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void update(DBHelper mydb, boolean hidden, Iterator<Page.PageTyp> typ) {
         mData = mydb.getAllPages(hidden, typ);
         this.notifyDataSetChanged();
     }
@@ -49,10 +58,9 @@ public class PageListRecyclerViewAdapter extends
     @Override
     public void onBindViewHolder(@NonNull TaskListRecyclerViewHolder holder, int position) {
         Page page = mData.get(position);
-
-        Object o = page.getCacheFileName(holder.itemView.getContext()).exists() ?
-                new ForegroundColorSpan(Color.BLUE) :
-                new ForegroundColorSpan(Color.GRAY);
+        Object o = new ForegroundColorSpan(page.getCacheFileName(holder.itemView.getContext()).exists() ?
+                (((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES) ? Color.WHITE : Color.BLUE) : Color.GRAY);
 
         Spannable WordtoSpan = new SpannableString(page.name);
         WordtoSpan.setSpan(o, 0, page.name.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

@@ -1,7 +1,9 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.annotation.SuppressLint;
-import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.AutoCompleteTextView;
@@ -24,9 +26,12 @@ import com.mwiacek.poczytaj.mi.tato.search.storeinfo.WolneLektury;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private final static Executor executor = Executors.newSingleThreadExecutor();
     private final static int VIEW_TYPE_ITEM = 0;
     private final FragmentConfig config;
     private final ArrayList<ManyBooks> mData = new ArrayList<>();
@@ -94,8 +99,8 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         }
         pageNumber = pageNumberAdd ? pageNumber + 1 : 0;
         sitesProcessed = 0;
+        StoreInfo st;
         for (StoreInfo.StoreInfoTyp info : config.storeInfoForSearchFragment) {
-            StoreInfo st = null;
             if (info == StoreInfo.StoreInfoTyp.IBUK) {
                 st = new IBUK();
             } else if (info == StoreInfo.StoreInfoTyp.BOOKRAGE) {
@@ -106,17 +111,41 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                 st = new WolneLektury();
             } else if (info == StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW) {
                 st = new EbookiSwiatCzytnikow();
+            } else {
+                continue;
             }
-            new DownloadBooksInfoTask(this, mSearchButton, mProgressBar,
-                    mSearchTextView, config)
-                    .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
-                            mSearchTextView.getText().toString(),
-                            st,
-                            mData,
-                            100 / config.storeInfoForSearchFragment.size(),
-                            this);
+            StoreInfo finalSt = st;
+            executor.execute(() -> {
+                mProgressBar.setProgress(0);
+                String[] urls = finalSt.getSearchUrl(mSearchTextView.getText().toString(), pageNumber);
+                for (String singleURL : urls) {
+                    try {
+                        StringBuilder content = Utils.getPageContent(singleURL);
+                        if (!content.toString().isEmpty()) {
+                            finalSt.doesItMatch(mSearchTextView.getText().toString(),
+                                    singleURL, content, mData, lock,
+                                    this);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    mProgressBar.setProgress(mProgressBar.getProgress() +
+                            (100 / config.storeInfoForSearchFragment.size() / urls.length));
+                }
+                sitesProcessed++;
+                if (sitesProcessed == config.storeInfoForSearchFragment.size()) {
+                    new Handler(Looper.getMainLooper()) {
+                        @Override
+                        public void handleMessage(Message msg) {
+                            mProgressBar.setProgress(0);
+                            mSearchButton.setEnabled(true);
+                            mSearchTextView.setEnabled(true);
+                            //   mAdapter.notifyDataSetChanged();
+                        }
+                    }.sendEmptyMessage(1);
+                }
+            });
         }
-
     }
 
 //    private void showLoadingView(LoadingViewHolder viewHolder, int position) {
@@ -156,57 +185,5 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         }
     }
      */
-
-    private class DownloadBooksInfoTask extends AsyncTask<Object, Object, ArrayList<ManyBooks>> {
-        public final FragmentConfig config;
-        private final ManyBooksRecyclerViewAdapter mAdapter;
-        private final Button mSearchButton;
-        private final ProgressBar mProgressBar;
-        private final AutoCompleteTextView mSearchTextView;
-
-        DownloadBooksInfoTask(ManyBooksRecyclerViewAdapter adapter, Button searchButton,
-                              ProgressBar progressBar, AutoCompleteTextView mSearchTextView,
-                              FragmentConfig config) {
-            mAdapter = adapter;
-            mSearchButton = searchButton;
-            mProgressBar = progressBar;
-            this.mSearchTextView = mSearchTextView;
-            this.config = config;
-            mProgressBar.setProgress(0);
-        }
-
-        @Override
-        protected ArrayList<ManyBooks> doInBackground(Object... params) {
-            String nameToSearch = (String) params[0];
-            StoreInfo ele = (StoreInfo) params[1];
-            ArrayList<ManyBooks> allBooks = (ArrayList<ManyBooks>) params[2];
-            String[] urls = ele.getSearchUrl(nameToSearch, pageNumber);
-            for (String singleURL : urls) {
-                try {
-                    StringBuilder content = Utils.getPageContent(singleURL);
-                    if (!content.toString().isEmpty()) {
-                        ele.doesItMatch(nameToSearch, singleURL, content, allBooks, lock,
-                                mAdapter);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                mProgressBar.setProgress(mProgressBar.getProgress() + ((int) (params[3]) / urls.length));
-            }
-            sitesProcessed++;
-
-            return allBooks;
-        }
-
-        protected void onPostExecute(ArrayList<ManyBooks> books) {
-            if (sitesProcessed == config.storeInfoForSearchFragment.size()) {
-                mProgressBar.setProgress(0);
-                mSearchButton.setEnabled(true);
-                mSearchTextView.setEnabled(true);
-                //   mAdapter.notifyDataSetChanged();
-            }
-        }
-    }
-
 }
 

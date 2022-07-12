@@ -73,7 +73,8 @@ public class SingleBookRecyclerViewAdapter extends RecyclerView.Adapter<Recycler
         String s = book.downloadUrl.contains(".epub") ? "Pobierz" :
                 (book.price != 0.0 ? book.price + " PLN" : "Darmowa");
         if (book.offerExpiryDate != null) {
-            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("d.M");
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat =
+                    new SimpleDateFormat("d.M");
             s = s + " do " + dateFormat.format(book.offerExpiryDate);
         }
         viewHolder.priceText.setText(s);

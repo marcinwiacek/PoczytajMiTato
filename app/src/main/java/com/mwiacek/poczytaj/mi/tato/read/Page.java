@@ -42,7 +42,6 @@ public class Page {
         FANTASTYKA_ARCHIWUM,
         FANTASTYKA_BIBLIOTEKA,
         FANTASTYKA_POCZEKALNIA,
-        OPOWI_FANTASTYKA,
-        OPOWI_AUTORZY
+        OPOWI_FANTASTYKA
     }
 }

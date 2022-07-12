@@ -21,8 +21,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         for (Fragment f : getSupportFragmentManager().getFragments()) {
-            if (f instanceof ReadFragment && viewPager.getCurrentItem() ==
-                    ((ReadFragment) f).getTabNum()) {
+            if (f instanceof ReadFragment &&
+                    viewPager.getCurrentItem() == ((ReadFragment) f).getTabNum()) {
                 ((ReadFragment) f).onBackPressed();
                 return;
             }

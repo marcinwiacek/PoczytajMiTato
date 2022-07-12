@@ -108,7 +108,6 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
     public CharSequence getPageTitle(int position) {
         if (configs.size() == 0) readConfigs();
-        //if (position > configs.size() - 1) return "";
         return configs.get(position).tabName;
     }
 
@@ -116,7 +115,6 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @Override
     public Fragment createFragment(int position) {
         if (configs.size() == 0) readConfigs();
-        //if (position > configs.size() - 1) return null;
         return configs.get(position).storeInfoForSearchFragment.isEmpty() ?
                 new ReadFragment(configs.get(position), this, mydb) :
                 new SearchFragment(configs.get(position), imageCache);

@@ -17,20 +17,18 @@ public class Notifications {
         return null;
     }
 
-    public static void setupNotifications(Context context) {
+    private static void setupOneChannel(Channels channelName, String description, Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(Channels.CZYTANIE_Z_INTERNETU.name(),
-                    Channels.CZYTANIE_Z_INTERNETU.name(),
-                    NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription("Czytanie plików z Internetu");
-            Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
-
-            channel = new NotificationChannel(Channels.ZAPIS_W_URZADZENIU.name(),
-                    Channels.ZAPIS_W_URZADZENIU.name(),
-                    NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription("Zapis plików w urządzeniu");
+            NotificationChannel channel = new NotificationChannel(channelName.name(),
+                    channelName.name(), NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription(description);
             Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
         }
+    }
+
+    public static void setupNotifications(Context context) {
+        setupOneChannel(Channels.CZYTANIE_Z_INTERNETU, "Czytanie plików z Internetu", context);
+        setupOneChannel(Channels.ZAPIS_W_URZADZENIU, "Zapis plików w urządzeniu", context);
     }
 
     public static NotificationCompat.Builder setupNotification(Channels channel, Context context, String text) {

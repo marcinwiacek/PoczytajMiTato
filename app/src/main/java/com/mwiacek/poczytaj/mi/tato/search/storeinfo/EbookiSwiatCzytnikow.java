@@ -16,8 +16,9 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
-                               ArrayList<ManyBooks> books, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
-        int startSearchPosition, fromPosition, toPosition = 0, sortOrder = 1;
+                               ArrayList<ManyBooks> books, ReentrantLock lock,
+                               ManyBooksRecyclerViewAdapter adapter) {
+        int startSearchPosition, fromPosition, toPosition = 0;
         String s, s2;
         SingleBook singleBook;
         boolean added = false;
@@ -43,14 +44,15 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
                     Utils.findBetween(s, "<img src=\"", "\"", 0);
 
             s2 = Utils.findBetween(s, "<div class=\"title\">", "</div>", 0);
-            singleBook.title = Utils.findBetween(s2, "\">", "</a>", s2.indexOf("<a href=\""));
+            singleBook.title = Utils.findBetween(s2, "\">", "</a>",
+                    s2.indexOf("<a href=\""));
             singleBook.downloadUrl = "https://ebooki.swiatczytnikow.pl" +
                     Utils.findBetween(s2, "<a href=\"", "\">", 0);
 
             singleBook.authors = new String[1];
             singleBook.authors[0] =
-                    Utils.stripHtml(Utils.findBetween(s, "<div class=\"author\">", "</div>", 0))
-                            .trim();
+                    Utils.stripHtml(Utils.findBetween(s, "<div class=\"author\">",
+                            "</div>", 0)).trim();
 
             if (singleBook.downloadUrl.isEmpty() || singleBook.smallThumbnailUrl.isEmpty() ||
                     singleBook.title.isEmpty()) {
@@ -64,12 +66,10 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
             singleBook.price = s2.equals("") ?
                     (float) 0.0 : Float.parseFloat(s2.replace(",", "."));
 
-            if (addBook(singleBook, books, sortOrder, lock, adapter)) {
+            if (addBook(singleBook, books, lock, adapter)) {
                 added = true;
             }
-            sortOrder++;
         }
-        return (pageContent.indexOf("\">następna »</a></div>") != -1 &&
-                added);
+        return (pageContent.indexOf("\">następna »</a></div>") != -1 && added);
     }
 }

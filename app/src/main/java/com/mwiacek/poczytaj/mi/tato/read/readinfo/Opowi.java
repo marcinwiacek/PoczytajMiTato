@@ -1,5 +1,6 @@
 package com.mwiacek.poczytaj.mi.tato.read.readinfo;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
@@ -13,6 +14,7 @@ import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Opowi extends ReadInfo {
@@ -36,7 +38,7 @@ public class Opowi extends ReadInfo {
         indeks = Utils.Szukaj(s, "<div class=\"list-box-date\">", 0);
         indeks2 = s.indexOf("</div>", indeks);
         String dt = s.substring(indeks, indeks2);
-        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
         Date date = new Date(0);
         try {
             date = format.parse(dt);
@@ -45,6 +47,7 @@ public class Opowi extends ReadInfo {
         }
 
         Log.i("MY2", "'" + title + "'" + author + "'" + url + "'" + date);
+        assert date != null;
         mydb.insertPage(typ, title, author, "", url, date);
     }
 
@@ -59,15 +62,15 @@ public class Opowi extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callback,
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
-            final DBHelper mydb, final Context context, Page.PageTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ,
+            int pagesInPartReading) {
         try {
             String url = "";
             int index = 1;
             while (true) {
-                Notifications.notificationManager(context).notify(1,
+                Objects.requireNonNull(Notifications.notificationManager(context)).notify(1,
                         Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU, context,
                                 "Czytanie listy - strona " + index).build());
-
                 url = "https://www.opowi.pl/spis" +
                         (index == 1 ? "" : "?str=" + index);
                 String result = Utils.getPageContent(url).toString();
@@ -79,16 +82,15 @@ public class Opowi extends ReadInfo {
                     processOneEntry(result.substring(indeks, indeks2), mydb, typ);
                     indeks = indeks2;
                 }
-                Utils.notifyResult(new StringBuilder(), callback, resultHandler);
+                resultHandler.post(() -> callback.onComplete(new StringBuilder()));
                 index++;
                 if (index == 3) break;
             }
-            Notifications.notificationManager(context).cancel(1);
-            Utils.notifyResult(new StringBuilder(), callbackOnTheEnd, resultHandler);
+            Objects.requireNonNull(Notifications.notificationManager(context)).cancel(1);
+            resultHandler.post(() -> callbackOnTheEnd.onComplete(new StringBuilder()));
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public void getList(
@@ -96,9 +98,11 @@ public class Opowi extends ReadInfo {
             final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
-            final DBHelper mydb, final Context context, Page.PageTyp typ) {
+            final DBHelper mydb, final Context context, Page.PageTyp typ,
+            int pagesInPartReading) {
         executor.execute(() -> {
-            getList(callback, callbackOnTheEnd, resultHandler, mydb, context, typ);
+            getList(callback, callbackOnTheEnd, resultHandler, mydb, context, typ,
+                    pagesInPartReading);
         });
     }
 }

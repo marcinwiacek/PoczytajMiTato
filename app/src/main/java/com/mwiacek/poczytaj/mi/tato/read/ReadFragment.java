@@ -18,10 +18,10 @@ import android.widget.EditText;
 import android.widget.ViewSwitcher;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.core.os.HandlerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -44,13 +44,13 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReadFragment extends Fragment {
+    private final static String MIME_TYPE = "text/html; charset=UTF-8";
+    private final static String ENCODING = "UTF-8";
+
     private final FragmentConfig config;
-    private final ViewPagerAdapter topPagrAdapter;
-    private final DBHelper mydb;
-    private final AtomicInteger pos = new AtomicInteger();
+    private final DBHelper db;
     private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -58,18 +58,20 @@ public class ReadFragment extends Fragment {
             new LinkedBlockingQueue<>()
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
-    private PageListRecyclerViewAdapter mTaskListAdapter;
+
+    private final ViewPagerAdapter topPagerAdapter;
+    private RecyclerView pageList;
+    private PageListRecyclerViewAdapter pageListAdapter;
     private SwipeRefreshLayout refresh;
-    private RecyclerView list;
-    private ViewSwitcher mViewSwitcher;
-    private WebView vw;
-    private String url;
-    private int top;
+    private ViewSwitcher viewSwitcher;
+    private WebView webView;
+
+    private int positionInPageList;
 
     public ReadFragment(FragmentConfig config, ViewPagerAdapter topPagrAdapter, DBHelper mydb) {
-        this.topPagrAdapter = topPagrAdapter;
+        this.topPagerAdapter = topPagrAdapter;
         this.config = config;
-        this.mydb = mydb;
+        this.db = mydb;
     }
 
     public int getTabNum() {
@@ -89,8 +91,7 @@ public class ReadFragment extends Fragment {
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 5L, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .setInputData(new Data.Builder()
-                        .putInt("TabNum", config.tabNumForFileForSerialization)
-                        .build())
+                        .putInt("TabNum", config.tabNumForFileForSerialization).build())
                 .addTag("poczytajmitato" + config.tabNumForFileForSerialization)
                 .build();
 
@@ -98,41 +99,39 @@ public class ReadFragment extends Fragment {
     }
 
     public void onBackPressed() {
-        if (list.isShown()) System.exit(0);
-        mydb.updateTop(url, vw.getScrollY());
-        mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment.toArray(
-                new Page.PageTyp[config.readInfoForReadFragment.size()])
-        );
-        mViewSwitcher.showPrevious();
+        if (pageList.isShown()) System.exit(0);
+        db.setPageTop(pageListAdapter.getItem(positionInPageList).url, webView.getScrollY());
+        pageListAdapter.update(db, config.showHiddenTexts,
+                config.readInfoForReadFragment.iterator());
+        viewSwitcher.showPrevious();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.read_fragment, container, false);
-        mViewSwitcher = view.findViewById(R.id.viewSwitcher2);
+        viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
         /* Page with webview */
         SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
-        vw = view.findViewById(R.id.webview);
+        webView = view.findViewById(R.id.webview);
 
-        vw.setWebViewClient(new WebViewClient() {
+        webView.setWebViewClient(new WebViewClient() {
             public void onPageFinished(WebView view, String url) {
-                vw.scrollTo(0, top);
+                webView.scrollTo(0, pageListAdapter.getItem(positionInPageList).top);
             }
         });
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-            WebSettingsCompat.setForceDark(vw.getSettings(),
+            WebSettingsCompat.setForceDark(webView.getSettings(),
                     WebSettingsCompat.FORCE_DARK_ON);
         }
 
         refresh2.setOnRefreshListener(() -> {
-            Page p = mTaskListAdapter.getItem(pos.get());
+            Page p = pageListAdapter.getItem(positionInPageList);
             File f = p.getCacheFileName(getContext());
             Utils.getPage(p.url,
-                    result -> vw.loadDataWithBaseURL(null,
+                    result -> webView.loadDataWithBaseURL(null,
                             Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f),
-                            "text/html; charset=UTF-8", "UFT-8",
-                            null),
+                            MIME_TYPE, ENCODING, null),
                     mainThreadHandler, threadPoolExecutor);
             refresh2.setRefreshing(false);
         });
@@ -140,38 +139,34 @@ public class ReadFragment extends Fragment {
         /* Page with list */
         Button menu = view.findViewById(R.id.menuButton2);
         refresh = view.findViewById(R.id.swiperefresh);
-        list = view.findViewById(R.id.pagesRecyclerView);
+        pageList = view.findViewById(R.id.pagesRecyclerView);
 
-        mTaskListAdapter = new PageListRecyclerViewAdapter();
-        mTaskListAdapter.setOnClick(position -> {
-            Page p = mTaskListAdapter.getItem(position);
-            File f = p.getCacheFileName(this.getContext());
-            top = p.top;
-            url = p.url;
+        pageListAdapter = new PageListRecyclerViewAdapter(requireContext());
+        pageListAdapter.setOnClick(position -> {
+            Page p = pageListAdapter.getItem(position);
+            File f = p.getCacheFileName(requireContext());
+            positionInPageList = position;
             if (f.exists()) {
-                vw.loadDataWithBaseURL(null, Utils.readFile(f),
-                        "text/html; charset=UTF-8", "UFT-8", null);
+                webView.loadDataWithBaseURL(null, Utils.readFile(f),
+                        MIME_TYPE, ENCODING, null);
             } else {
-                vw.loadDataWithBaseURL(null, "Loading file " + p.url,
-                        "text/html; charset=UTF-8",
-                        "UFT-8", null);
+                webView.loadDataWithBaseURL(null, "Czytanie pliku " + p.url,
+                        MIME_TYPE, ENCODING, null);
                 Utils.getPage(p.url, result -> {
-                            mTaskListAdapter.update(mydb, config.showHiddenTexts,
-                                    config.readInfoForReadFragment.toArray(
-                                            new Page.PageTyp[config.readInfoForReadFragment.size()])
-                            );
-                            vw.loadDataWithBaseURL(null,
+                            pageListAdapter.update(db, config.showHiddenTexts,
+                                    config.readInfoForReadFragment.iterator());
+                            webView.loadDataWithBaseURL(null,
                                     Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f),
-                                    "text/html; charset=UTF-8", "UFT-8",
-                                    null);
+                                    MIME_TYPE, ENCODING, null);
                         },
                         mainThreadHandler, threadPoolExecutor);
             }
-            mViewSwitcher.showNext();
+            viewSwitcher.showNext();
         });
-        list.setAdapter(mTaskListAdapter);
-        mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment.
-                toArray(new Page.PageTyp[config.readInfoForReadFragment.size()]));
+        pageList.setAdapter(pageListAdapter);
+        pageList.addItemDecoration(new DividerItemDecoration(requireContext(),
+                DividerItemDecoration.VERTICAL));
+        pageListAdapter.update(db, config.showHiddenTexts, config.readInfoForReadFragment.iterator());
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
                 ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
@@ -184,11 +179,9 @@ public class ReadFragment extends Fragment {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                mydb.setPageVisible(mTaskListAdapter
+                db.setPageVisible(pageListAdapter
                         .getItem(viewHolder.getAbsoluteAdapterPosition()).url, !config.showHiddenTexts);
-                mTaskListAdapter.update(mydb, config.showHiddenTexts,
-                        config.readInfoForReadFragment.toArray(
-                                new Page.PageTyp[config.readInfoForReadFragment.size()]));
+                pageListAdapter.update(db, config.showHiddenTexts, config.readInfoForReadFragment.iterator());
             }
 
             /**
@@ -215,16 +208,17 @@ public class ReadFragment extends Fragment {
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
         });
-        itemTouchHelper.attachToRecyclerView(list);
+        itemTouchHelper.attachToRecyclerView(pageList);
 
         refresh.setOnRefreshListener(() -> {
             for (Page.PageTyp pt : config.readInfoForReadFragment) {
                 refresh.setRefreshing(true);
                 Page.getReadInfo(pt).getList(
-                        result -> mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
-                                .toArray(new Page.PageTyp[config.readInfoForReadFragment.size()])),
+                        result -> pageListAdapter.update(db, config.showHiddenTexts,
+                                config.readInfoForReadFragment.iterator()),
                         result -> refresh.setRefreshing(false),
-                        mainThreadHandler, threadPoolExecutor, mydb, this.getContext(), pt);
+                        mainThreadHandler, threadPoolExecutor, db, this.getContext(), pt,
+                        3);
             }
         });
 
@@ -233,200 +227,200 @@ public class ReadFragment extends Fragment {
                 put("fantastyka.pl, archiwum", Page.PageTyp.FANTASTYKA_ARCHIWUM);
                 put("fantastyka.pl, biblioteka", Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
                 put("fantastyka.pl, poczekalnia", Page.PageTyp.FANTASTYKA_POCZEKALNIA);
-                put("opowi.pl, autorzy", Page.PageTyp.OPOWI_AUTORZY);
                 put("opowi.pl, fantastyka", Page.PageTyp.OPOWI_FANTASTYKA);
             }};
             int i = 0;
             int mainIndex = 0;
             PopupMenu popupMenu = new PopupMenu(requireContext(), menu);
-            popupMenu.getMenu().add(1, i++, mainIndex++, "Pokaż ukryte").setCheckable(true)
-                    .setChecked(config.showHiddenTexts);
-            popupMenu.getMenu().add(2, i++, mainIndex++, "Używaj TOR")
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(config.useTOR);
-            popupMenu.getMenu().add(2, i++, mainIndex++, "Zawsze pobieraj teksty")
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(config.getTextsWhenRefreshingIndex);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_SHOW_HIDDEN)
+                    .setCheckable(true).setChecked(config.showHiddenTexts);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_IMPORT_EPUB);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_EXPORT_EPUB);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_UNREAD_TEXTS);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_ALL_TEXTS);
+            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_ALL_INDEX_PAGES);
+            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_CLONE_TAB);
+            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_DELETE_TAB);
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_USE_TOR)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setChecked(config.useTOR);
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setChecked(config.getTextsWhenRefreshingIndex);
             for (String s : hm.keySet()) {
-                popupMenu.getMenu().add(2, i++, mainIndex++, s).
+                popupMenu.getMenu().add(3, i++, mainIndex++, s).
                         setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
                                 config.readInfoForReadFragment.contains(hm.get(s)));
             }
-            popupMenu.getMenu().add(2, i++, mainIndex++, "Lokalny filtr na autorów").setActionView(R.layout.checkbox_menu_item).setCheckable(true);
-            popupMenu.getMenu().add(2, i++, mainIndex++, "Lokalny filtr na tagi").setActionView(R.layout.checkbox_menu_item).setCheckable(true);
-            popupMenu.getMenu().add(3, i++, mainIndex++, "Pobierz niepobrane teksty");
-            popupMenu.getMenu().add(3, i++, mainIndex++, "EPUB z pokazanych i pobranych");
-            popupMenu.getMenu().add(3, i++, mainIndex++, "Klonuj zakładkę");
-            popupMenu.getMenu().add(3, i++, mainIndex++, "Usuń zakładkę");
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_LOCAL_AUTHOR_FILTER)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true);
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_LOCAL_TAG_FILTER)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true);
             popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ? "x" : config.howOftenRefreshTabInHours) + " godzin").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                            "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ?
+                                    "x" : config.howOftenRefreshTabInHours) + " godzin")
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
                     .setChecked(config.howOftenRefreshTabInHours != -1);
             popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Przy błędzie co " + (config.howOftenTryToRefreshTabAfterErrorInMinutes == -1 ? "x" : config.howOftenTryToRefreshTabAfterErrorInMinutes) + " minut").setActionView(R.layout.checkbox_menu_item)
-                    .setCheckable(true).setChecked(config.howOftenTryToRefreshTabAfterErrorInMinutes != -1).setEnabled(config.howOftenRefreshTabInHours != -1);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na Wifi").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyWifi);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na GSM").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyGSM);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz na innej sieci").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzPrzyInnejSieci);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Pobierz tylko przy ładowaniu").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.pobierzTylkoPrzyLadowaniu);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Nie pobieraj przy niskiej baterii").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.niePobierajPrzyNiskiejBaterii);
-            popupMenu.getMenu().add(4, i++, mainIndex++, "Sieć musi być bez limitu").setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1).setChecked(config.networkWithoutLimit);
-            popupMenu.getMenu().add(5, i, mainIndex, "Napisz maila do autora");
+                            "Przy błędzie co " +
+                                    (config.howOftenTryToRefreshTabAfterErrorInMinutes == -1 ?
+                                            "x" : config.howOftenTryToRefreshTabAfterErrorInMinutes) +
+                                    " minut").setActionView(R.layout.checkbox_menu_item)
+                    .setCheckable(true).setChecked(config.howOftenTryToRefreshTabAfterErrorInMinutes != -1)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_WIFI)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.downloadWithWifi);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_GSM)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.downloadWithGSM);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_OTHER_NET)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.downloadWithOtherNet);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.downloadDuringChargingOnly);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.doNotDownloadWithLowBattery);
+            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_NETWORK_WITHOUT_LIMIT)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setEnabled(config.howOftenRefreshTabInHours != -1)
+                    .setChecked(config.networkWithoutLimit);
+            popupMenu.getMenu().add(5, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 popupMenu.getMenu().setGroupDividerEnabled(true);
             }
 
             popupMenu.setOnMenuItemClickListener(item -> {
+                if (item.isCheckable()) {
+                    item.setChecked(!item.isChecked());
+                }
                 for (String s : hm.keySet()) {
                     if (!item.getTitle().equals(s)) continue;
-                    item.setChecked(!item.isChecked());
                     if (item.isChecked()) {
                         config.readInfoForReadFragment.add(hm.get(s));
                     } else {
                         config.readInfoForReadFragment.remove(hm.get(s));
                     }
-                    config.saveToInternalStorage(getContext());
-                    mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
-                            .toArray(new Page.PageTyp[config.readInfoForReadFragment.size()]));
-                    return true;
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment.iterator());
+                    break;
                 }
-                if (item.getTitle().toString().startsWith("Pobierz co")) {
-                    item.setChecked(!item.isChecked());
+                if (item.getTitle().equals(getString(R.string.MENU_SHOW_HIDDEN))) {
+                    config.showHiddenTexts = item.isChecked();
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment.iterator());
+                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_WIFI))) {
+                    config.downloadWithWifi = item.isChecked();
+                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_GSM))) {
+                    config.downloadWithGSM = item.isChecked();
+                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_OTHER_NET))) {
+                    config.downloadWithOtherNet = item.isChecked();
+                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING))) {
+                    config.downloadDuringChargingOnly = item.isChecked();
+                } else if (item.getTitle().equals(getString(R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY))) {
+                    config.doNotDownloadWithLowBattery = item.isChecked();
+                } else if (item.getTitle().equals(getString(R.string.MENU_NETWORK_WITHOUT_LIMIT))) {
+                    config.networkWithoutLimit = item.isChecked();
+                } else if (item.getTitle().toString().startsWith("Pobierz co")) {
                     if (item.isChecked()) {
                         EditText input = new EditText(this.getContext());
                         input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        new AlertDialog.Builder(this.requireContext())
-                                .setIcon(android.R.drawable.ic_dialog_alert)
-                                .setTitle("Poczytaj mi tato")
-                                .setMessage("Co ile godzin zakładka ma być odświeżana")
-                                .setView(input)
-                                .setPositiveButton("OK", (dialog, which) -> {
-                                    config.howOftenRefreshTabInHours = Integer.parseInt(String.valueOf(input.getText()));
+                        Utils.dialog(this.requireContext(),
+                                "Co ile godzin zakładka ma być odświeżana", input,
+                                (dialog, which) -> {
+                                    config.howOftenRefreshTabInHours =
+                                            Integer.parseInt(String.valueOf(input.getText()));
                                     setupRefresh();
                                     config.saveToInternalStorage(getContext());
-                                })
-                                .setNegativeButton("Cancel", (dialog, which) -> {
+                                }, (dialog, which) -> {
                                     dialog.dismiss();
                                     config.howOftenRefreshTabInHours = -1;
                                     setupRefresh();
                                     config.saveToInternalStorage(getContext());
-                                })
-                                .show();
+                                });
                     } else {
                         config.howOftenRefreshTabInHours = -1;
                         setupRefresh();
-                        config.saveToInternalStorage(getContext());
                     }
-                    return true;
-                }
-                if (item.getTitle().toString().startsWith("Przy błędzie co ")) {
-                    item.setChecked(!item.isChecked());
+                } else if (item.getTitle().toString().startsWith("Przy błędzie co ")) {
                     if (item.isChecked()) {
                         EditText input = new EditText(this.getContext());
                         input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        new AlertDialog.Builder(this.requireContext())
-                                .setIcon(android.R.drawable.ic_dialog_alert)
-                                .setTitle("Poczytaj mi tato")
-                                .setMessage("Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu")
-                                .setView(input)
-                                .setPositiveButton("OK", (dialog, which) -> {
-                                    config.howOftenTryToRefreshTabAfterErrorInMinutes = Integer.parseInt(String.valueOf(input.getText()));
-                                    config.saveToInternalStorage(getContext());
-                                })
-                                .setNegativeButton("Cancel", (dialog, which) -> {
+                        Utils.dialog(this.requireContext(),
+                                "Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu",
+                                input, (dialog, which) -> {
+                                    config.howOftenTryToRefreshTabAfterErrorInMinutes =
+                                            Integer.parseInt(String.valueOf(input.getText()));
+                                    config.saveToInternalStorage(ReadFragment.this.getContext());
+                                }, (dialog, which) -> {
                                     dialog.dismiss();
                                     config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
                                     config.saveToInternalStorage(getContext());
-                                })
-                                .show();
+                                });
                     } else {
                         config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
-                        config.saveToInternalStorage(getContext());
                     }
+                }
+                if (item.isCheckable()) {
+                    config.saveToInternalStorage(getContext());
                     return true;
                 }
-                if (item.getTitle().equals("Klonuj zakładkę")) {
+                if (item.getTitle().equals(getString(R.string.MENU_CLONE_TAB))) {
                     EditText input = new EditText(this.getContext());
-                    new AlertDialog.Builder(this.requireContext())
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .setTitle("Poczytaj mi tato")
-                            .setMessage("Nazwa nowej zakładki")
-                            .setView(input)
-                            .setPositiveButton("OK", (dialog, which) -> {
+                    Utils.dialog(this.requireContext(), "Nazwa nowej zakładki", input,
+                            (dialog, which) -> {
                                 try {
-                                    topPagrAdapter.addTab(config, input.getText().toString());
+                                    topPagerAdapter.addTab(config, input.getText().toString());
                                 } catch (CloneNotSupportedException e) {
                                     e.printStackTrace();
                                 }
-                            })
-                            .setNegativeButton("Cancel", (dialog, which) -> {
-                                dialog.dismiss();
-                            })
-                            .show();
-                    return true;
-                }
-                if (item.getTitle().equals("Usuń zakładkę")) {
-                    new AlertDialog.Builder(this.requireContext())
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .setTitle("Poczytaj mi tato")
-                            .setMessage("Czy chcesz usunąć zakładkę?")
-                            .setPositiveButton("OK", (dialog, which) -> {
-                                topPagrAdapter.deleteTab(config);
-                            })
-                            .setNegativeButton("Cancel", (dialog, which) -> {
-                                dialog.dismiss();
-                            })
-                            .show();
-                    return true;
-                }
-                if (item.getTitle().equals("Pokaż ukryte")) {
-                    config.showHiddenTexts = !config.showHiddenTexts;
-                    mTaskListAdapter.update(mydb, config.showHiddenTexts, config.readInfoForReadFragment
-                            .toArray(new Page.PageTyp[config.readInfoForReadFragment.size()]));
-                    config.saveToInternalStorage(getContext());
-                }
-                if (item.isCheckable()) {
-                    item.setChecked(!item.isChecked());
-                }
-                if (item.getTitle().equals("Pobierz na Wifi")) {
-                    config.pobierzPrzyWifi = item.isChecked();
-                } else if (item.getTitle().equals("Pobierz na GSM")) {
-                    config.pobierzPrzyGSM = item.isChecked();
-                } else if (item.getTitle().equals("Pobierz na innej sieci")) {
-                    config.pobierzPrzyInnejSieci = item.isChecked();
-                } else if (item.getTitle().equals("Pobierz tylko przy ładowaniu")) {
-                    config.pobierzTylkoPrzyLadowaniu = item.isChecked();
-                } else if (item.getTitle().equals("Nie pobieraj przy niskiej baterii")) {
-                    config.niePobierajPrzyNiskiejBaterii = item.isChecked();
-                } else if (item.getTitle().equals("Sieć musi być bez limitu")) {
-                    config.networkWithoutLimit = item.isChecked();
-                }
-                if (item.isCheckable()) {
-                    config.saveToInternalStorage(getContext());
-                    return true;
-                }
-                if (item.getTitle().equals("Napisz maila do autora")) {
+                            }, (dialog, which) -> dialog.dismiss());
+                } else if (item.getTitle().equals(getString(R.string.MENU_DELETE_TAB))) {
+                    Utils.dialog(this.requireContext(), "Czy chcesz usunąć zakładkę?",
+                            null, (dialog, which) -> topPagerAdapter.deleteTab(config),
+                            (dialog, which) -> dialog.dismiss());
+                } else if (item.getTitle().equals(getString(R.string.MENU_WRITE_MAIL_TO_AUTHOR))) {
                     Utils.contactMe(getContext());
-                }
-                if (item.getTitle().equals("Pobierz niepobrane")) {
-                    for (int j = 0; j < mTaskListAdapter.getItemCount(); j++) {
-                        Page p = mTaskListAdapter.getItem(j);
+                } else if (item.getTitle().equals(getString(R.string.MENU_GET_UNREAD_TEXTS))) {
+                    for (Page p : pageListAdapter.getAllItems()) {
                         File f = p.getCacheFileName(this.getContext());
                         if (f.exists()) continue;
                         Utils.getPage(p.url, result -> {
                                     Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
-                                    mTaskListAdapter.update(mydb, config.showHiddenTexts,
-                                            config.readInfoForReadFragment
-                                                    .toArray(new Page.PageTyp[config.readInfoForReadFragment.size()]));
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator());
                                 },
                                 mainThreadHandler, threadPoolExecutor);
                     }
-                }
-                if (item.getTitle().equals("EPUB z pokazanych i pobranych")) {
-                    Utils.createEPUB(getContext(), config.tabName, mTaskListAdapter.getAllItems());
+                } else if (item.getTitle().equals(getString(R.string.MENU_GET_ALL_TEXTS))) {
+                    for (Page p : pageListAdapter.getAllItems()) {
+                        File f = p.getCacheFileName(this.getContext());
+                        Utils.getPage(p.url, result -> {
+                                    Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator());
+                                },
+                                mainThreadHandler, threadPoolExecutor);
+                    }
+                } else if (item.getTitle().equals(getString(R.string.MENU_GET_ALL_INDEX_PAGES))) {
+                    for (Page.PageTyp pt : config.readInfoForReadFragment) {
+                        refresh.setRefreshing(true);
+                        Page.getReadInfo(pt).getList(
+                                result -> pageListAdapter.update(db, config.showHiddenTexts,
+                                        config.readInfoForReadFragment.iterator()),
+                                result -> refresh.setRefreshing(false),
+                                mainThreadHandler, threadPoolExecutor, db, this.getContext(), pt,
+                                -1);
+                    }
+                } else if (item.getTitle().equals(getString(R.string.MENU_EXPORT_EPUB))) {
+                    Utils.createEPUB(getContext(), config.tabName, pageListAdapter.getAllItems());
                 }
                 return false;
             });

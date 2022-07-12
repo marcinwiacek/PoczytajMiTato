@@ -15,16 +15,19 @@ public class WolneLektury extends StoreInfo {
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
-                               ArrayList<ManyBooks> books, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
-        String formattedName = name.toLowerCase().replaceAll("\\s", "-");
-        formattedName = Normalizer.normalize(formattedName, Normalizer.Form.NFD);
-        formattedName = formattedName.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-
-        int startSearchPosition, fromPosition, toPosition, sortOrder = 1;
+                               ArrayList<ManyBooks> books, ReentrantLock lock,
+                               ManyBooksRecyclerViewAdapter adapter) {
+        int startSearchPosition, fromPosition, toPosition;
         SingleBook singleBook;
         String s;
 
-        fromPosition = pageContent.indexOf("<div class=\"book-box-inner\"><p>Znalezione w treści</p></div>");
+        String formattedName = name.toLowerCase().replaceAll("\\s", "-");
+        formattedName = Normalizer.normalize(formattedName, Normalizer.Form.NFD);
+        formattedName = formattedName.replaceAll("\\p{InCombiningDiacriticalMarks}+",
+                "");
+
+        fromPosition = pageContent
+                .indexOf("<div class=\"book-box-inner\"><p>Znalezione w treści</p></div>");
         if (fromPosition != -1) {
             toPosition = pageContent.length();
             pageContent.delete(fromPosition, toPosition);
@@ -52,10 +55,12 @@ public class WolneLektury extends StoreInfo {
                     Utils.findBetween(s, "<img src=\"", "\" alt=\"Cover\"", 0);
             if (singleBook.smallThumbnailUrl.isEmpty()) {
                 singleBook.smallThumbnailUrl =
-                        Utils.findBetween(s, "<img class=\"cover\" src=\"", "\"", 0);
+                        Utils.findBetween(s, "<img class=\"cover\" src=\"", "\"",
+                                0);
             }
             if (!singleBook.smallThumbnailUrl.isEmpty()) {
-                singleBook.smallThumbnailUrl = "https://wolnelektury.pl" + singleBook.smallThumbnailUrl;
+                singleBook.smallThumbnailUrl = "https://wolnelektury.pl" +
+                        singleBook.smallThumbnailUrl;
             }
 
             singleBook.downloadUrl = "https://wolnelektury.pl/media/book/epub/" +
@@ -64,8 +69,7 @@ public class WolneLektury extends StoreInfo {
             if (singleBook.smallThumbnailUrl.isEmpty() || singleBook.title.isEmpty()) {
                 break;
             }
-            addBook(singleBook, books, sortOrder, lock, adapter);
-            sortOrder++;
+            addBook(singleBook, books, lock, adapter);
         }
         return false;
     }

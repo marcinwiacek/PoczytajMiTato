@@ -19,7 +19,8 @@ public class BookRage extends StoreInfo {
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
-                               ArrayList<ManyBooks> books, ReentrantLock lock, ManyBooksRecyclerViewAdapter adapter) {
+                               ArrayList<ManyBooks> books, ReentrantLock lock,
+                               ManyBooksRecyclerViewAdapter adapter) {
         int startSearchPosition, fromPosition, fromPosition2, toPosition = 0, sortOrder = 1;
         String s;
         SingleBook singleBook;
@@ -27,10 +28,12 @@ public class BookRage extends StoreInfo {
         Date expiryDate;
         float price = (float) 0;
 
-        s = Utils.findBetween(pageContent.toString(), "<p data-ends-at=\"", "\"", 0);
+        s = Utils.findBetween(pageContent.toString(), "<p data-ends-at=\"", "\"",
+                0);
         if (s.equals("")) return false;
 
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("y/M/d H:m");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat format =
+                new SimpleDateFormat("y/M/d H:m");
         try {
             expiryDate = format.parse(s);
         } catch (ParseException e) {
@@ -85,10 +88,9 @@ public class BookRage extends StoreInfo {
                     !singleBook.title.toLowerCase().contains(name.toLowerCase())) {
                 continue;
             }
-            if (addBook(singleBook, books, sortOrder, lock, adapter)) {
+            if (addBook(singleBook, books, lock, adapter)) {
                 added = true;
             }
-            sortOrder++;
         }
         return added;
     }

@@ -17,7 +17,7 @@ import java.util.List;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 8L; // Version of the structure for serialization
+    static final long serialVersionUID = 9L; // Version of the structure for serialization
 
     /* Search Fragment */
     public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
@@ -28,11 +28,11 @@ public class FragmentConfig implements Serializable, Cloneable {
     public boolean showHiddenTexts = false;
     public boolean useTOR = false;
     public boolean getTextsWhenRefreshingIndex = false;
-    public boolean pobierzPrzyWifi = true;
-    public boolean pobierzPrzyGSM = true;
-    public boolean pobierzPrzyInnejSieci = true;
-    public boolean pobierzTylkoPrzyLadowaniu = false;
-    public boolean niePobierajPrzyNiskiejBaterii = true;
+    public boolean downloadWithWifi = true;
+    public boolean downloadWithGSM = true;
+    public boolean downloadWithOtherNet = true;
+    public boolean downloadDuringChargingOnly = false;
+    public boolean doNotDownloadWithLowBattery = true;
     public boolean networkWithoutLimit = false;
     public int howOftenRefreshTabInHours = -1;
     public int howOftenTryToRefreshTabAfterErrorInMinutes = -1;
@@ -48,11 +48,12 @@ public class FragmentConfig implements Serializable, Cloneable {
 
     static FragmentConfig readFromInternalStorage(Context context, int tabNum) {
         try {
-            ObjectInputStream inputStream = new ObjectInputStream(context.openFileInput("tab" + tabNum));
+            ObjectInputStream inputStream = new ObjectInputStream(
+                    context.openFileInput("tab" + tabNum));
             FragmentConfig t = (FragmentConfig) inputStream.readObject();
             inputStream.close();
             return t;
-        } catch (Exception ignoreException) {
+        } catch (Exception ignore) {
             return null;
         }
     }
@@ -66,7 +67,8 @@ public class FragmentConfig implements Serializable, Cloneable {
     public void saveToInternalStorage(Context context) {
         try {
             ObjectOutputStream outputStream = new ObjectOutputStream(
-                    context.openFileOutput("tab" + tabNumForFileForSerialization, Context.MODE_PRIVATE));
+                    context.openFileOutput("tab" + tabNumForFileForSerialization,
+                            Context.MODE_PRIVATE));
             outputStream.writeObject(this);
             outputStream.close();
         } catch (Exception e) {
