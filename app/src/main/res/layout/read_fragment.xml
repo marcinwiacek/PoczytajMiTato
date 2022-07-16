@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    tools:context="com.mwiacek.poczytaj.mi.tato.MainActivity">
+    android:layout_height="wrap_content">
 
     <ViewSwitcher
         android:id="@+id/viewSwitcher2"
@@ -56,11 +54,15 @@
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/pagesRecyclerView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:layout_below="@+id/menuButton2"
-                    android:paddingBottom="?attr/actionBarSize"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                                    android:layout_alignParentEnd="true"
+                android:paddingBottom="?attr/actionBarSize"
+                android:layout_alignParentRight="true"
+
+                />
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
         </RelativeLayout>
 
@@ -69,6 +71,7 @@
             android:layout_height="match_parent">
 
             <FrameLayout
+                android:id="@+id/frameLayout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:paddingBottom="?attr/actionBarSize">

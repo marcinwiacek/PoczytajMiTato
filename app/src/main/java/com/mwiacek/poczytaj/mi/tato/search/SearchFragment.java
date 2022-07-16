@@ -1,5 +1,6 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -29,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
+import com.mwiacek.poczytaj.mi.tato.ViewPagerAdapter;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
 
 import java.io.File;
@@ -37,15 +39,25 @@ import java.util.LinkedHashMap;
 public class SearchFragment extends Fragment {
     private final FragmentConfig config;
     private final ImageCache imageCache;
+    private final ViewPagerAdapter topPagerAdapter;
     private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;
     private SingleBookRecyclerViewAdapter singleBookRecyclerViewAdapter;
     private ArrayAdapter searchTextAdapter;
     private ViewSwitcher viewSwitcher;
     private boolean isLoadingMoreBooks = false;
 
-    public SearchFragment(FragmentConfig config, ImageCache imageCache) {
+    public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
         this.config = config;
         this.imageCache = imageCache;
+        this.topPagerAdapter = topPagerAdapter;
+    }
+
+    public void onBackPressed() {
+        System.exit(0);
+    }
+
+    public int getTabNum() {
+        return config.fileNameTabNum;
     }
 
     private void loadMoreBooks(Context context) {
@@ -53,11 +65,11 @@ public class SearchFragment extends Fragment {
                 .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
         if (!isConnected) {
-            Toast.makeText(context, "Lepiej działa z siecią!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Potrzebny internet!", Toast.LENGTH_SHORT).show();
             return;
         }
         // rowsArrayList.add(null);
-        //  manyBooksRecyclerView.post(() -> manyBooksRecyclerViewAdapter.notifyItemInserted(rowsArrayList.size() - 1));
+        // manyBooksRecyclerView.post(() -> manyBooksRecyclerViewAdapter.notifyItemInserted(rowsArrayList.size() - 1));
 
         new Handler().postDelayed(() -> {
             //    rowsArrayList.remove(rowsArrayList.size() - 1);
@@ -69,6 +81,7 @@ public class SearchFragment extends Fragment {
         }, 1000);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.search_fragment, container, false);
@@ -134,8 +147,8 @@ public class SearchFragment extends Fragment {
         });
 
         searchButton.setOnClickListener(v -> {
-//                InputMethodManager imm = (InputMethodManager) view.getSystemService(Context.INPUT_METHOD_SERVICE);
-            //              imm.hideSoftInputFromWindow(mSearchTextView.getWindowToken(), 0);
+//          InputMethodManager imm = (InputMethodManager) view.getSystemService(Context.INPUT_METHOD_SERVICE);
+//          imm.hideSoftInputFromWindow(mSearchTextView.getWindowToken(), 0);
 
             searchButton.setEnabled(false);
             searchTextView.setEnabled(false);
@@ -203,9 +216,10 @@ public class SearchFragment extends Fragment {
                         setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
                                 config.storeInfoForSearchFragment.contains(hm.get(s)));
             }
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_CLONE_TAB);
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_DELETE_TAB);
-            popupMenu.getMenu().add(5, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
+            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
+                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                    .setChecked(ViewPagerAdapter.isSearchTabAvailable());
+            popupMenu.getMenu().add(4, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 popupMenu.getMenu().setGroupDividerEnabled(true);
             }
@@ -222,6 +236,10 @@ public class SearchFragment extends Fragment {
                         config.storeInfoForSearchFragment.remove(hm.get(s));
                     }
                     break;
+                }
+                if (item.getTitle().equals(getString(R.string.MENU_SHOW_SEARCH_TAB))) {
+                    topPagerAdapter.deleteSearchTab();
+                    return true;
                 }
                 if (item.isCheckable()) {
                     config.saveToInternalStorage(getContext());

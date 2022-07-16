@@ -6,7 +6,9 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,17 +27,47 @@ import java.util.Iterator;
 public class PageListRecyclerViewAdapter extends
         RecyclerView.Adapter<PageListRecyclerViewAdapter.TaskListRecyclerViewHolder> {
 
+    private final Context context;
     private ArrayList<Page> mData = new ArrayList<>();
     private Utils.OnItemClicked mOnClick;
-    private final Context context;
+    private String[] search;
 
     public PageListRecyclerViewAdapter(Context context) {
         this.context = context;
     }
 
+    private static Spannable getSpannable(Object o, String text, String[] search) {
+        Spannable WordtoSpan = new SpannableString(text);
+        WordtoSpan.setSpan(o, 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (search != null) {
+            for (String s : search) {
+                String x = Utils.findText(text, s.trim());
+                while (x.length() != text.length()) {
+                    int i = x.indexOf("<ins style='background-color:yellow'>");
+                    x = x.replace("<ins style='background-color:yellow'>", "");
+                    int j = x.indexOf("</ins>");
+                    x = x.replace("</ins>", "");
+                    WordtoSpan.setSpan(new BackgroundColorSpan(Color.YELLOW),
+                            i, j, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    WordtoSpan.setSpan(new UnderlineSpan(),
+                            i, j, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+        }
+        return WordtoSpan;
+    }
+
     @SuppressLint("NotifyDataSetChanged")
-    public void update(DBHelper mydb, boolean hidden, Iterator<Page.PageTyp> typ) {
-        mData = mydb.getAllPages(hidden, typ);
+    public void update(DBHelper mydb, boolean hidden, Iterator<Page.PageTyp> typ,
+                       String authorFilter, String tagFilter) {
+        mData = mydb.getAllPages(hidden, typ, authorFilter, tagFilter);
+        this.notifyDataSetChanged();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void update(ArrayList<Page> mData, String[] search) {
+        this.mData = mData;
+        this.search = search;
         this.notifyDataSetChanged();
     }
 
@@ -62,23 +94,15 @@ public class PageListRecyclerViewAdapter extends
                 (((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                         == Configuration.UI_MODE_NIGHT_YES) ? Color.WHITE : Color.BLUE) : Color.GRAY);
 
-        Spannable WordtoSpan = new SpannableString(page.name);
-        WordtoSpan.setSpan(o, 0, page.name.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        holder.titleText.setText(WordtoSpan);
-
-        WordtoSpan = new SpannableString(page.author);
-        WordtoSpan.setSpan(o, 0, page.author.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        holder.titleAuthor.setText(WordtoSpan);
+        holder.titleText.setText(getSpannable(o, page.name, search));
+        holder.titleAuthor.setText(getSpannable(o, page.author, search));
+        holder.desc.setText(getSpannable(o, page.tags, search));
 
         @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("dd.MM.yy hh:mm");
         String time = " | " + df.format(page.dt);
-        WordtoSpan = new SpannableString(time);
+        Spannable WordtoSpan = new SpannableString(time);
         WordtoSpan.setSpan(o, 0, time.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         holder.when.setText(WordtoSpan);
-
-        WordtoSpan = new SpannableString(page.tags);
-        WordtoSpan.setSpan(o, 0, page.tags.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        holder.desc.setText(WordtoSpan);
     }
 
     @Override

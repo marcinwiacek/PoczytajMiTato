@@ -1,6 +1,7 @@
 package com.mwiacek.poczytaj.mi.tato;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.PendingIntent;
@@ -33,9 +34,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -168,7 +173,7 @@ public class Utils {
             context.startActivity(i);
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      /*  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_DENIED) {
                 ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
@@ -177,7 +182,7 @@ public class Utils {
                     == PackageManager.PERMISSION_DENIED) {
                 return;
             }
-        }
+        }*/
         File path = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS);
 
@@ -194,11 +199,10 @@ public class Utils {
         downloadmanager.enqueue(request);
     }
 
-    public static void addZipFile(String name, ZipOutputStream out, File f) throws IOException {
+    public static void addZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {
         byte[] data = new byte[1000];
 
-        FileInputStream fi = new FileInputStream(f);
-        BufferedInputStream origin = new BufferedInputStream(fi, 1000);
+        BufferedInputStream origin = new BufferedInputStream(f, 1000);
         ZipEntry entry = new ZipEntry(name);
         out.putNextEntry(entry);
         int count;
@@ -214,62 +218,104 @@ public class Utils {
         out.write(content.getBytes());
     }
 
-    public static void createEPUB(Context context, String tabName, List<Page> list) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(context,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_DENIED) {
-                ActivityCompat.requestPermissions((Activity) context,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-            }
-            if (ContextCompat.checkSelfPermission(context,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_DENIED) {
-                return;
-            }
-        }
+    public static void createEPUB(Context context, Uri file, String tabName, List<Page> list,
+                                  HashSet<Page.PageTyp> types) {
         NotificationCompat.Builder builder =
                 Notifications.setupNotification(Notifications.Channels.ZAPIS_W_URZADZENIU, context,
                         "Tworzenie pliku EPUB");
         Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
         try {
-            int z = 0;
+         /*   int z = 0;
             String longFileName;
             String shortFileName;
 
             while (true) {
-                longFileName = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS).getPath() + File.separator +
+                longFileName = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                        .getPath() + File.separator +
                         tabName.replaceAll("[^A-Za-z0-9]", "") +
                         (z == 0 ? "" : z) + ".zip";
                 File f = new File(longFileName);
                 if (!f.exists()) break;
                 z++;
-            }
+            }*/
 
-            shortFileName = tabName.replaceAll("[^A-Za-z0-9]", "") +
-                    (z == 0 ? "" : z) + ".zip";
+            String shortFileName = tabName.replaceAll("[^A-Za-z0-9]", "") + ".zip";
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(
-                    new FileOutputStream(longFileName)));
+                    context.getContentResolver().openOutputStream(file)));
 
+            String coverName = "cover5.jpg";
+            Object[] arr = types.toArray();
+            if (arr.length == 1) {
+                if (arr[0] == Page.PageTyp.FANTASTYKA_BIBLIOTEKA) coverName = "cover1.jpg";
+                if (arr[0] == Page.PageTyp.FANTASTYKA_POCZEKALNIA) coverName = "cover2.jpg";
+                if (arr[0] == Page.PageTyp.FANTASTYKA_ARCHIWUM) coverName = "cover3.jpg";
+            }
+            Utils.addZipFile("OEBPS/" + coverName, out,
+                    context.getAssets().open(coverName));
+
+            String tocTocNCX = "";
+            String tocTocXHTML = "";
+            String tocContentOpf1 = "";
+            String tocContentOpf2 = "";
+            String tocContentOpf3 = "";
             for (int j = 0; j < list.size(); j++) {
-                File f = list.get(j).getCacheFileName(context);
+                Page p = list.get(j);
+                File f = p.getCacheFileName(context);
                 if (f.exists()) {
-                    Utils.addZipFile("OEBPS\\" + j + ".html", out, f);
+                    Date date = new Date();
+                    date.setTime(f.lastModified());
+                    @SuppressLint("SimpleDateFormat") String d = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")).format(date);
+
+                    Utils.addZipFile("OEBPS/" + j + ".xhtml", out,
+                            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                                    "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n" +
+                                    "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
+                                    "xmlns:epub=\"http://www.idpf.org/2007/ops\"\n" +
+                                    "xml:lang=\"pl\" lang=\"pl\">\n" +
+                                    "<head>\n" +
+                                    "<!-- typ " + p.typ.name() + " -->" +
+                                    "<title>" + p.name + "</title>\n" +
+                                    "<link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\" />\n" +
+                                    "</head>\n" +
+                                    "<body xml:lang=\"pl\" lang=\"pl\">\n" +
+                                    "Autor: " + p.author + "<br/>\n" +
+                                    "Info: " + p.tags + "<br/>\n" +
+                                    "Pobrane: <a href=\""+p.url+"\">"+d+"</a><br/>\n"+
+                                    "<hr/>\n" +
+                                    readFile(f) +
+                                    "</body>\n</html>");
+                    tocTocNCX += "<navPoint id=\"index_" + j + "\" playOrder=\"" + j + "\">\n" +
+                            "<navLabel>\n" +
+                            "<text>" + p.name + "</text>\n" +
+                            "</navLabel>\n" +
+                            "<content src=\"" + j + ".xhtml\"/>\n" +
+                            "</navPoint>\n";
+
+                    tocTocXHTML += "<li>\n" +
+                            "<a href=\"" + j + ".xhtml\">" + p.name + "</a>\n" +
+                            "</li>\n";
+
+                    tocContentOpf1 += "<item id=\"" + j + "_xhtml\" media-type=\"application/xhtml+xml\" href=\"" + j + ".xhtml\" />\n";
+
+                    tocContentOpf2 += "<itemref idref=\"" + j + "_xhtml\"/>\n";
+
+                    if (tocContentOpf3.isEmpty()) {
+                        tocContentOpf3 = "<reference href=\"" + j + ".xhtml\" type=\"text\" title=\"Tekst\"/>\n";
+                    }
                 }
             }
 
             Utils.addZipFile("mimetype", out, "application/epub+zip");
-            Utils.addZipFile("META-INF\\container.xml",
+            Utils.addZipFile("META-INF/container.xml",
                     out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n" +
                             "<rootfiles>\n" +
                             "<rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n" +
                             "</rootfiles>\n" +
                             "</container>");
-            Utils.addZipFile("OEBPS\\style.css", out, "body {text-align:justify}");
+            Utils.addZipFile("OEBPS/style.css", out, "body {text-align:justify}");
 
-            Utils.addZipFile("OEBPS\\toc.ncx", out,
+            Utils.addZipFile("OEBPS/toc.ncx", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\"\n" +
                             "xmlns:py=\"http://genshi.edgewall.org/\"\n" +
@@ -286,11 +332,11 @@ public class Utils {
                             "<text>tytul</text>\n" +
                             "</docTitle>\n" +
                             "<navMap>\n" +
-                            //$tocTocNCX.
+                            tocTocNCX +
                             "</navMap>\n" +
                             "</ncx>\n");
 
-            Utils.addZipFile("OEBPS\\toc.xhtml", out,
+            Utils.addZipFile("OEBPS/toc.xhtml", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n" +
                             "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
@@ -306,13 +352,13 @@ public class Utils {
                             "</header>\n" +
                             "<nav epub:type=\"toc\">\n" +
                             "<ol>\n" +
-                            //$tocTocXHTML.
+                            tocTocXHTML +
                             "</ol>\n" +
                             "</nav>\n" +
                             "</body>\n" +
                             "</html>");
 
-            Utils.addZipFile("OEBPS\\content.opf", out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            Utils.addZipFile("OEBPS/content.opf", out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<package xmlns=\"http://www.idpf.org/2007/opf\"\n" +
                     "xmlns:opf=\"http://www.idpf.org/2007/opf\"\n" +
                     "xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
@@ -322,38 +368,38 @@ public class Utils {
                     "<metadata>\n" +
                     "<dc:identifier id=\"bookid\">urn:uuid:e5953946-ea06-4599-9a53-f5c652b89f5c</dc:identifier>\n" +
                     "<dc:language>pl-PL</dc:language>\n" +
-                    "<meta name=\"generator\" content=\"Skrypt z mwiacek.com\"/>\n" +
+                    "<meta name=\"generator\" content=\"Poczytaj Mi Tato z Google Play\"/>\n" +
                     "<dc:title>title</dc:title>\n" +
                     "<dc:description>\n" +
                     "title\n" +
                     "</dc:description>\n" +
-                    "<dc:creator id=\"creator-0\">A.zbiorowy+skrypt z mwiacek.com</dc:creator>\n" +
+                    "<dc:creator id=\"creator-0\">A.zbiorowy+Poczytaj Mi Tato z Google Play</dc:creator>\n" +
                     "<meta refines=\"#creator-0\" property=\"role\" scheme=\"marc:relators\">aut</meta>\n" +
-                    "<meta refines=\"#creator-0\" property=\"file-as\">A.zbiorowy+skrypt z mwiacek.com</meta>\n" +
+                    "<meta refines=\"#creator-0\" property=\"file-as\">A.zbiorowy+Poczytaj Mi Tato z Google Play</meta>\n" +
                     "<meta name=\"cover\" content=\"cover\"></meta>\n" +
                     "<meta property=\"dcterms:modified\"></meta>\n" +
                     "</metadata>\n" +
                     "<manifest>\n" +
                     "<item id=\"style_css\" media-type=\"text/css\" href=\"style.css\" />\n" +
-                    "<item id=\"cover\" media-type=\"image/jpeg\" href=\"cover$set.jpg\" properties=\"cover-image\" />\n" +
+                    "<item id=\"cover\" media-type=\"image/jpeg\" href=\"" + coverName + "\" properties=\"cover-image\" />\n" +
                     "<item id=\"cover-page_xhtml\" media-type=\"application/xhtml+xml\" href=\"cover-page.xhtml\" />\n" +
                     "<item id=\"toc_xhtml\" media-type=\"application/xhtml+xml\" href=\"toc.xhtml\" properties=\"nav\" />\n" +
-                    //        $tocContentOpf1.
+                    tocContentOpf1 +
                     "<item id=\"ncxtoc\" media-type=\"application/x-dtbncx+xml\" href=\"toc.ncx\" />\n" +
                     "</manifest>\n" +
                     "<spine toc=\"ncxtoc\">\n" +
                     "<itemref idref=\"cover-page_xhtml\" linear=\"no\"/>\n" +
                     "<itemref idref=\"toc_xhtml\"/>\n" +
-                    //$tocContentOpf2.
+                    tocContentOpf2 +
                     "</spine>\n" +
                     "<guide>\n" +
                     "<reference href=\"cover-page.xhtml\" type=\"cover\" title=\"Strona okładki\"/>\n" +
                     "<reference href=\"toc.xhtml\" type=\"toc\" title=\"Spis treści\"/>\n" +
-                    //$tocContentOpf3.
+                    tocContentOpf3 +
                     "</guide>\n" +
                     "</package>");
 
-            Utils.addZipFile("OEBPS\\cover-page.xhtml", out,
+            Utils.addZipFile("OEBPS/cover-page.xhtml", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<!DOCTYPE html>\n" +
                             "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
@@ -365,14 +411,14 @@ public class Utils {
                             "</head>\n" +
                             "<body xml:lang=\"pl\" lang=\"pl\">\n" +
                             "<div>\n" +
-                            "<img src=\"cover$set.jpg\"/>\n" +
+                            "<img src=\"" + coverName + "\"/>\n" +
                             "</div>\n" +
                             "</body>\n" +
                             "</html>");
 
             out.close();
 
-            Intent intent = new Intent();
+           /* Intent intent = new Intent();
             intent.setDataAndType(Uri.fromFile(new File(longFileName)),
                     MimeTypeMap.getSingleton().getMimeTypeFromExtension(".ZIP"));
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -381,10 +427,10 @@ public class Utils {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                 pendingIntent = PendingIntent.getActivity(context,
                         0, intent, PendingIntent.FLAG_IMMUTABLE);
-            }
+            }*/
 
-            builder.setContentText("Zapisano plik EPUB " + shortFileName).setContentIntent(pendingIntent);
-            Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+           // builder.setContentText("Zapisano plik EPUB " + shortFileName).setContentIntent(pendingIntent);
+           // Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
         } catch (Exception e) {
             builder.setContentText("Błąd zapisu pliku EPUB");
             Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
@@ -413,6 +459,25 @@ public class Utils {
         int i = s.indexOf(szukaj, startIndeks);
         if (i != -1) i += szukaj.length();
         return i;
+    }
+
+    public static String findText(String s, String s2) {
+        return s.replaceAll("(?![^<]+>)((?i:\\Q" + s2
+                        .replace("\\E", "\\E\\\\E\\Q")
+                        .replace("a", "\\E[aąĄ]\\Q")
+                        .replace("c", "\\E[cćĆ]\\Q")
+                        .replace("e", "\\E[eęĘ]\\Q")
+                        .replace("l", "\\E[lłŁ]\\Q")
+                        .replace("n", "\\E[nńŃ]\\Q")
+                        .replace("o", "\\E[oóÓ]\\Q")
+                        .replace("s", "\\E[sśŚ]\\Q")
+                        .replace("z", "\\E[zźżŻŹ]\\Q")
+                        + "\\E))",
+                "<ins style='background-color:yellow'>$1</ins>");
+    }
+
+    public static boolean contaisText(String s, String s2) {
+        return (findText(s, s2).length() != s.length());
     }
 
     public interface RepositoryCallback<T> {

@@ -17,12 +17,10 @@ import java.util.List;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 9L; // Version of the structure for serialization
-
+    static final long serialVersionUID = 15L; // Version of the structure for serialization
     /* Search Fragment */
     public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
     public List<String> searchHistory = new ArrayList<>();
-
     /* Read Fragment */
     public HashSet<Page.PageTyp> readInfoForReadFragment = new HashSet<>();
     public boolean showHiddenTexts = false;
@@ -34,19 +32,23 @@ public class FragmentConfig implements Serializable, Cloneable {
     public boolean downloadDuringChargingOnly = false;
     public boolean doNotDownloadWithLowBattery = true;
     public boolean networkWithoutLimit = false;
+    public boolean downloadOnRoaming = false;
+    public boolean isDoNotDownloadWithLowStorage = true;
+    public String authorFilter = "";
+    public String tagFilter = "";
     public int howOftenRefreshTabInHours = -1;
     public int howOftenTryToRefreshTabAfterErrorInMinutes = -1;
-
     /* tab related info */
-    public int tabNumForFileForSerialization;
+    public int fileNameTabNum;
     public String tabName;
+    boolean searchFragmentConfig = false;
 
     FragmentConfig(int tabNum, String tabName) {
-        this.tabNumForFileForSerialization = tabNum;
+        this.fileNameTabNum = tabNum;
         this.tabName = tabName;
     }
 
-    static FragmentConfig readFromInternalStorage(Context context, int tabNum) {
+    public static FragmentConfig readFromInternalStorage(Context context, int tabNum) {
         try {
             ObjectInputStream inputStream = new ObjectInputStream(
                     context.openFileInput("tab" + tabNum));
@@ -67,7 +69,7 @@ public class FragmentConfig implements Serializable, Cloneable {
     public void saveToInternalStorage(Context context) {
         try {
             ObjectOutputStream outputStream = new ObjectOutputStream(
-                    context.openFileOutput("tab" + tabNumForFileForSerialization,
+                    context.openFileOutput("tab" + fileNameTabNum,
                             Context.MODE_PRIVATE));
             outputStream.writeObject(this);
             outputStream.close();

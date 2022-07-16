@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -100,6 +101,8 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         pageNumber = pageNumberAdd ? pageNumber + 1 : 0;
         sitesProcessed = 0;
         StoreInfo st;
+        Toast.makeText(mSearchButton.getContext(),
+                "szukanie", Toast.LENGTH_LONG);
         for (StoreInfo.StoreInfoTyp info : config.storeInfoForSearchFragment) {
             if (info == StoreInfo.StoreInfoTyp.IBUK) {
                 st = new IBUK();
@@ -122,9 +125,14 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                     try {
                         StringBuilder content = Utils.getPageContent(singleURL);
                         if (!content.toString().isEmpty()) {
+                            System.out.println(
+                                    "Wyniki z serwisu " + info.name());
                             finalSt.doesItMatch(mSearchTextView.getText().toString(),
                                     singleURL, content, mData, lock,
                                     this);
+                        } else {
+                            System.out.println(
+                                    "Problem z wynikami z serwisu " + info.name());
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -141,6 +149,13 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                             mSearchButton.setEnabled(true);
                             mSearchTextView.setEnabled(true);
                             //   mAdapter.notifyDataSetChanged();
+                            /*Collections.sort(mData, new Comparator<CustomData>() {
+                                @Override
+                                public int compare(CustomData lhs, CustomData rhs) {
+                                    // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+                                    return lhs.getId() > rhs.getId() ? -1 : (lhs.customInt < rhs.customInt ) ? 1 : 0;
+                                }
+                            });*/
                         }
                     }.sendEmptyMessage(1);
                 }

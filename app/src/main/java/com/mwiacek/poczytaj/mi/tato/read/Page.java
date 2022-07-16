@@ -11,13 +11,13 @@ import java.io.File;
 import java.util.Date;
 
 public class Page {
-    String name;
-    String author;
-    String tags;
-    String url;
-    int top;
-    Date dt;
-    PageTyp typ;
+    public String name;
+    public String author;
+    public String tags;
+    public String url;
+    public int top;
+    public Date dt;
+    public PageTyp typ;
 
     Page(String name, String author, String comments, String url, int top, Date dt, PageTyp typ) {
         this.name = name;

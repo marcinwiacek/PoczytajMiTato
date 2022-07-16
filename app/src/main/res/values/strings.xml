@@ -2,7 +2,10 @@
 <resources>
     <string name="MENU_CLONE_TAB">Klonuj zakładkę</string>
     <string name="MENU_DELETE_TAB">Usuń zakładkę</string>
-    <string name="MENU_EXPORT_EPUB">Zrób EPUB (pokazane, pobrane)</string>
+    <string name="MENU_CHANGE_TAB_NAME">Zmień nazwę zakładki</string>
+    <string name="MENU_SHOW_SEARCH_TAB">Pokaż zakładkę Szukaj</string>
+    <string name="MENU_EXPORT_EPUB">Zrób EPUB (widoczne i pobrane)</string>
+    <string name="MENU_IMPORT_EPUB">Importuj EPUB</string>
     <string name="MENU_SHOW_HIDDEN">Pokaż ukryte</string>
     <string name="MENU_USE_TOR">Używaj TOR</string>
     <string name="MENU_NETWORK_WITHOUT_LIMIT">Sieć musi być bez limitu</string>
@@ -16,7 +19,6 @@
     <string name="MENU_DOWNLOAD_ON_GSM">Pobierz na GSM</string>
     <string name="MENU_DOWNLOAD_ON_OTHER_NET">Pobierz na innej sieci</string>
     <string name="MENU_DOWNLOAD_ONLY_ON_CHARGING">Pobierz tylko przy ładowaniu</string>
-    <string name="MENU_IMPORT_EPUB">Importuj EPUB</string>
     <string name="MENU_LOCAL_AUTHOR_FILTER">Lokalny filtr na autorów</string>
     <string name="MENU_LOCAL_TAG_FILTER">Lokalny filtr na tagi</string>
 </resources>

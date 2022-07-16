@@ -31,11 +31,14 @@ public class Fantastyka extends ReadInfo {
         if (indeks == -1) {
             indeks = Utils.Szukaj(s, "<div class=\"teksty teksty-piorko\"><a href=\"", indeks2);
             if (indeks != -1) {
-                if (Utils.Szukaj(s, "<img src=\"/images/braz.png\" class=\"piorko\" />", indeks) != -1) {
+                if (Utils.Szukaj(s, "<img src=\"/images/braz.png\" class=\"piorko\" />",
+                        indeks) != -1) {
                     comments += "brązowe piórko";
-                } else if (Utils.Szukaj(s, "<img src=\"/images/srebro.png\" class=\"piorko\" />", indeks) != -1) {
+                } else if (Utils.Szukaj(s, "<img src=\"/images/srebro.png\" class=\"piorko\" />",
+                        indeks) != -1) {
                     comments += "srebrne piórko";
-                } else if (Utils.Szukaj(s, "<img src=\"/images/zloto.png\" class=\"piorko\" />", indeks) != -1) {
+                } else if (Utils.Szukaj(s, "<img src=\"/images/zloto.png\" class=\"piorko\" />",
+                        indeks) != -1) {
                     comments += "złote piórko";
                 }
             }
@@ -86,6 +89,7 @@ public class Fantastyka extends ReadInfo {
 
     public String getOpkoFromSinglePage(String result, File f) {
         int index = result.indexOf("<section class=\"opko no-headline\">");
+        index = result.indexOf("<article>", index) + 9;
         int index2 = result.indexOf("<span class=\"koniec\">Koniec</span>", index);
         String s = result.substring(index, index2)
                 .replaceAll("<br>", "<br />")
@@ -101,6 +105,7 @@ public class Fantastyka extends ReadInfo {
                 .replaceAll("  ", " ")
                 .replaceAll(" <p ", "<p ")
                 .replaceAll("<p /> <hr />", "<hr />")
+                .replaceAll("<p>", "<p />")
                 .replaceAll("&oacute;", "ó");
         Utils.writeFile(f, s);
         return s;

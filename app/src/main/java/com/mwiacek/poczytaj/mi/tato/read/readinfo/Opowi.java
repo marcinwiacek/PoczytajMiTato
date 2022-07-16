@@ -69,8 +69,8 @@ public class Opowi extends ReadInfo {
             int index = 1;
             while (true) {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(1,
-                        Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU, context,
-                                "Czytanie listy - strona " + index).build());
+                        Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU,
+                                context, "Czytanie listy - strona " + index).build());
                 url = "https://www.opowi.pl/spis" +
                         (index == 1 ? "" : "?str=" + index);
                 String result = Utils.getPageContent(url).toString();

@@ -1,12 +1,15 @@
 package com.mwiacek.poczytaj.mi.tato;
 
 import android.content.Context;
+import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
+import com.google.android.material.tabs.TabLayout;
 import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.read.ReadFragment;
@@ -17,97 +20,174 @@ import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
-    private final ArrayList<FragmentConfig> configs = new ArrayList<>();
-    private final ArrayList<Integer> nums = new ArrayList<>();
+    private final static ArrayList<FragmentConfig> configs = new ArrayList<>();
     private final Context context;
     private final ImageCache imageCache;
     private final DBHelper mydb;
+    private final TabLayout tabLayout;
+    private final int screenWidth;
+    private final AppCompatActivity activity;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, Context context,
-                            ImageCache imageCache, DBHelper mydb) {
+                            ImageCache imageCache, DBHelper mydb, TabLayout tabLayout,
+                            int screenWidth, AppCompatActivity activity) {
         super(fragmentActivity);
         this.context = context;
         this.imageCache = imageCache;
         this.mydb = mydb;
+        this.tabLayout = tabLayout;
+        this.screenWidth = screenWidth;
+        this.activity = activity;
+    }
+
+    public static boolean isSearchTabAvailable() {
+        int i = 0;
+        for (FragmentConfig f : configs) {
+            if (f.searchFragmentConfig) i++;
+        }
+        return i > 0;
+    }
+
+    public static boolean areMultipleReadTabsAvailable() {
+        int i = 0;
+        for (FragmentConfig f : configs) {
+            if (!f.searchFragmentConfig) i++;
+        }
+        return i > 1;
+    }
+
+    private void checkTabMode() {
+       // tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+        //int tabsWidth = 0;
+        //for (int i = 0; i < tabLayout.getChildCount(); i++) {
+         //   View view = tabLayout.getChildAt(i);
+          //  view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        //    tabsWidth += view.getMeasuredWidth();
+       // }
+
+       // tabLayout.setMinimumWidth(screenWidth/3);
+        tabLayout.setVisibility(tabLayout.getTabCount() == 1 ? View.GONE : View.VISIBLE);
+
+     //   tabLayout.setTabMode(TabLayout.MODE_FIXED );
+      //  tabLayout.selectTab(tabLayout.getTabAt(1));
+        //tabLayout.setTabMode(screenWidth > tabsWidth ?
+//                TabLayout.MODE_FIXED : TabLayout.MODE_SCROLLABLE);
+        for (Fragment f : activity.getSupportFragmentManager().getFragments()) {
+            if (f instanceof ReadFragment) {
+                ((ReadFragment) f).updateLayout(!(tabLayout.getTabCount() == 1));
+            }
+        }
+        /*File[] f = context.getFilesDir().listFiles();
+        if (f != null) {
+            for (File file : f) {
+                if (file.getName().startsWith("tab")) {
+                    System.out.println(file.getName());
+                }
+            }
+        }*/
+    }
+
+    public void deleteSearchTab() {
+        FragmentConfig c = null;
+        for (FragmentConfig f : configs) {
+            if (f.searchFragmentConfig) {
+                c = f;
+                break;
+            }
+        }
+        if (c != null) {
+            deleteTab(c);
+        }
+    }
+
+    public void addSearchTab() {
+        FragmentConfig c = new FragmentConfig(2, "SZUKAJ");
+        c.searchFragmentConfig = true;
+        c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.BOOKRAGE);
+        c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW);
+        c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.IBUK);
+        c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA);
+        c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.WOLNE_LEKTURY);
+        c.fileNameTabNum = configs.get(configs.size() - 1).fileNameTabNum + 1;
+        configs.add(c);
+        c.saveToInternalStorage(context);
+        this.notifyItemInserted(configs.size() - 1);
+        checkTabMode();
     }
 
     public void addTab(FragmentConfig config, String newName) throws CloneNotSupportedException {
         FragmentConfig config2 = (FragmentConfig) config.clone();
         config2.tabName = newName;
-        config2.tabNumForFileForSerialization = nums.get(nums.size() - 1) + 1;
+        config2.fileNameTabNum = configs.get(configs.size() - 1).fileNameTabNum + 1;
         configs.add(config2);
-        nums.add(config2.tabNumForFileForSerialization);
         config2.saveToInternalStorage(context);
         this.notifyItemInserted(configs.size() - 1);
+        checkTabMode();
     }
 
     public void deleteTab(FragmentConfig config) {
         /* Remove tab from configs */
         int index = -1;
         for (int i = 0; i < configs.size(); i++) {
-            if (configs.get(i).tabNumForFileForSerialization == config.tabNumForFileForSerialization) {
+            if (configs.get(i).fileNameTabNum == config.fileNameTabNum) {
                 index = i;
                 break;
             }
         }
         configs.remove(index);
-        /* Remove tab from nums. Numbers are sorted and we need second loop */
-        int index2 = -1;
-        for (int i = 0; i < nums.size(); i++) {
-            if (nums.get(i) == config.tabNumForFileForSerialization) {
-                index2 = i;
-                break;
-            }
-        }
-        nums.remove(index2);
         /* delete file */
-        new File(context.getFilesDir() + File.separator +
-                "tab" + config.tabNumForFileForSerialization).delete();
+        boolean delete = new File(context.getFilesDir() + File.separator +
+                "tab" + config.fileNameTabNum).delete();
+        if (!delete) System.out.println("file not deleted");
         this.notifyItemRemoved(index);
+        checkTabMode();
     }
 
     private void readConfigs() {
         File[] f = context.getFilesDir().listFiles();
+        int correct = 0;
         if (f != null) {
             for (File file : f) {
                 if (file.getName().startsWith("tab")) {
-                    nums.add(Integer.valueOf(file.getName().substring(3)));
+                    FragmentConfig c = FragmentConfig.readFromInternalStorage(context,
+                            Integer.parseInt(file.getName().substring(3)));
+                    System.out.println("x" + Integer.parseInt(file.getName().substring(3)));
+                    if (c == null) {
+                        file.delete();
+                        correct = -1;
+                    } else if (correct != -1) {
+                        correct++;
+                        configs.add(c);
+                    }
                 }
             }
-            Collections.sort(nums);
+            Comparator<FragmentConfig> comparator =
+                    (lhs, rhs) -> Integer.compare(lhs.fileNameTabNum, rhs.fileNameTabNum);
+            Collections.sort(configs, comparator);
         }
-        if (f == null || nums.isEmpty()) {
+        if (f == null || correct < 1) {
             FragmentConfig c = new FragmentConfig(0, "FANTASTYKA");
             c.readInfoForReadFragment.add(Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
+            c.searchFragmentConfig = false;
             configs.add(c);
-            nums.add(0);
             c.saveToInternalStorage(context);
+
             c = new FragmentConfig(1, "OPOWI");
             c.readInfoForReadFragment.add(Page.PageTyp.OPOWI_FANTASTYKA);
+            c.searchFragmentConfig = false;
             configs.add(c);
-            nums.add(1);
             c.saveToInternalStorage(context);
-            c = new FragmentConfig(2, "SZUKAJ");
-            c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.BOOKRAGE);
-            c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW);
-            c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.IBUK);
-            c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA);
-            c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.WOLNE_LEKTURY);
-            configs.add(c);
-            nums.add(2);
-            c.saveToInternalStorage(context);
-            return;
-        }
-        for (int i : nums) {
-            FragmentConfig c = FragmentConfig.readFromInternalStorage(context, i);
-            configs.add(c);
+
+            addSearchTab();
         }
     }
 
     public CharSequence getPageTitle(int position) {
         if (configs.size() == 0) readConfigs();
+        checkTabMode();
         return configs.get(position).tabName;
     }
 
@@ -115,14 +195,16 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @Override
     public Fragment createFragment(int position) {
         if (configs.size() == 0) readConfigs();
-        return configs.get(position).storeInfoForSearchFragment.isEmpty() ?
-                new ReadFragment(configs.get(position), this, mydb) :
-                new SearchFragment(configs.get(position), imageCache);
+        checkTabMode();
+        return configs.get(position).searchFragmentConfig ?
+                new SearchFragment(configs.get(position), imageCache, this) :
+                new ReadFragment(configs.get(position), this, mydb);
     }
 
     @Override
     public int getItemCount() {
         if (configs.size() == 0) readConfigs();
+        checkTabMode();
         return configs.size();
     }
 }

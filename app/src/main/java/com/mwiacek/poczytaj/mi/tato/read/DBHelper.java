@@ -95,7 +95,8 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages(boolean hidden, Iterator<Page.PageTyp> typ) {
+    public ArrayList<Page> getAllPages(boolean hidden, Iterator<Page.PageTyp> typ,
+                                       String authorFilter, String tagFilter) {
         ArrayList<Page> array_list = new ArrayList<>();
 
         StringBuilder types = new StringBuilder();
@@ -103,6 +104,12 @@ public class DBHelper extends SQLiteOpenHelper {
             if (types.length() > 0) types.append(",");
             types.append("").append(typ.next().ordinal());
         }
+
+        String[] authors = null;
+        if (!authorFilter.isEmpty()) authors = authorFilter.toLowerCase().split(",");
+
+        String[] tags = null;
+        if (!tagFilter.isEmpty()) tags = tagFilter.toLowerCase().split(",");
 
         Cursor res = this.getReadableDatabase().rawQuery(
                 "select * from " + PAGES_TABLE_NAME +
@@ -112,6 +119,41 @@ public class DBHelper extends SQLiteOpenHelper {
         res.moveToFirst();
 
         while (!res.isAfterLast()) {
+            if (authors != null) {
+                boolean ok = true;
+                for (String s : authors) {
+                    //fixme
+                    if (s.trim().startsWith("not ") ==
+                            res.getString(res.getColumnIndex(COLUMN_AUTHOR)).toLowerCase()
+                                    .trim().equals(s.trim().replace("not ", ""))) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (!ok) {
+                    res.moveToNext();
+                    continue;
+                }
+            }
+            if (tags != null && !res.getString(res.getColumnIndex(COLUMN_COMMENTS)).isEmpty()) {
+                boolean ok = true;
+                String[] abc = res.getString(res.getColumnIndex(COLUMN_COMMENTS)).toLowerCase().split(",");
+                for (String s : tags) {
+                    //fixme
+                    for (String ab : abc) {
+                        if (ab.trim().startsWith("not ") == ab.trim().equals(s.trim()
+                                .replace("not ", ""))) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (!ok) break;
+                }
+                if (!ok) {
+                    res.moveToNext();
+                    continue;
+                }
+            }
             array_list.add(new Page(
                     res.getString(res.getColumnIndex(COLUMN_NAME)),
                     res.getString(res.getColumnIndex(COLUMN_AUTHOR)),
