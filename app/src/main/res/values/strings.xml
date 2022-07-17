@@ -3,7 +3,7 @@
     <string name="MENU_CLONE_TAB">Klonuj zakładkę</string>
     <string name="MENU_DELETE_TAB">Usuń zakładkę</string>
     <string name="MENU_CHANGE_TAB_NAME">Zmień nazwę zakładki</string>
-    <string name="MENU_SHOW_SEARCH_TAB">Pokaż zakładkę Szukaj</string>
+    <string name="MENU_SHOW_SEARCH_TAB">Pokaż zakładkę SZUKAJ</string>
     <string name="MENU_EXPORT_EPUB">Zrób EPUB (widoczne i pobrane)</string>
     <string name="MENU_IMPORT_EPUB">Importuj EPUB</string>
     <string name="MENU_SHOW_HIDDEN">Pokaż ukryte</string>

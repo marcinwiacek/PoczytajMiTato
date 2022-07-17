@@ -1,33 +1,35 @@
 package com.mwiacek.poczytaj.mi.tato.read;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ViewSwitcher;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.os.HandlerCompat;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -69,13 +71,13 @@ public class ReadFragment extends Fragment {
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
 
     private final ViewPagerAdapter topPagerAdapter;
-    private AutoCompleteTextView searchTextView2;
     private RecyclerView pageList;
     private PageListRecyclerViewAdapter pageListAdapter;
     private SwipeRefreshLayout refresh;
     private ViewSwitcher viewSwitcher;
     private WebView webView;
     private FrameLayout frameLayout;
+    private ActivityResultLauncher<String> mCreateEPUB;
 
     private int positionInPageList;
 
@@ -89,6 +91,18 @@ public class ReadFragment extends Fragment {
         return config.fileNameTabNum;
     }
 
+    public void notifyAboutUpdates(String url) {
+        pageListAdapter.notifyAboutUpdates(url);
+    }
+
+    public void notifyAboutUpdates(Page.PageTyp typ) {
+        if (config.readInfoForReadFragment.contains(typ)) {
+            pageListAdapter.update(db, config.showHiddenTexts,
+                    config.readInfoForReadFragment.iterator(), config.authorFilter,
+                    config.tagFilter);
+        }
+    }
+
     public void setupRefresh() {
         WorkManager.getInstance(requireContext())
                 .cancelAllWorkByTag("poczytajmitato" + config.fileNameTabNum);
@@ -97,7 +111,6 @@ public class ReadFragment extends Fragment {
                 .setRequiresBatteryNotLow(config.doNotDownloadWithLowBattery)
                 .setRequiresCharging(config.downloadDuringChargingOnly)
                 //      .setRequiredNetworkType()
-
                 //        .setRequiredNetworkType(NetworkType.UNMETERED)
                 .build();
         WorkRequest request = new PeriodicWorkRequest.Builder(UploadWorker.class,
@@ -126,17 +139,9 @@ public class ReadFragment extends Fragment {
         if (pageList.isShown()) System.exit(0);
         db.setPageTop(pageListAdapter.getItem(positionInPageList).url, webView.getScrollY());
         viewSwitcher.showPrevious();
+        webView.loadDataWithBaseURL(null, "",
+                MIME_TYPE, ENCODING, null);
     }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK && resultData != null) {
-            Uri uri = resultData.getData();
-            Utils.createEPUB(getContext(), uri, config.tabName,
-                    pageListAdapter.getAllItems(), config.readInfoForReadFragment);
-        }
-    }
-
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
@@ -151,7 +156,7 @@ public class ReadFragment extends Fragment {
 
         webView.setWebViewClient(new WebViewClient() {
             public void onPageFinished(WebView view, String url) {
-                webView.scrollTo(0, pageListAdapter.getItem(positionInPageList).top);
+                webView.scrollTo(0, db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
             }
         });
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) &&
@@ -175,10 +180,307 @@ public class ReadFragment extends Fragment {
         });
 
         /* Page with list */
-        Button menu = view.findViewById(R.id.menuButton2);
-        searchTextView2 = view.findViewById(R.id.searchTextView2);
+        SearchView searchView = view.findViewById(R.id.mySearch);
         refresh = view.findViewById(R.id.swiperefresh);
         pageList = view.findViewById(R.id.pagesRecyclerView);
+        Toolbar toolbar = view.findViewById(R.id.toolbar);
+        toolbar.addMenuProvider(new MenuProvider() {
+            private final LinkedHashMap<String, Page.PageTyp> hm = new LinkedHashMap<String, Page.PageTyp>() {{
+                put("fantastyka.pl, archiwum", Page.PageTyp.FANTASTYKA_ARCHIWUM);
+                put("fantastyka.pl, biblioteka", Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
+                put("fantastyka.pl, poczekalnia", Page.PageTyp.FANTASTYKA_POCZEKALNIA);
+                put("opowi.pl, fantastyka", Page.PageTyp.OPOWI_FANTASTYKA);
+            }};
+
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                int i = 0;
+                int mainIndex = 0;
+
+                menu.add(0, R.string.MENU_SHOW_HIDDEN, mainIndex++, R.string.MENU_SHOW_HIDDEN)
+                        .setCheckable(true).setChecked(config.showHiddenTexts == FragmentConfig.HiddenTexts.HIDDEN);
+                menu.add(1, R.string.MENU_IMPORT_EPUB, mainIndex++, R.string.MENU_IMPORT_EPUB);
+                menu.add(1, R.string.MENU_EXPORT_EPUB, mainIndex++, R.string.MENU_EXPORT_EPUB);
+                menu.add(1, R.string.MENU_GET_UNREAD_TEXTS, mainIndex++, R.string.MENU_GET_UNREAD_TEXTS);
+                menu.add(1, R.string.MENU_GET_ALL_TEXTS, mainIndex++, R.string.MENU_GET_ALL_TEXTS);
+                menu.add(1, R.string.MENU_GET_ALL_INDEX_PAGES, mainIndex++, R.string.MENU_GET_ALL_INDEX_PAGES);
+                menu.add(2, R.string.MENU_CLONE_TAB, mainIndex++, R.string.MENU_CLONE_TAB);
+                menu.add(2, R.string.MENU_DELETE_TAB, mainIndex++, R.string.MENU_DELETE_TAB)
+                        .setEnabled(ViewPagerAdapter.areMultipleReadTabsAvailable());
+                menu.add(2, R.string.MENU_CHANGE_TAB_NAME, mainIndex++, R.string.MENU_CHANGE_TAB_NAME);
+                menu.add(2, R.string.MENU_SHOW_SEARCH_TAB, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(ViewPagerAdapter.isSearchTabAvailable());
+                menu.add(3, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(config.useTOR);
+                menu.add(3, R.string.MENU_GET_TEXTS_WITH_INDEX, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(config.getTextsWhenRefreshingIndex);
+                for (String s : hm.keySet()) {
+                    menu.add(3, i++, mainIndex++, s).
+                            setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
+                                    config.readInfoForReadFragment.contains(hm.get(s)));
+                }
+                menu.add(3, R.string.MENU_LOCAL_AUTHOR_FILTER, mainIndex++, R.string.MENU_LOCAL_AUTHOR_FILTER)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(!config.authorFilter.isEmpty());
+                menu.add(3, R.string.MENU_LOCAL_TAG_FILTER, mainIndex++, R.string.MENU_LOCAL_TAG_FILTER)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(!config.tagFilter.isEmpty());
+                menu.add(4, i++, mainIndex++,
+                                "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ?
+                                        "x" : config.howOftenRefreshTabInHours) + " godzin")
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(config.howOftenRefreshTabInHours != -1);
+                menu.add(4, i++, mainIndex++,
+                                "Przy błędzie co " +
+                                        (config.howOftenTryToRefreshTabAfterErrorInMinutes == -1 ?
+                                                "x" : config.howOftenTryToRefreshTabAfterErrorInMinutes) +
+                                        " minut").setActionView(R.layout.checkbox_menu_item)
+                        .setCheckable(true).setChecked(config.howOftenTryToRefreshTabAfterErrorInMinutes != -1)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1);
+                menu.add(4, R.string.MENU_DOWNLOAD_ON_WIFI, mainIndex++, R.string.MENU_DOWNLOAD_ON_WIFI)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.downloadWithWifi);
+                menu.add(4, R.string.MENU_DOWNLOAD_ON_GSM, mainIndex++, R.string.MENU_DOWNLOAD_ON_GSM)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.downloadWithGSM);
+                menu.add(4, R.string.MENU_DOWNLOAD_ON_OTHER_NET, mainIndex++, R.string.MENU_DOWNLOAD_ON_OTHER_NET)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.downloadWithOtherNet);
+                menu.add(4, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING, mainIndex++, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.downloadDuringChargingOnly);
+                menu.add(4, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY, mainIndex++, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.doNotDownloadWithLowBattery);
+                menu.add(4, R.string.MENU_NETWORK_WITHOUT_LIMIT, mainIndex++, R.string.MENU_NETWORK_WITHOUT_LIMIT)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.networkWithoutLimit);
+                menu.add(5, R.string.MENU_WRITE_MAIL_TO_AUTHOR, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    menu.setGroupDividerEnabled(true);
+                }
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                if (menuItem.getItemId() == R.string.MENU_LOCAL_AUTHOR_FILTER) {
+                    EditText input = new EditText(getContext());
+                    input.setText(config.authorFilter);
+                    Utils.dialog(requireContext(),
+                            "Podaj autorów (oddzielonych przecinkiem). " +
+                                    "\"not \" na początku autora oznacza zaprzeczenie.", input,
+                            (dialog, which) -> {
+                                menuItem.setChecked(input.getText().toString().isEmpty());
+                                if (!config.authorFilter.equals(input.getText().toString().trim())) {
+                                    config.authorFilter = input.getText().toString().trim();
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                    config.saveToInternalStorage(getContext());
+                                }
+                            }, (dialog, which) -> {
+                                dialog.dismiss();
+                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
+                                    config.tagFilter = input.getText().toString().trim();
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                    config.saveToInternalStorage(getContext());
+                                }
+                                config.saveToInternalStorage(getContext());
+                            });
+                    return false;
+                } else if (menuItem.getItemId() == R.string.MENU_LOCAL_TAG_FILTER) {
+                    EditText input = new EditText(getContext());
+                    input.setText(config.tagFilter);
+                    Utils.dialog(requireContext(),
+                            "Podaj tagi (oddzielone przecinkiem). " +
+                                    "\"not \" na początku taga oznacza zaprzeczenie.", input,
+                            (dialog, which) -> {
+                                menuItem.setChecked(input.getText().toString().isEmpty());
+                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
+                                    config.tagFilter = input.getText().toString().trim();
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                    config.saveToInternalStorage(getContext());
+                                }
+                            }, (dialog, which) -> {
+                                dialog.dismiss();
+                                menuItem.setChecked(false);
+                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
+                                    config.tagFilter = input.getText().toString().trim();
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                    config.saveToInternalStorage(getContext());
+                                }
+                                config.saveToInternalStorage(getContext());
+                            });
+                    return false;
+                }
+                if (menuItem.isCheckable()) {
+                    menuItem.setChecked(!menuItem.isChecked());
+                }
+                for (String s : hm.keySet()) {
+                    if (!menuItem.getTitle().equals(s)) continue;
+                    if (menuItem.isChecked()) {
+                        config.readInfoForReadFragment.add(hm.get(s));
+                    } else {
+                        config.readInfoForReadFragment.remove(hm.get(s));
+                    }
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment.iterator(), config.authorFilter,
+                            config.tagFilter);
+                    break;
+                }
+                if (menuItem.getItemId() == R.string.MENU_SHOW_HIDDEN) {
+                    config.showHiddenTexts = menuItem.isChecked() ?
+                            FragmentConfig.HiddenTexts.HIDDEN : FragmentConfig.HiddenTexts.NONE;
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment.iterator(), config.authorFilter,
+                            config.tagFilter);
+                } else if (menuItem.getItemId() == R.string.MENU_SHOW_SEARCH_TAB) {
+                    if (menuItem.isChecked()) {
+                        topPagerAdapter.addSearchTab();
+                    } else {
+                        topPagerAdapter.deleteSearchTab();
+                    }
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ON_WIFI) {
+                    config.downloadWithWifi = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ON_GSM) {
+                    config.downloadWithGSM = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ON_OTHER_NET) {
+                    config.downloadWithOtherNet = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING) {
+                    config.downloadDuringChargingOnly = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY) {
+                    config.doNotDownloadWithLowBattery = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_NETWORK_WITHOUT_LIMIT) {
+                    config.networkWithoutLimit = menuItem.isChecked();
+                } else if (menuItem.getTitle().toString().startsWith("Pobierz co")) {
+                    if (menuItem.isChecked()) {
+                        EditText input = new EditText(getContext());
+                        input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+                        Utils.dialog(requireContext(),
+                                "Co ile godzin zakładka ma być odświeżana (24 = 1 dzień, " +
+                                        "48 = 2 dni, 168 = tydzień, etc.)", input,
+                                (dialog, which) -> {
+                                    config.howOftenRefreshTabInHours =
+                                            Integer.parseInt(String.valueOf(input.getText()));
+                                    setupRefresh();
+                                    config.saveToInternalStorage(getContext());
+                                }, (dialog, which) -> {
+                                    dialog.dismiss();
+                                    config.howOftenRefreshTabInHours = -1;
+                                    setupRefresh();
+                                    config.saveToInternalStorage(getContext());
+                                });
+                    } else {
+                        config.howOftenRefreshTabInHours = -1;
+                        setupRefresh();
+                    }
+                } else if (menuItem.getTitle().toString().startsWith("Przy błędzie co ")) {
+                    if (menuItem.isChecked()) {
+                        EditText input = new EditText(getContext());
+                        input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+                        Utils.dialog(requireContext(),
+                                "Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu",
+                                input, (dialog, which) -> {
+                                    config.howOftenTryToRefreshTabAfterErrorInMinutes =
+                                            Integer.parseInt(String.valueOf(input.getText()));
+                                    config.saveToInternalStorage(getContext());
+                                }, (dialog, which) -> {
+                                    dialog.dismiss();
+                                    config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
+                                    config.saveToInternalStorage(getContext());
+                                });
+                    } else {
+                        config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
+                    }
+                }
+                if (menuItem.isCheckable()) {
+                    config.saveToInternalStorage(getContext());
+                    return true;
+                }
+                if (menuItem.getItemId() == R.string.MENU_CLONE_TAB) {
+                    EditText input = new EditText(getContext());
+                    Utils.dialog(requireContext(), "Nazwa nowej zakładki", input,
+                            (dialog, which) -> {
+                                try {
+                                    topPagerAdapter.addTab(config, input.getText().toString());
+                                } catch (CloneNotSupportedException e) {
+                                    e.printStackTrace();
+                                }
+                            }, (dialog, which) -> dialog.dismiss());
+                } else if (menuItem.getItemId() == R.string.MENU_CHANGE_TAB_NAME) {
+                    EditText input = new EditText(getContext());
+                    input.setText(config.tabName);
+                    Utils.dialog(requireContext(), "Nowa nazwa zakładki " +
+                                    config.tabName, input,
+                            (dialog, which) -> {
+                                if (!input.getText().toString().equals(config.tabName)) {
+                                    config.tabName = input.getText().toString();
+                                    config.saveToInternalStorage(getContext());
+                                    topPagerAdapter.notifyDataSetChanged();
+                                }
+                            }, (dialog, which) -> dialog.dismiss());
+                } else if (menuItem.getItemId() == R.string.MENU_DELETE_TAB) {
+                    Utils.dialog(requireContext(), "Czy chcesz usunąć zakładkę " +
+                                    config.tabName + "?",
+                            null, (dialog, which) -> topPagerAdapter.deleteTab(config),
+                            (dialog, which) -> dialog.dismiss());
+                } else if (menuItem.getItemId() == R.string.MENU_WRITE_MAIL_TO_AUTHOR) {
+                    Utils.contactMe(getContext());
+                } else if (menuItem.getItemId() == R.string.MENU_GET_UNREAD_TEXTS) {
+                    for (Page p : pageListAdapter.getAllItems()) {
+                        File f = p.getCacheFileName(getContext());
+                        if (f.exists()) continue;
+                        Utils.getPage(p.url, result -> {
+                                    Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                },
+                                mainThreadHandler, threadPoolExecutor);
+                    }
+                } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_TEXTS) {
+                    for (Page p : pageListAdapter.getAllItems()) {
+                        File f = p.getCacheFileName(getContext());
+                        Utils.getPage(p.url, result -> {
+                                    Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
+                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                            config.readInfoForReadFragment.iterator(),
+                                            config.authorFilter, config.tagFilter);
+                                },
+                                mainThreadHandler, threadPoolExecutor);
+                    }
+                } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_INDEX_PAGES) {
+                    for (Page.PageTyp pt : config.readInfoForReadFragment) {
+                        refresh.setRefreshing(true);
+                        Page.getReadInfo(pt).getList(
+                                result -> pageListAdapter.update(db, config.showHiddenTexts,
+                                        config.readInfoForReadFragment.iterator(),
+                                        config.authorFilter, config.tagFilter),
+                                result -> refresh.setRefreshing(false),
+                                mainThreadHandler, threadPoolExecutor, db, getContext(), pt,
+                                -1);
+                    }
+                } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
+                    mCreateEPUB.launch(config.tabName);
+                }
+                return false;
+            }
+        });
 
         pageListAdapter = new PageListRecyclerViewAdapter(requireContext());
         pageListAdapter.setOnClick(position -> {
@@ -187,8 +489,8 @@ public class ReadFragment extends Fragment {
             positionInPageList = position;
             if (f.exists()) {
                 String s = Utils.readFile(f);
-                if (!searchTextView2.getText().toString().trim().isEmpty()) {
-                    String[] toSearch = searchTextView2.getText().toString().trim().split(" ");
+                if (!searchView.getQuery().toString().trim().isEmpty()) {
+                    String[] toSearch = searchView.getQuery().toString().trim().split(" ");
                     for (String ts : toSearch) {
                         s = Utils.findText(s, ts.trim());
                     }
@@ -198,10 +500,14 @@ public class ReadFragment extends Fragment {
                 webView.loadDataWithBaseURL(null, "Czytanie pliku " + p.url,
                         MIME_TYPE, ENCODING, null);
                 Utils.getPage(p.url, result -> {
-                            pageListAdapter.notifyItemChanged(positionInPageList);
+                            for (Fragment ff : getParentFragmentManager().getFragments()) {
+                                if (ff instanceof ReadFragment) {
+                                    ((ReadFragment) ff).notifyAboutUpdates(p.url);
+                                }
+                            }
                             String s = Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
-                            if (!searchTextView2.getText().toString().trim().isEmpty()) {
-                                String[] toSearch = searchTextView2.getText().toString().trim().split(" ");
+                            if (!searchView.getQuery().toString().trim().isEmpty()) {
+                                String[] toSearch = searchView.getQuery().toString().trim().split(" ");
                                 for (String ts : toSearch) {
                                     s = Utils.findText(s, ts.trim());
                                 }
@@ -229,11 +535,15 @@ public class ReadFragment extends Fragment {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                db.setPageVisible(pageListAdapter
-                        .getItem(viewHolder.getAbsoluteAdapterPosition()).url, !config.showHiddenTexts);
-                pageListAdapter.update(db, config.showHiddenTexts,
-                        config.readInfoForReadFragment.iterator(), config.authorFilter,
-                        config.tagFilter);
+                Page p = pageListAdapter
+                        .getItem(viewHolder.getAbsoluteAdapterPosition());
+                db.setPageHidden(p.url, config.showHiddenTexts == FragmentConfig.HiddenTexts.HIDDEN ?
+                        FragmentConfig.HiddenTexts.NONE : FragmentConfig.HiddenTexts.HIDDEN);
+                for (Fragment ff : getParentFragmentManager().getFragments()) {
+                    if (ff instanceof ReadFragment) {
+                        ((ReadFragment) ff).notifyAboutUpdates(p.typ);
+                    }
+                }
             }
 
             /**
@@ -265,370 +575,70 @@ public class ReadFragment extends Fragment {
             for (Page.PageTyp pt : config.readInfoForReadFragment) {
                 refresh.setRefreshing(true);
                 Page.getReadInfo(pt).getList(
-                        result -> pageListAdapter.update(db, config.showHiddenTexts,
-                                config.readInfoForReadFragment.iterator(), config.authorFilter,
-                                config.tagFilter),
+                        result -> {
+                            for (Fragment ff : getParentFragmentManager().getFragments()) {
+                                if (ff instanceof ReadFragment) {
+                                    ((ReadFragment) ff).notifyAboutUpdates(pt);
+                                }
+                            }
+                        },
                         result -> refresh.setRefreshing(false),
                         mainThreadHandler, threadPoolExecutor, db, getContext(), pt,
                         new DBHelper(getContext()).checkIfTypIsCompletelyRead(pt) ? 3 : -1);
             }
         });
 
-        Button search = view.findViewById(R.id.searchButton2);
-        search.setOnClickListener(v -> {
-            if (searchTextView2.getText().toString().trim().isEmpty()) {
-                pageListAdapter.update(db, config.showHiddenTexts,
-                        config.readInfoForReadFragment.iterator(),
-                        config.authorFilter, config.tagFilter);
-            }
-            ArrayList<Page> list = new ArrayList<>();
-            String[] toSearch = searchTextView2.getText().toString().trim().split(" ");
-            for (Page p : db.getAllPages(config.showHiddenTexts,
-                    config.readInfoForReadFragment.iterator(), config.authorFilter, config.tagFilter)) {
-                File f = p.getCacheFileName(getContext());
-
-                for (String ts : toSearch) {
-                    if (Utils.contaisText(p.name, ts.trim()) || Utils.contaisText(p.tags, ts.trim()) ||
-                            Utils.contaisText(p.author, ts.trim())) {
-                        list.add(p);
-                        f = null;
-                        break;
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                ArrayList<Page> list = new ArrayList<>();
+                String[] toSearch = query.trim().split(" ");
+                for (Page p : db.getAllPages(config.showHiddenTexts,
+                        config.readInfoForReadFragment.iterator(), config.authorFilter, config.tagFilter)) {
+                    File f = p.getCacheFileName(getContext());
+                    for (String ts : toSearch) {
+                        if (Utils.contaisText(p.name, ts.trim()) || Utils.contaisText(p.tags, ts.trim()) ||
+                                Utils.contaisText(p.author, ts.trim())) {
+                            list.add(p);
+                            f = null;
+                            break;
+                        }
+                    }
+                    if (f == null) continue;
+                    if (!f.exists()) continue;
+                    String s = Utils.readFile(f);
+                    for (String ts : toSearch) {
+                        if (Utils.contaisText(s, ts.trim())) {
+                            list.add(p);
+                            break;
+                        }
                     }
                 }
-                if (f == null) continue;
-                if (!f.exists()) continue;
-                String s = Utils.readFile(f);
-                for (String ts : toSearch) {
-                    if (Utils.contaisText(s, ts.trim())) {
-                        list.add(p);
-                        break;
-                    }
-                }
-            }
-            pageListAdapter.update(list, toSearch);
-        });
-
-      /*  ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                result -> {
-                    if (result) Utils.createEPUB(getContext(), config.tabName,
-                            pageListAdapter.getAllItems(), config.readInfoForReadFragment);
-                });
-*/
-        menu.setOnClickListener(view1 -> {
-            LinkedHashMap<String, Page.PageTyp> hm = new LinkedHashMap<String, Page.PageTyp>() {{
-                put("fantastyka.pl, archiwum", Page.PageTyp.FANTASTYKA_ARCHIWUM);
-                put("fantastyka.pl, biblioteka", Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
-                put("fantastyka.pl, poczekalnia", Page.PageTyp.FANTASTYKA_POCZEKALNIA);
-                put("opowi.pl, fantastyka", Page.PageTyp.OPOWI_FANTASTYKA);
-            }};
-            int i = 0;
-            int mainIndex = 0;
-            PopupMenu popupMenu = new PopupMenu(requireContext(), menu);
-            popupMenu.getMenu().add(0, i++, mainIndex++, R.string.MENU_SHOW_HIDDEN)
-                    .setCheckable(true).setChecked(config.showHiddenTexts);
-            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_IMPORT_EPUB);
-            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_EXPORT_EPUB);
-                  /*  .setEnabled(!(ContextCompat.checkSelfPermission(requireContext(),
-                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                            == PackageManager.PERMISSION_DENIED &&
-                            !ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
-                                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE)));*/
-            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_UNREAD_TEXTS);
-            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_ALL_TEXTS);
-            popupMenu.getMenu().add(1, i++, mainIndex++, R.string.MENU_GET_ALL_INDEX_PAGES);
-            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_CLONE_TAB);
-            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_DELETE_TAB)
-                    .setEnabled(ViewPagerAdapter.areMultipleReadTabsAvailable());
-            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_CHANGE_TAB_NAME);
-            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(ViewPagerAdapter.isSearchTabAvailable());
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_USE_TOR)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(config.useTOR);
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(config.getTextsWhenRefreshingIndex);
-            for (String s : hm.keySet()) {
-                popupMenu.getMenu().add(3, i++, mainIndex++, s).
-                        setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
-                                config.readInfoForReadFragment.contains(hm.get(s)));
-            }
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_LOCAL_AUTHOR_FILTER)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(!config.authorFilter.isEmpty());
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_LOCAL_TAG_FILTER)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(!config.tagFilter.isEmpty());
-            popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ?
-                                    "x" : config.howOftenRefreshTabInHours) + " godzin")
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(config.howOftenRefreshTabInHours != -1);
-            popupMenu.getMenu().add(4, i++, mainIndex++,
-                            "Przy błędzie co " +
-                                    (config.howOftenTryToRefreshTabAfterErrorInMinutes == -1 ?
-                                            "x" : config.howOftenTryToRefreshTabAfterErrorInMinutes) +
-                                    " minut").setActionView(R.layout.checkbox_menu_item)
-                    .setCheckable(true).setChecked(config.howOftenTryToRefreshTabAfterErrorInMinutes != -1)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_WIFI)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.downloadWithWifi);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_GSM)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.downloadWithGSM);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ON_OTHER_NET)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.downloadWithOtherNet);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.downloadDuringChargingOnly);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.doNotDownloadWithLowBattery);
-            popupMenu.getMenu().add(4, i++, mainIndex++, R.string.MENU_NETWORK_WITHOUT_LIMIT)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setEnabled(config.howOftenRefreshTabInHours != -1)
-                    .setChecked(config.networkWithoutLimit);
-            popupMenu.getMenu().add(5, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                popupMenu.getMenu().setGroupDividerEnabled(true);
-            }
-
-            popupMenu.setOnMenuItemClickListener(item -> {
-                if (item.getTitle().equals(getString(R.string.MENU_LOCAL_AUTHOR_FILTER))) {
-                    EditText input = new EditText(getContext());
-                    input.setText(config.authorFilter);
-                    Utils.dialog(requireContext(),
-                            "Podaj autorów (oddzielonych przecinkiem). " +
-                                    "\"not \" na początku autora oznacza zaprzeczenie.", input,
-                            (dialog, which) -> {
-                                item.setChecked(input.getText().toString().isEmpty());
-                                if (!config.authorFilter.equals(input.getText().toString().trim())) {
-                                    config.authorFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                            }, (dialog, which) -> {
-                                dialog.dismiss();
-                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
-                                    config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                                config.saveToInternalStorage(getContext());
-                            });
-                    return false;
-                } else if (item.getTitle().equals(getString(R.string.MENU_LOCAL_TAG_FILTER))) {
-                    EditText input = new EditText(getContext());
-                    input.setText(config.tagFilter);
-                    Utils.dialog(requireContext(),
-                            "Podaj tagi (oddzielone przecinkiem). " +
-                                    "\"not \" na początku taga oznacza zaprzeczenie.", input,
-                            (dialog, which) -> {
-                                item.setChecked(input.getText().toString().isEmpty());
-                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
-                                    config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                            }, (dialog, which) -> {
-                                dialog.dismiss();
-                                item.setChecked(false);
-                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
-                                    config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                                config.saveToInternalStorage(getContext());
-                            });
-                    return false;
-                }
-                if (item.isCheckable()) {
-                    item.setChecked(!item.isChecked());
-                }
-                for (String s : hm.keySet()) {
-                    if (!item.getTitle().equals(s)) continue;
-                    if (item.isChecked()) {
-                        config.readInfoForReadFragment.add(hm.get(s));
-                    } else {
-                        config.readInfoForReadFragment.remove(hm.get(s));
-                    }
-                    pageListAdapter.update(db, config.showHiddenTexts,
-                            config.readInfoForReadFragment.iterator(), config.authorFilter,
-                            config.tagFilter);
-                    break;
-                }
-                if (item.getTitle().equals(getString(R.string.MENU_SHOW_HIDDEN))) {
-                    config.showHiddenTexts = item.isChecked();
-                    pageListAdapter.update(db, config.showHiddenTexts,
-                            config.readInfoForReadFragment.iterator(), config.authorFilter,
-                            config.tagFilter);
-                } else if (item.getTitle().equals(getString(R.string.MENU_SHOW_SEARCH_TAB))) {
-                    if (item.isChecked()) {
-                        topPagerAdapter.addSearchTab();
-                    } else {
-                        topPagerAdapter.deleteSearchTab();
-                    }
-                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_WIFI))) {
-                    config.downloadWithWifi = item.isChecked();
-                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_GSM))) {
-                    config.downloadWithGSM = item.isChecked();
-                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ON_OTHER_NET))) {
-                    config.downloadWithOtherNet = item.isChecked();
-                } else if (item.getTitle().equals(getString(R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING))) {
-                    config.downloadDuringChargingOnly = item.isChecked();
-                } else if (item.getTitle().equals(getString(R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY))) {
-                    config.doNotDownloadWithLowBattery = item.isChecked();
-                } else if (item.getTitle().equals(getString(R.string.MENU_NETWORK_WITHOUT_LIMIT))) {
-                    config.networkWithoutLimit = item.isChecked();
-                } else if (item.getTitle().toString().startsWith("Pobierz co")) {
-                    if (item.isChecked()) {
-                        EditText input = new EditText(getContext());
-                        input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        Utils.dialog(requireContext(),
-                                "Co ile godzin zakładka ma być odświeżana (24 = 1 dzień, "+
-                                        "48 = 2 dni, 168 = tydzień, etc.)", input,
-                                (dialog, which) -> {
-                                    config.howOftenRefreshTabInHours =
-                                            Integer.parseInt(String.valueOf(input.getText()));
-                                    setupRefresh();
-                                    config.saveToInternalStorage(getContext());
-                                }, (dialog, which) -> {
-                                    dialog.dismiss();
-                                    config.howOftenRefreshTabInHours = -1;
-                                    setupRefresh();
-                                    config.saveToInternalStorage(getContext());
-                                });
-                    } else {
-                        config.howOftenRefreshTabInHours = -1;
-                        setupRefresh();
-                    }
-                } else if (item.getTitle().toString().startsWith("Przy błędzie co ")) {
-                    if (item.isChecked()) {
-                        EditText input = new EditText(getContext());
-                        input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        Utils.dialog(requireContext(),
-                                "Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu",
-                                input, (dialog, which) -> {
-                                    config.howOftenTryToRefreshTabAfterErrorInMinutes =
-                                            Integer.parseInt(String.valueOf(input.getText()));
-                                    config.saveToInternalStorage(getContext());
-                                }, (dialog, which) -> {
-                                    dialog.dismiss();
-                                    config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
-                                    config.saveToInternalStorage(getContext());
-                                });
-                    } else {
-                        config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
-                    }
-                }
-                if (item.isCheckable()) {
-                    config.saveToInternalStorage(getContext());
-                    return true;
-                }
-                if (item.getTitle().equals(getString(R.string.MENU_CLONE_TAB))) {
-                    EditText input = new EditText(getContext());
-                    Utils.dialog(requireContext(), "Nazwa nowej zakładki", input,
-                            (dialog, which) -> {
-                                try {
-                                    topPagerAdapter.addTab(config, input.getText().toString());
-                                } catch (CloneNotSupportedException e) {
-                                    e.printStackTrace();
-                                }
-                            }, (dialog, which) -> dialog.dismiss());
-                } else if (item.getTitle().equals(getString(R.string.MENU_CHANGE_TAB_NAME))) {
-                    EditText input = new EditText(getContext());
-                    input.setText(config.tabName);
-                    Utils.dialog(requireContext(), "Nowa nazwa zakładki " +
-                                    config.tabName, input,
-                            (dialog, which) -> {
-                                if (!input.getText().toString().equals(config.tabName)) {
-                                    config.tabName = input.getText().toString();
-                                    config.saveToInternalStorage(getContext());
-                                    topPagerAdapter.notifyDataSetChanged();
-                                }
-                            }, (dialog, which) -> dialog.dismiss());
-                } else if (item.getTitle().equals(getString(R.string.MENU_DELETE_TAB))) {
-                    Utils.dialog(requireContext(), "Czy chcesz usunąć zakładkę " +
-                                    config.tabName + "?",
-                            null, (dialog, which) -> topPagerAdapter.deleteTab(config),
-                            (dialog, which) -> dialog.dismiss());
-                } else if (item.getTitle().equals(getString(R.string.MENU_WRITE_MAIL_TO_AUTHOR))) {
-                    Utils.contactMe(getContext());
-                } else if (item.getTitle().equals(getString(R.string.MENU_GET_UNREAD_TEXTS))) {
-                    for (Page p : pageListAdapter.getAllItems()) {
-                        File f = p.getCacheFileName(getContext());
-                        if (f.exists()) continue;
-                        Utils.getPage(p.url, result -> {
-                                    Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                },
-                                mainThreadHandler, threadPoolExecutor);
-                    }
-                } else if (item.getTitle().equals(getString(R.string.MENU_GET_ALL_TEXTS))) {
-                    for (Page p : pageListAdapter.getAllItems()) {
-                        File f = p.getCacheFileName(getContext());
-                        Utils.getPage(p.url, result -> {
-                                    Page.getReadInfo(p.typ).getOpkoFromSinglePage(result.toString(), f);
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment.iterator(),
-                                            config.authorFilter, config.tagFilter);
-                                },
-                                mainThreadHandler, threadPoolExecutor);
-                    }
-                } else if (item.getTitle().equals(getString(R.string.MENU_GET_ALL_INDEX_PAGES))) {
-                    for (Page.PageTyp pt : config.readInfoForReadFragment) {
-                        refresh.setRefreshing(true);
-                        Page.getReadInfo(pt).getList(
-                                result -> pageListAdapter.update(db, config.showHiddenTexts,
-                                        config.readInfoForReadFragment.iterator(),
-                                        config.authorFilter, config.tagFilter),
-                                result -> refresh.setRefreshing(false),
-                                mainThreadHandler, threadPoolExecutor, db, getContext(), pt,
-                                -1);
-                    }
-                } else if (item.getTitle().equals(getString(R.string.MENU_EXPORT_EPUB))) {
-                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("application/zip");  //epub+zip
-                    intent.putExtra(Intent.EXTRA_TITLE, "invoice");
-                    //intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri);
-                    startActivityForResult(intent, 1);
-/*
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
-                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                        Snackbar.make(view, "Aplikacja musi zapisać plik na dysk." +
-                                                "Przyznaj uprawnienie WRITE_EXTERNAL_STORAGE.",
-                                        Snackbar.LENGTH_INDEFINITE)
-                                .setAction("OK", view2 ->
-                                        requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-                                .show();
-                    } else {
-                        requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                    }*/
-                }
+                pageListAdapter.update(list, toSearch);
                 return false;
-            });
-            popupMenu.show();
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
         });
+        View closeButton = searchView.findViewById(androidx.appcompat.R.id.search_close_btn);
+        closeButton.setOnClickListener(v -> {
+            searchView.setQuery("", true);
+            searchView.clearFocus();
+            pageListAdapter.update(db, config.showHiddenTexts,
+                    config.readInfoForReadFragment.iterator(),
+                    config.authorFilter, config.tagFilter);
+        });
+
+        mCreateEPUB = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("application/zip"), //epub+zip
+                uri -> Utils.createEPUB(getContext(), uri, config.tabName,
+                        pageListAdapter.getAllItems(),
+                        config.readInfoForReadFragment));
+
+
         return view;
     }
 }

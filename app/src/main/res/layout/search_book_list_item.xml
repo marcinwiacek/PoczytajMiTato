@@ -4,10 +4,10 @@
     android:layout_height="100dip">
 
     <ImageView
-        android:contentDescription="Miniatura"
         android:id="@+id/BookImage"
         android:layout_width="90sp"
-        android:layout_height="90sp" />
+        android:layout_height="90sp"
+        android:contentDescription="Miniatura" />
 
     <LinearLayout
         android:layout_width="match_parent"

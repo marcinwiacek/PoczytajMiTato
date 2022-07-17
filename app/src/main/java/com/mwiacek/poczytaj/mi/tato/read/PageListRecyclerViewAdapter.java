@@ -17,6 +17,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 
@@ -43,10 +44,10 @@ public class PageListRecyclerViewAdapter extends
             for (String s : search) {
                 String x = Utils.findText(text, s.trim());
                 while (x.length() != text.length()) {
-                    int i = x.indexOf("<ins style='background-color:yellow'>");
-                    x = x.replace("<ins style='background-color:yellow'>", "");
-                    int j = x.indexOf("</ins>");
-                    x = x.replace("</ins>", "");
+                    int i = x.indexOf(Utils.BEFORE_HIGHLIGHT);
+                    x = x.replace(Utils.BEFORE_HIGHLIGHT, "");
+                    int j = x.indexOf(Utils.AFTER_HIGHLIGHT);
+                    x = x.replace(Utils.AFTER_HIGHLIGHT, "");
                     WordtoSpan.setSpan(new BackgroundColorSpan(Color.YELLOW),
                             i, j, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     WordtoSpan.setSpan(new UnderlineSpan(),
@@ -57,10 +58,20 @@ public class PageListRecyclerViewAdapter extends
         return WordtoSpan;
     }
 
+    public void notifyAboutUpdates(String url) {
+        for (int i = 0; i < mData.size(); i++) {
+            if (mData.get(i).url.equals(url)) {
+                notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
     @SuppressLint("NotifyDataSetChanged")
-    public void update(DBHelper mydb, boolean hidden, Iterator<Page.PageTyp> typ,
+    public void update(DBHelper mydb, FragmentConfig.HiddenTexts hidden, Iterator<Page.PageTyp> typ,
                        String authorFilter, String tagFilter) {
         mData = mydb.getAllPages(hidden, typ, authorFilter, tagFilter);
+        this.search = null;
         this.notifyDataSetChanged();
     }
 

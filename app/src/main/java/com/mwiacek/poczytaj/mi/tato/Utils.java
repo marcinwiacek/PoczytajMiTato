@@ -1,28 +1,21 @@
 package com.mwiacek.poczytaj.mi.tato;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.DownloadManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.text.Html;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.read.Page;
@@ -50,6 +43,8 @@ import java.util.zip.ZipOutputStream;
 import javax.net.ssl.HttpsURLConnection;
 
 public class Utils {
+    public final static String BEFORE_HIGHLIGHT = "<ins style='background-color:yellow'>";
+    public final static String AFTER_HIGHLIGHT = "</ins>";
 
     public static void dialog(Context context, String message, View view,
                               android.content.DialogInterface.OnClickListener OKListener,
@@ -173,7 +168,7 @@ public class Utils {
             context.startActivity(i);
             return;
         }
-      /*  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+       /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_DENIED) {
                 ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
@@ -183,19 +178,18 @@ public class Utils {
                 return;
             }
         }*/
-        File path = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS);
+//        File path = Environment.getExternalStoragePublicDirectory(
+        //              Environment.DIRECTORY_DOWNLOADS);
 
         DownloadManager downloadmanager = (DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
-
         File f = new File("" + uri);
 
         DownloadManager.Request request = new DownloadManager.Request(uri);
         request.setTitle(f.getName());
         request.setDescription(title);
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationUri(Uri.parse("file://" + path + "/" + f.getName()));
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName());
         downloadmanager.enqueue(request);
     }
 
@@ -220,25 +214,12 @@ public class Utils {
 
     public static void createEPUB(Context context, Uri file, String tabName, List<Page> list,
                                   HashSet<Page.PageTyp> types) {
+        if (file == null) return;
         NotificationCompat.Builder builder =
                 Notifications.setupNotification(Notifications.Channels.ZAPIS_W_URZADZENIU, context,
                         "Tworzenie pliku EPUB");
         Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
         try {
-         /*   int z = 0;
-            String longFileName;
-            String shortFileName;
-
-            while (true) {
-                longFileName = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                        .getPath() + File.separator +
-                        tabName.replaceAll("[^A-Za-z0-9]", "") +
-                        (z == 0 ? "" : z) + ".zip";
-                File f = new File(longFileName);
-                if (!f.exists()) break;
-                z++;
-            }*/
-
             String shortFileName = tabName.replaceAll("[^A-Za-z0-9]", "") + ".zip";
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(
                     context.getContentResolver().openOutputStream(file)));
@@ -250,13 +231,12 @@ public class Utils {
                 if (arr[0] == Page.PageTyp.FANTASTYKA_POCZEKALNIA) coverName = "cover2.jpg";
                 if (arr[0] == Page.PageTyp.FANTASTYKA_ARCHIWUM) coverName = "cover3.jpg";
             }
-            Utils.addZipFile("OEBPS/" + coverName, out,
-                    context.getAssets().open(coverName));
+            Utils.addZipFile("OEBPS/" + coverName, out, context.getAssets().open(coverName));
 
-            String tocTocNCX = "";
-            String tocTocXHTML = "";
-            String tocContentOpf1 = "";
-            String tocContentOpf2 = "";
+            StringBuilder tocTocNCX = new StringBuilder();
+            StringBuilder tocTocXHTML = new StringBuilder();
+            StringBuilder tocContentOpf1 = new StringBuilder();
+            StringBuilder tocContentOpf2 = new StringBuilder();
             String tocContentOpf3 = "";
             for (int j = 0; j < list.size(); j++) {
                 Page p = list.get(j);
@@ -280,24 +260,26 @@ public class Utils {
                                     "<body xml:lang=\"pl\" lang=\"pl\">\n" +
                                     "Autor: " + p.author + "<br/>\n" +
                                     "Info: " + p.tags + "<br/>\n" +
-                                    "Pobrane: <a href=\""+p.url+"\">"+d+"</a><br/>\n"+
+                                    "Pobrane: <a href=\"" + p.url + "\">" + d + "</a><br/>\n" +
                                     "<hr/>\n" +
                                     readFile(f) +
                                     "</body>\n</html>");
-                    tocTocNCX += "<navPoint id=\"index_" + j + "\" playOrder=\"" + j + "\">\n" +
-                            "<navLabel>\n" +
-                            "<text>" + p.name + "</text>\n" +
-                            "</navLabel>\n" +
-                            "<content src=\"" + j + ".xhtml\"/>\n" +
-                            "</navPoint>\n";
+                    tocTocNCX.append("<navPoint id=\"index_").append(j).append("\" playOrder=\"")
+                            .append(j).append("\">\n")
+                            .append("<navLabel>\n")
+                            .append("<text>").append(p.name).append("</text>\n")
+                            .append("</navLabel>\n")
+                            .append("<content src=\"").append(j).append(".xhtml\"/>\n")
+                            .append("</navPoint>\n");
 
-                    tocTocXHTML += "<li>\n" +
-                            "<a href=\"" + j + ".xhtml\">" + p.name + "</a>\n" +
-                            "</li>\n";
+                    tocTocXHTML.append("<li>\n" + "<a href=\"").append(j).append(".xhtml\">")
+                            .append(p.name).append("</a>\n").append("</li>\n");
 
-                    tocContentOpf1 += "<item id=\"" + j + "_xhtml\" media-type=\"application/xhtml+xml\" href=\"" + j + ".xhtml\" />\n";
+                    tocContentOpf1.append("<item id=\"").append(j)
+                            .append("_xhtml\" media-type=\"application/xhtml+xml\" href=\"")
+                            .append(j).append(".xhtml\" />\n");
 
-                    tocContentOpf2 += "<itemref idref=\"" + j + "_xhtml\"/>\n";
+                    tocContentOpf2.append("<itemref idref=\"").append(j).append("_xhtml\"/>\n");
 
                     if (tocContentOpf3.isEmpty()) {
                         tocContentOpf3 = "<reference href=\"" + j + ".xhtml\" type=\"text\" title=\"Tekst\"/>\n";
@@ -429,8 +411,8 @@ public class Utils {
                         0, intent, PendingIntent.FLAG_IMMUTABLE);
             }*/
 
-           // builder.setContentText("Zapisano plik EPUB " + shortFileName).setContentIntent(pendingIntent);
-           // Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+            // builder.setContentText("Zapisano plik EPUB " + shortFileName).setContentIntent(pendingIntent);
+            // Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
         } catch (Exception e) {
             builder.setContentText("Błąd zapisu pliku EPUB");
             Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
@@ -473,7 +455,7 @@ public class Utils {
                         .replace("s", "\\E[sśŚ]\\Q")
                         .replace("z", "\\E[zźżŻŹ]\\Q")
                         + "\\E))",
-                "<ins style='background-color:yellow'>$1</ins>");
+                BEFORE_HIGHLIGHT + "$1" + AFTER_HIGHLIGHT);
     }
 
     public static boolean contaisText(String s, String s2) {

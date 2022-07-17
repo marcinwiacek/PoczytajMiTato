@@ -10,109 +10,79 @@
         android:layout_height="match_parent"
         android:inAnimation="@android:anim/slide_in_left">
 
-        <RelativeLayout
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:inAnimation="@android:anim/slide_in_left"
             android:outAnimation="@android:anim/slide_out_right">
 
-            <AutoCompleteTextView
-                android:id="@+id/searchTextView"
+            <com.google.android.material.appbar.AppBarLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_alignBottom="@+id/searchButton"
-                android:layout_toStartOf="@+id/searchButton"
-                android:layout_toLeftOf="@+id/searchButton"
-                android:hint="Szukaj online"
-                android:inputType="text"
-                android:maxLines="1"
-                android:text="" />
+                android:layout_height="?attr/actionBarSize"
+                android:fitsSystemWindows="false">
 
-            <Button
-                android:id="@+id/searchButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_toStartOf="@+id/menuButton"
-                android:layout_toLeftOf="@+id/menuButton"
-                android:text="Szukaj" />
+                <com.google.android.material.appbar.CollapsingToolbarLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layout_scrollFlags="scroll|enterAlways">
 
-            <Button
-                android:id="@+id/menuButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentRight="true"
-                android:text="Menu" />
+                    <androidx.appcompat.widget.Toolbar
+                        android:id="@+id/toolbar3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/colorPrimary"
+                        android:theme="?attr/actionBarTheme"
+                        app:layout_collapseMode="pin">
+
+                        <androidx.appcompat.widget.SearchView
+                            android:id="@+id/mySearch3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="start"
+                            app:iconifiedByDefault="false"
+                            app:layout_collapseMode="pin"
+                            app:queryHint="Szukaj" />
+
+                    </androidx.appcompat.widget.Toolbar>
+
+                </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+            </com.google.android.material.appbar.AppBarLayout>
 
             <ProgressBar
-                android:id="@+id/progressBar"
+                android:id="@+id/progressBar3"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_below="@+id/searchTextView"
                 android:max="100" />
 
-            <CheckBox
-                android:id="@+id/freeCheckBox"
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swiperefresh3"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/progressBar"
-                android:text="tylko darmowe"
-                android:visibility="gone" />
+                app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-            <TextView
-                android:id="@+id/resultTypeTextView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_below="@+id/freeCheckBox"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:textSize="16sp"
-                android:visibility="gone" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/booksListListView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingBottom="?attr/actionBarSize"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/booksListListView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_below="@+id/resultTypeTextView"
-                android:paddingBottom="?attr/actionBarSize"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-        </RelativeLayout>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-        <RelativeLayout
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
-            <Button
-                android:id="@+id/backButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentLeft="true"
-                android:layout_alignParentTop="true"
-                android:text="&lt;&lt;" />
-
-            <TextView
-                android:id="@+id/titleTextView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_alignBottom="@+id/backButton"
-                android:layout_toEndOf="@+id/backButton"
-                android:layout_toRightOf="@+id/backButton"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text=""
-                android:textSize="16sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/bookListListView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/backButton"
                 android:paddingBottom="?attr/actionBarSize"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-        </RelativeLayout>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </ViewSwitcher>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

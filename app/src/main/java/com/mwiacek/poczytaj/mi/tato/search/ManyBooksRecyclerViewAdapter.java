@@ -1,13 +1,12 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -37,21 +36,22 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
     private final FragmentConfig config;
     private final ArrayList<ManyBooks> mData = new ArrayList<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private final Button mSearchButton;
-    private final AutoCompleteTextView mSearchTextView;
+    //private final Button mSearchButton;
+    //   private final AutoCompleteTextView mSearchTextView;
     private final ProgressBar mProgressBar;
     private final ImageCache mImageCache;
     private final Utils.OnItemClicked mOnClick;
     private int pageNumber = 0;
     private int sitesProcessed;
 
-    public ManyBooksRecyclerViewAdapter(FragmentConfig config, Button mSearchButton,
-                                        AutoCompleteTextView mSearchTextView,
+    public ManyBooksRecyclerViewAdapter(FragmentConfig config,
+                                        //Button mSearchButton,
+                                        // AutoCompleteTextView mSearchTextView,
                                         ProgressBar mProgressBar, ImageCache imageCache,
                                         Utils.OnItemClicked mOnClick) {
         this.config = config;
-        this.mSearchButton = mSearchButton;
-        this.mSearchTextView = mSearchTextView;
+        //  this.mSearchButton = mSearchButton;
+        //  this.mSearchTextView = mSearchTextView;
         this.mProgressBar = mProgressBar;
         this.mImageCache = imageCache;
         this.mOnClick = mOnClick;
@@ -93,7 +93,7 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void makeSearch(boolean pageNumberAdd) {
+    public void makeSearch(Context context, boolean pageNumberAdd, String stringToSearch) {
         if (!pageNumberAdd) {
             mData.clear();
             notifyDataSetChanged();
@@ -101,8 +101,7 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
         pageNumber = pageNumberAdd ? pageNumber + 1 : 0;
         sitesProcessed = 0;
         StoreInfo st;
-        Toast.makeText(mSearchButton.getContext(),
-                "szukanie", Toast.LENGTH_LONG);
+        Toast.makeText(context, "szukanie", Toast.LENGTH_LONG);
         for (StoreInfo.StoreInfoTyp info : config.storeInfoForSearchFragment) {
             if (info == StoreInfo.StoreInfoTyp.IBUK) {
                 st = new IBUK();
@@ -120,15 +119,14 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
             StoreInfo finalSt = st;
             executor.execute(() -> {
                 mProgressBar.setProgress(0);
-                String[] urls = finalSt.getSearchUrl(mSearchTextView.getText().toString(), pageNumber);
+                String[] urls = finalSt.getSearchUrl(stringToSearch, pageNumber);
                 for (String singleURL : urls) {
                     try {
                         StringBuilder content = Utils.getPageContent(singleURL);
                         if (!content.toString().isEmpty()) {
                             System.out.println(
                                     "Wyniki z serwisu " + info.name());
-                            finalSt.doesItMatch(mSearchTextView.getText().toString(),
-                                    singleURL, content, mData, lock,
+                            finalSt.doesItMatch(stringToSearch, singleURL, content, mData, lock,
                                     this);
                         } else {
                             System.out.println(
@@ -146,8 +144,8 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                         @Override
                         public void handleMessage(Message msg) {
                             mProgressBar.setProgress(0);
-                            mSearchButton.setEnabled(true);
-                            mSearchTextView.setEnabled(true);
+                            //mSearchButton.setEnabled(true);
+                            //mSearchTextView.setEnabled(true);
                             //   mAdapter.notifyDataSetChanged();
                             /*Collections.sort(mData, new Comparator<CustomData>() {
                                 @Override

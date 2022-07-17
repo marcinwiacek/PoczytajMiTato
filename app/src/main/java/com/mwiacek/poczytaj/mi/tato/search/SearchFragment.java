@@ -7,23 +7,22 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,8 +41,9 @@ public class SearchFragment extends Fragment {
     private final ViewPagerAdapter topPagerAdapter;
     private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;
     private SingleBookRecyclerViewAdapter singleBookRecyclerViewAdapter;
-    private ArrayAdapter searchTextAdapter;
     private ViewSwitcher viewSwitcher;
+    private SearchView searchView;
+    private RecyclerView manyBooksRecyclerView;
     private boolean isLoadingMoreBooks = false;
 
     public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
@@ -53,6 +53,9 @@ public class SearchFragment extends Fragment {
     }
 
     public void onBackPressed() {
+        System.out.println("jest back");
+        if (manyBooksRecyclerView.isShown()) System.exit(0);
+        viewSwitcher.showPrevious();
         System.exit(0);
     }
 
@@ -75,7 +78,7 @@ public class SearchFragment extends Fragment {
             //    rowsArrayList.remove(rowsArrayList.size() - 1);
             //     int scrollPosition = rowsArrayList.size();
             //     manyBooksRecyclerViewAdapter.notifyItemRemoved(scrollPosition);
-            manyBooksRecyclerViewAdapter.makeSearch(true);
+            manyBooksRecyclerViewAdapter.makeSearch(requireContext(), true, searchView.getQuery().toString());
             //  manyBooksRecyclerViewAdapter.notifyDataSetChanged();
             isLoadingMoreBooks = false;
         }, 1000);
@@ -88,9 +91,9 @@ public class SearchFragment extends Fragment {
         viewSwitcher = view.findViewById(R.id.viewSwitcher);
 
         /* Page with single book */
-        TextView titleTextView = view.findViewById(R.id.titleTextView);
+        //TextView titleTextView = view.findViewById(R.id.titleTextView);
         RecyclerView singleBookRecyclerView = view.findViewById(R.id.bookListListView);
-        Button mBackButton = view.findViewById(R.id.backButton);
+        //  Button mBackButton = view.findViewById(R.id.backButton);
 
         singleBookRecyclerViewAdapter = new SingleBookRecyclerViewAdapter(imageCache, getContext(),
                 position -> {
@@ -100,18 +103,20 @@ public class SearchFragment extends Fragment {
                 });
         singleBookRecyclerView.setAdapter(singleBookRecyclerViewAdapter);
         singleBookRecyclerView.setItemAnimator(null);
+        singleBookRecyclerView.addItemDecoration(new DividerItemDecoration(requireContext(),
+                DividerItemDecoration.VERTICAL));
 
-        mBackButton.setOnClickListener(v -> viewSwitcher.showPrevious());
+
+        //   mBackButton.setOnClickListener(v -> viewSwitcher.showPrevious());
 
         /* Page with many books */
-        Button searchButton = view.findViewById(R.id.searchButton);
-        AutoCompleteTextView searchTextView = view.findViewById(R.id.searchTextView);
-        ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
-        RecyclerView manyBooksRecyclerView = view.findViewById(R.id.booksListListView);
-        Button menu = view.findViewById(R.id.menuButton);
+        searchView = view.findViewById(R.id.mySearch3);
+        ProgressBar mProgressBar = view.findViewById(R.id.progressBar3);
+        manyBooksRecyclerView = view.findViewById(R.id.booksListListView);
+        Toolbar toolbar = view.findViewById(R.id.toolbar3);
 
-        manyBooksRecyclerViewAdapter = new ManyBooksRecyclerViewAdapter(config, searchButton,
-                searchTextView, mProgressBar, imageCache, position -> {
+        manyBooksRecyclerViewAdapter = new ManyBooksRecyclerViewAdapter(config, mProgressBar,
+                imageCache, position -> {
             ManyBooks books = manyBooksRecyclerViewAdapter.getItem(position);
             SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
             if (books.items.size() == 1) {
@@ -120,11 +125,12 @@ public class SearchFragment extends Fragment {
                 return;
             }
             singleBookRecyclerViewAdapter.refreshData(books.items);
-            titleTextView.setText(book.title);
             viewSwitcher.showNext();
         });
         manyBooksRecyclerView.setAdapter(manyBooksRecyclerViewAdapter);
         manyBooksRecyclerView.setItemAnimator(null);
+        manyBooksRecyclerView.addItemDecoration(new DividerItemDecoration(requireContext(),
+                DividerItemDecoration.VERTICAL));
         manyBooksRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -146,11 +152,28 @@ public class SearchFragment extends Fragment {
             }
         });
 
-        searchButton.setOnClickListener(v -> {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                manyBooksRecyclerViewAdapter.makeSearch(requireContext(), false, query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        View closeButton = searchView.findViewById(androidx.appcompat.R.id.search_close_btn);
+        closeButton.setOnClickListener(v -> {
+            searchView.setQuery("", true);
+            searchView.clearFocus();
+        });
+        //     searchButton.setOnClickListener(v -> {
 //          InputMethodManager imm = (InputMethodManager) view.getSystemService(Context.INPUT_METHOD_SERVICE);
 //          imm.hideSoftInputFromWindow(mSearchTextView.getWindowToken(), 0);
 
-            searchButton.setEnabled(false);
+    /*        searchButton.setEnabled(false);
             searchTextView.setEnabled(false);
             config.searchHistory.add(searchTextView.getText().toString());
             searchTextAdapter = new ArrayAdapter<>(getActivity(),
@@ -194,10 +217,10 @@ public class SearchFragment extends Fragment {
 
             public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
-        });
+        });*/
 
-        menu.setOnClickListener(view1 -> {
-            LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String,
+        toolbar.addMenuProvider(new MenuProvider() {
+            private final LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String,
                     StoreInfo.StoreInfoTyp>() {{
                 put("artrage.pl/bookrage", StoreInfo.StoreInfoTyp.BOOKRAGE);
                 put("ebooki.swiatczytnikow.pl", StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW);
@@ -205,52 +228,55 @@ public class SearchFragment extends Fragment {
                 put("upolujebooka.pl", StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA);
                 put("wolnelektury.pl", StoreInfo.StoreInfoTyp.WOLNE_LEKTURY);
             }};
-            int i = 0;
-            int mainIndex = 0;
-            PopupMenu popupMenu = new PopupMenu(requireContext(), menu);
-            popupMenu.getMenu().add(2, i++, mainIndex++, R.string.MENU_USE_TOR)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(config.useTOR);
-            for (String s : hm.keySet()) {
-                popupMenu.getMenu().add(2, i++, mainIndex++, s).
-                        setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
-                                config.storeInfoForSearchFragment.contains(hm.get(s)));
-            }
-            popupMenu.getMenu().add(3, i++, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
-                    .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                    .setChecked(ViewPagerAdapter.isSearchTabAvailable());
-            popupMenu.getMenu().add(4, i, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                popupMenu.getMenu().setGroupDividerEnabled(true);
+
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                int i = 0;
+                int mainIndex = 0;
+                menu.add(2, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(config.useTOR);
+                for (String s : hm.keySet()) {
+                    menu.add(2, i++, mainIndex++, s).
+                            setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
+                                    config.storeInfoForSearchFragment.contains(hm.get(s)));
+                }
+                menu.add(3, R.string.MENU_SHOW_SEARCH_TAB, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
+                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
+                        .setChecked(ViewPagerAdapter.isSearchTabAvailable());
+                menu.add(4, R.string.MENU_WRITE_MAIL_TO_AUTHOR, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    menu.setGroupDividerEnabled(true);
+                }
             }
 
-            popupMenu.setOnMenuItemClickListener(item -> {
-                if (item.isCheckable()) {
-                    item.setChecked(!item.isChecked());
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                if (menuItem.isCheckable()) {
+                    menuItem.setChecked(!menuItem.isChecked());
                 }
                 for (String s : hm.keySet()) {
-                    if (!item.getTitle().equals(s)) continue;
-                    if (item.isChecked()) {
+                    if (!menuItem.getTitle().equals(s)) continue;
+                    if (menuItem.isChecked()) {
                         config.storeInfoForSearchFragment.add(hm.get(s));
                     } else {
                         config.storeInfoForSearchFragment.remove(hm.get(s));
                     }
                     break;
                 }
-                if (item.getTitle().equals(getString(R.string.MENU_SHOW_SEARCH_TAB))) {
+                if (menuItem.getItemId() == R.string.MENU_SHOW_SEARCH_TAB) {
                     topPagerAdapter.deleteSearchTab();
                     return true;
                 }
-                if (item.isCheckable()) {
+                if (menuItem.isCheckable()) {
                     config.saveToInternalStorage(getContext());
                     return true;
                 }
-                if (item.getTitle().equals(getString(R.string.MENU_WRITE_MAIL_TO_AUTHOR))) {
+                if (menuItem.getItemId() == R.string.MENU_WRITE_MAIL_TO_AUTHOR) {
                     Utils.contactMe(getContext());
                 }
                 return false;
-            });
-            popupMenu.show();
+            }
         });
 
         /* Delete files if we have more than 500 */
@@ -272,6 +298,5 @@ public class SearchFragment extends Fragment {
 
         return view;
     }
-
 
 }

@@ -28,18 +28,16 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     private final ImageCache imageCache;
     private final DBHelper mydb;
     private final TabLayout tabLayout;
-    private final int screenWidth;
     private final AppCompatActivity activity;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, Context context,
                             ImageCache imageCache, DBHelper mydb, TabLayout tabLayout,
-                            int screenWidth, AppCompatActivity activity) {
+                            AppCompatActivity activity) {
         super(fragmentActivity);
         this.context = context;
         this.imageCache = imageCache;
         this.mydb = mydb;
         this.tabLayout = tabLayout;
-        this.screenWidth = screenWidth;
         this.activity = activity;
     }
 
@@ -60,34 +58,12 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     }
 
     private void checkTabMode() {
-       // tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        //int tabsWidth = 0;
-        //for (int i = 0; i < tabLayout.getChildCount(); i++) {
-         //   View view = tabLayout.getChildAt(i);
-          //  view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        //    tabsWidth += view.getMeasuredWidth();
-       // }
-
-       // tabLayout.setMinimumWidth(screenWidth/3);
         tabLayout.setVisibility(tabLayout.getTabCount() == 1 ? View.GONE : View.VISIBLE);
-
-     //   tabLayout.setTabMode(TabLayout.MODE_FIXED );
-      //  tabLayout.selectTab(tabLayout.getTabAt(1));
-        //tabLayout.setTabMode(screenWidth > tabsWidth ?
-//                TabLayout.MODE_FIXED : TabLayout.MODE_SCROLLABLE);
         for (Fragment f : activity.getSupportFragmentManager().getFragments()) {
             if (f instanceof ReadFragment) {
                 ((ReadFragment) f).updateLayout(!(tabLayout.getTabCount() == 1));
             }
         }
-        /*File[] f = context.getFilesDir().listFiles();
-        if (f != null) {
-            for (File file : f) {
-                if (file.getName().startsWith("tab")) {
-                    System.out.println(file.getName());
-                }
-            }
-        }*/
     }
 
     public void deleteSearchTab() {
@@ -183,6 +159,10 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
             addSearchTab();
         }
+    }
+
+    public int getTabNum(int position) {
+        return configs.get(position).fileNameTabNum;
     }
 
     public CharSequence getPageTitle(int position) {

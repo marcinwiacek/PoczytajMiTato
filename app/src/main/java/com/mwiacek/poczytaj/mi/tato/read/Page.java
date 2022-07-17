@@ -15,16 +15,14 @@ public class Page {
     public String author;
     public String tags;
     public String url;
-    public int top;
     public Date dt;
     public PageTyp typ;
 
-    Page(String name, String author, String comments, String url, int top, Date dt, PageTyp typ) {
+    Page(String name, String author, String comments, String url, Date dt, PageTyp typ) {
         this.name = name;
         this.author = author;
         this.tags = comments;
         this.url = url;
-        this.top = top;
         this.dt = dt;
         this.typ = typ;
     }

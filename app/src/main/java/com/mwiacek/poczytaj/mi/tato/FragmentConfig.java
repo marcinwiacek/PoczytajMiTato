@@ -17,13 +17,13 @@ import java.util.List;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 15L; // Version of the structure for serialization
+    static final long serialVersionUID = 16L; // Version of the structure for serialization
     /* Search Fragment */
     public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
     public List<String> searchHistory = new ArrayList<>();
     /* Read Fragment */
     public HashSet<Page.PageTyp> readInfoForReadFragment = new HashSet<>();
-    public boolean showHiddenTexts = false;
+    public HiddenTexts showHiddenTexts = HiddenTexts.NONE;
     public boolean useTOR = false;
     public boolean getTextsWhenRefreshingIndex = false;
     public boolean downloadWithWifi = true;
@@ -42,7 +42,6 @@ public class FragmentConfig implements Serializable, Cloneable {
     public int fileNameTabNum;
     public String tabName;
     boolean searchFragmentConfig = false;
-
     FragmentConfig(int tabNum, String tabName) {
         this.fileNameTabNum = tabNum;
         this.tabName = tabName;
@@ -84,5 +83,10 @@ public class FragmentConfig implements Serializable, Cloneable {
 
     private void writeObject(ObjectOutputStream outputStream) throws IOException {
         outputStream.defaultWriteObject();
+    }
+
+    public enum HiddenTexts {
+        NONE,
+        HIDDEN
     }
 }

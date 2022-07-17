@@ -8,6 +8,8 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -72,9 +74,18 @@ public class DBHelper extends SQLiteOpenHelper {
                 " where " + COLUMN_URL + "='" + url + "'");
     }
 
-    public void setPageVisible(String url, boolean hidden) {
+    @SuppressLint("Range")
+    public int getPageTop(String url) {
+        Cursor res = this.getReadableDatabase().rawQuery(
+                "select " + COLUMN_TOP + " from " + PAGES_TABLE_NAME +
+                        " where " + COLUMN_URL + "='" + url + "'", null);
+        res.moveToFirst();
+        return res.getInt(res.getColumnIndex(COLUMN_TOP));
+    }
+
+    public void setPageHidden(String url, FragmentConfig.HiddenTexts hidden) {
         this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
-                " set " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
+                " set " + COLUMN_HIDDEN + "=" + hidden.ordinal() +
                 " where " + COLUMN_URL + "='" + url + "'");
     }
 
@@ -95,7 +106,7 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages(boolean hidden, Iterator<Page.PageTyp> typ,
+    public ArrayList<Page> getAllPages(FragmentConfig.HiddenTexts hidden, Iterator<Page.PageTyp> typ,
                                        String authorFilter, String tagFilter) {
         ArrayList<Page> array_list = new ArrayList<>();
 
@@ -113,7 +124,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         Cursor res = this.getReadableDatabase().rawQuery(
                 "select * from " + PAGES_TABLE_NAME +
-                        " where " + COLUMN_HIDDEN + "=" + (hidden ? "1" : "0") +
+                        " where " + COLUMN_HIDDEN + "=" + hidden.ordinal() +
                         " and " + COLUMN_TYP + " IN (" + types + ") " +
                         " order by " + COLUMN_DATETIME + " desc", null);
         res.moveToFirst();
@@ -159,7 +170,6 @@ public class DBHelper extends SQLiteOpenHelper {
                     res.getString(res.getColumnIndex(COLUMN_AUTHOR)),
                     res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
                     res.getString(res.getColumnIndex(COLUMN_URL)),
-                    res.getInt(res.getColumnIndex(COLUMN_TOP)),
                     new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
                     Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]));
             res.moveToNext();

@@ -2,7 +2,6 @@ package com.mwiacek.poczytaj.mi.tato;
 
 
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -35,14 +34,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         for (Fragment f : getSupportFragmentManager().getFragments()) {
-            if (f instanceof ReadFragment && (
-                    viewPager.getCurrentItem() == 0 ||
-                            viewPager.getCurrentItem() == ((ReadFragment) f).getTabNum())) {
+            if (f instanceof ReadFragment &&
+                    viewPagerAdapter.getTabNum(viewPager.getCurrentItem())
+                            == ((ReadFragment) f).getTabNum()) {
                 ((ReadFragment) f).onBackPressed();
                 return;
-            } else if (f instanceof SearchFragment && (
-                    viewPager.getCurrentItem() == 0 ||
-                            viewPager.getCurrentItem() == ((SearchFragment) f).getTabNum())) {
+            } else if (f instanceof SearchFragment &&
+                    viewPagerAdapter.getTabNum(viewPager.getCurrentItem())
+                            == ((SearchFragment) f).getTabNum()) {
                 ((SearchFragment) f).onBackPressed();
                 return;
             }
@@ -60,11 +59,8 @@ public class MainActivity extends AppCompatActivity {
         // getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        this.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-
         viewPagerAdapter = new ViewPagerAdapter(this, getApplicationContext(),
-                mImageCache, mydb, findViewById(R.id.tab_layout), displayMetrics.widthPixels, this);
+                mImageCache, mydb, findViewById(R.id.tab_layout), this);
         viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(viewPagerAdapter);
         new TabLayoutMediator(findViewById(R.id.tab_layout), viewPager,
