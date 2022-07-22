@@ -52,7 +52,7 @@ import java.util.zip.ZipOutputStream;
 import javax.net.ssl.HttpsURLConnection;
 
 public class Utils {
-    public final static String BEFORE_HIGHLIGHT = "<ins style='background-color:yellow'>";
+    public final static String BEFORE_HIGHLIGHT = "<ins style='background-color:green'>";
     public final static String AFTER_HIGHLIGHT = "</ins>";
 
     public static void dialog(Context context, String message, View view,
@@ -121,21 +121,6 @@ public class Utils {
         return r.toString();
     }
 
-    public static String readTextFile(InputStream is) {
-        StringBuilder s = new StringBuilder();
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            String str;
-            if (is != null) {
-                while ((str = reader.readLine()) != null) {
-                    s.append(str);
-                }
-            }
-        } catch (IOException ignore) {
-        }
-        return s.toString();
-    }
-
     public static String getDiskCacheFolder(Context context) {
         return context.getCacheDir().getPath();
     }
@@ -148,7 +133,7 @@ public class Utils {
         URL url = new URL(address);
         HttpURLConnection connection = url.getProtocol().equals("https") ?
                 (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
-        connection.setReadTimeout(15000); // 5 seconds
+        connection.setReadTimeout(15000); // 15 seconds
         connection.connect();
         if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
             return content;
@@ -516,14 +501,14 @@ public class Utils {
             String mimetype = "";
             while ((entry = zipfile.getNextEntry()) != null) {
                 if (entry.getName().equals("mimetype")) {
-                    String sss = "";
+                    StringBuilder sss = new StringBuilder();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(zipfile));
                     String str;
                     while ((str = reader.readLine()) != null) {
-                        sss += str;
+                        sss.append(str);
                     }
-                    mimetype = sss;
-                    if (!sss.equals("application/epub+zip")) {
+                    mimetype = sss.toString();
+                    if (!sss.toString().equals("application/epub+zip")) {
                         break;
                     }
                 }
@@ -561,27 +546,27 @@ public class Utils {
                     continue;
                 }
                 if (entry.getName().startsWith("OEBPS/") && entry.getName().endsWith(".xhtml")) {
-                    String sss = "";
+                    StringBuilder sss = new StringBuilder();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(zipfile));
                     String str;
                     while ((str = reader.readLine()) != null) {
-                        sss += str;
+                        sss.append(str);
                     }
                     Page.PageTyp typ = null;
                     for (Page.PageTyp pt : Page.PageTyp.values()) {
-                        if (sss.contains("<!-- typ " + pt.name() + " -->")) {
+                        if (sss.toString().contains("<!-- typ " + pt.name() + " -->")) {
                             typ = pt;
                             break;
                         }
                     }
                     if (typ == null) continue;
-                    String tytul = findBetween(sss, "<title>", "</title>", 0);
-                    String author = findBetween(sss, "Autor: ", "<br/>", 0);
-                    String tags = findBetween(sss, "Info: ", "<br/>", 0);
-                    String url = findBetween(sss, "Pobrano: <a href=\"", "\"", 0);
+                    String tytul = findBetween(sss.toString(), "<title>", "</title>", 0);
+                    String author = findBetween(sss.toString(), "Autor: ", "<br/>", 0);
+                    String tags = findBetween(sss.toString(), "Info: ", "<br/>", 0);
+                    String url = findBetween(sss.toString(), "Pobrano: <a href=\"", "\"", 0);
                     System.out.println("'" + tytul + "'" + author + "'" + tags + "'" + url + "'" + typ.ordinal());
                     if (tytul.isEmpty() || author.isEmpty() || url.isEmpty()) continue;
-                    String created = findBetween(sss, "Czas: ", "<br/>", 0);
+                    String created = findBetween(sss.toString(), "Czas: ", "<br/>", 0);
                     System.out.println("ala" + created);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
@@ -592,7 +577,7 @@ public class Utils {
                         date = null;
                     }
                     if (date == null) continue;
-                    String modified = findBetween(sss, url + "\">", "</a>", 0);
+                    String modified = findBetween(sss.toString(), url + "\">", "</a>", 0);
                     System.out.println(modified);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format2 =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
@@ -605,7 +590,7 @@ public class Utils {
                     if (modified.isEmpty()) continue;
                     System.out.println(format + " " + modified);
                     boolean correctImage = true;
-                    for (String s : findImagesUrlInHTML(sss)) {
+                    for (String s : findImagesUrlInHTML(sss.toString())) {
                         correctImage = false;
                         for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
                             if (s.endsWith("." + extension) &&
@@ -647,8 +632,8 @@ public class Utils {
                         myDB.insertOrUpdatePage(typ, tytul, author, tags, url, date);
                         p = myDB.getPage(url);
                         writeTextFile(p.getCacheFile(context),
-                                findBetween(sss, "<hr/>", "</body>", 0));
-                        imagesToRead.addAll(findImagesUrlInHTML(sss));
+                                findBetween(sss.toString(), "<hr/>", "</body>", 0));
+                        imagesToRead.addAll(findImagesUrlInHTML(sss.toString()));
                     }
                 }
             }
