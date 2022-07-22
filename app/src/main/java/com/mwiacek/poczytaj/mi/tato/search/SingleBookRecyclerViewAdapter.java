@@ -47,14 +47,12 @@ public class SingleBookRecyclerViewAdapter extends RecyclerView.Adapter<Recycler
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new Utils.ItemViewHolder(LayoutInflater.from(parent.getContext()).inflate(
-                R.layout.search_book_list_item, parent, false), mOnClick);
+                R.layout.search_list_item, parent, false), mOnClick);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
-        //if (viewHolder instanceof Utils.ItemViewHolder) {
         populateItemRows((Utils.ItemViewHolder) viewHolder, position);
-        //}
     }
 
     @Override

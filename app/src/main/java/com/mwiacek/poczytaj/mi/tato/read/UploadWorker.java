@@ -39,9 +39,9 @@ public class UploadWorker extends ListenableWorker {
             if (config != null) {
                 for (Page.PageTyp typ : config.readInfoForReadFragment) {
                     //fixme notify all in callback
-                    Page.getReadInfo(typ).getList(null, null, null,
-                            new DBHelper(getApplicationContext()), getApplicationContext(), typ,
-                            new DBHelper(getApplicationContext()).checkIfTypIsCompletelyRead(typ) ? 3 : -1);
+                 //   Page.getReadInfo(typ).getList(null, null, null,
+                //            new DBHelper(getApplicationContext()), getApplicationContext(), typ,
+                //            3 );
                 }
             }
         }).start();

@@ -3,14 +3,12 @@ package com.mwiacek.poczytaj.mi.tato.read.readinfo;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
-import android.util.Log;
 
 import com.mwiacek.poczytaj.mi.tato.Notifications;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 
-import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,26 +16,17 @@ import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Opowi extends ReadInfo {
+    private static boolean processOneListEntry(String s, DBHelper mydb, Page.PageTyp typ) {
 
-    private static void processOneEntry(String s, DBHelper mydb, Page.PageTyp typ) {
-        if (!s.contains("<div class=\"list-box-cat\">Fantastyka</div>")) return;
+        String author = Utils.findBetween(s, "<div class=\"list-box-author\">", "</div>", 0);
 
-        int indeks = Utils.Szukaj(s, "<div class=\"list-box-author\">", 0);
-        int indeks2 = s.indexOf("</div>", indeks);
-        String author = s.substring(indeks, indeks2);
+        int indeks = Utils.Szukaj(s, "<div class=\"list-box-title\"><a href=\"", 0);
+        String title = Utils.findBetween(s, "\">", "</a>", indeks);
 
-        indeks = Utils.Szukaj(s, "<div class=\"list-box-title\"><a href=\"", 0);
-        indeks = Utils.Szukaj(s, "\">", indeks);
-        indeks2 = s.indexOf("</a>", indeks);
-        String title = s.substring(indeks, indeks2);
+        String url = "https://www.opowi.pl" +
+                Utils.findBetween(s, "<div class=\"list-box-title\"><a href=\"", "\">", 0);
 
-        indeks = Utils.Szukaj(s, "<div class=\"list-box-title\"><a href=\"", 0);
-        indeks2 = s.indexOf("\">", indeks);
-        String url = "https://www.opowi.pl" + s.substring(indeks, indeks2);
-
-        indeks = Utils.Szukaj(s, "<div class=\"list-box-date\">", 0);
-        indeks2 = s.indexOf("</div>", indeks);
-        String dt = s.substring(indeks, indeks2);
+        String dt = Utils.findBetween(s, "<div class=\"list-box-date\">", "</div>", 0);
         @SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
         Date date = new Date(0);
         try {
@@ -46,63 +35,81 @@ public class Opowi extends ReadInfo {
             e.printStackTrace();
         }
 
-        Log.i("MY2", "'" + title + "'" + author + "'" + url + "'" + date);
+        // Log.i("MY2", "'" + title + "'" + author + "'" + url + "'" + date);
         assert date != null;
-        mydb.insertPage(typ, title, author, "", url, date);
+        return mydb.insertOrUpdatePage(typ, title, author, "", url, date);
     }
 
-    public String getOpkoFromSinglePage(String result, File f) {
-        int index = result.indexOf("<div id=\"content\" class=\"novel  \">");
-        int index2 = result.indexOf("<div class=\"clear\"></div></div>", index);
-        Utils.writeFile(f, result.substring(index, index2));
-        return result.substring(index, index2);
-    }
-
-    public void getList(
-            final Utils.RepositoryCallback<StringBuilder> callback,
-            final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
+    public void processTextFromSinglePage(
+            Context context, Page p,
             final Handler resultHandler,
-            final DBHelper mydb, final Context context, Page.PageTyp typ,
-            int pagesInPartReading) {
+            final ThreadPoolExecutor executor,
+            final Utils.RepositoryCallback<String[]> callbackAfterMainFileWithResourceList,
+            final Utils.RepositoryCallback<String> callbackAfterEveryImage,
+            final Utils.RepositoryCallback<String> completeCallback) {
+        Utils.getTextPage(p.url, result -> {
+            int index = result.indexOf("<div id=\"content\" class=\"novel  \">");
+            int index2 = result.indexOf("<div class=\"clear\"></div></div>", index);
+            String mainPageText = result.substring(index, index2);
+            Utils.writeTextFile(p.getCacheFile(context), mainPageText);
+            if (completeCallback != null) {
+                resultHandler.post(() -> completeCallback.onComplete(mainPageText));
+            }
+        }, resultHandler, executor);
+    }
+
+    public void getList(final Context context,
+                        final Handler resultHandler,
+                        final DBHelper mydb, Page.PageTyp typ,
+                        int pageStart, int pageStop,
+                        final Utils.RepositoryCallback<Page.PageTyp> callback ) {
         try {
             String url = "";
-            int index = 1;
+            int index = pageStart;
+            boolean haveNewEntry = false;
             while (true) {
-                Objects.requireNonNull(Notifications.notificationManager(context)).notify(1,
-                        Notifications.setupNotification(Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                context, "Czytanie listy - strona " + index).build());
-                url = "https://www.opowi.pl/spis" +
+                Objects.requireNonNull(Notifications.notificationManager(context)).notify(typ.ordinal(),
+                        Notifications.setupNotification(context,
+                                Notifications.Channels.CZYTANIE_Z_INTERNETU,
+                                "Czytanie "+typ.name()+" - strona " + index).build());
+                url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
-                String result = Utils.getPageContent(url).toString();
-                int indeks = result.indexOf("<h2>Wszystkie opowiadania</h2>");
+                String result = Utils.getTextPageContent(url).toString();
+                int indeks = result.indexOf("<h2>Opowiadania z kategorii: Fantastyka</h2>");
+                boolean haveNewEntryOnThisPage = false;
                 while (true) {
                     indeks = result.indexOf("<div class=\"list-box-title\">", indeks);
                     int indeks2 = Utils.Szukaj(result, "</div></div>", indeks);
                     if (indeks == -1 || indeks2 == -1) break;
-                    processOneEntry(result.substring(indeks, indeks2), mydb, typ);
+                    if (processOneListEntry(result.substring(indeks, indeks2), mydb, typ)) {
+                        haveNewEntry = true;
+                        haveNewEntryOnThisPage = true;
+                    }
                     indeks = indeks2;
                 }
-                resultHandler.post(() -> callback.onComplete(new StringBuilder()));
+                if (callback != null && haveNewEntryOnThisPage) {
+                    resultHandler.post(() -> callback.onComplete(typ));
+                }
+                if (!result.contains("rel=\"next\">Dalej &raquo;</a>")) {
+                    mydb.setLastIndexPageRead(typ, -1);
+                    break;
+                }
                 index++;
-                if (index == 3) break;
+                if (index == pageStop) {
+                    mydb.setLastIndexPageRead(typ, pageStop);
+                    break;
+                }
             }
-            Objects.requireNonNull(Notifications.notificationManager(context)).cancel(1);
-            resultHandler.post(() -> callbackOnTheEnd.onComplete(new StringBuilder()));
+            if (haveNewEntry) {
+                Objects.requireNonNull(Notifications.notificationManager(context)).notify(
+                        typ.ordinal(), Notifications.setupNotification(context,
+                                Notifications.Channels.CZYTANIE_Z_INTERNETU,
+                                typ.name() + " - nowe strony").build());
+            } else {
+                Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public void getList(
-            final Utils.RepositoryCallback<StringBuilder> callback,
-            final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
-            final Handler resultHandler,
-            final ThreadPoolExecutor executor,
-            final DBHelper mydb, final Context context, Page.PageTyp typ,
-            int pagesInPartReading) {
-        executor.execute(() -> {
-            getList(callback, callbackOnTheEnd, resultHandler, mydb, context, typ,
-                    pagesInPartReading);
-        });
     }
 }

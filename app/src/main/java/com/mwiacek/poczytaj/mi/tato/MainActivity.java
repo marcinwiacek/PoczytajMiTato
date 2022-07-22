@@ -1,27 +1,33 @@
 package com.mwiacek.poczytaj.mi.tato;
 
 
+import android.annotation.SuppressLint;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
+import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.read.ReadFragment;
 import com.mwiacek.poczytaj.mi.tato.search.ImageCache;
 import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
 
+import java.io.File;
 import java.lang.reflect.Field;
 
 /*
-TODO inform other pages about updates
-TODO symbioza obrazki
-TODO EPUB import eksport
+TODO EPUB import
 TODO sync w background
 TODO czerwone teksty (niewidoczne na serwerze)
+TODO up down przy szukaniu
+TODO brak miniaturek w search
 TODO tor
 TODO Google Books ?
 TODO sortowanie szukania ?
@@ -49,15 +55,23 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
+    @SuppressLint("PrivateResource")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
+                (getResources().getConfiguration().uiMode &
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+            getWindow().setNavigationBarColor(ContextCompat.getColor(this,
+                    com.google.android.material.R.color.design_dark_default_color_background
+            ));
+        }
+
+        setContentView(R.layout.activity_main);
+
         ImageCache mImageCache = new ImageCache(getApplicationContext());
         DBHelper mydb = new DBHelper(getApplicationContext());
-
-        // getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.activity_main);
 
         viewPagerAdapter = new ViewPagerAdapter(this, getApplicationContext(),
                 mImageCache, mydb, findViewById(R.id.tab_layout), this);
@@ -81,5 +95,7 @@ public class MainActivity extends AppCompatActivity {
             touchSlopField.set(recyclerView, touchSlop);//6 is empirical value
         } catch (Exception ignore) {
         }
+
+        new File(Utils.getDiskCacheFolder(getApplicationContext()), Page.CACHE_SUB_DIRECTORY).mkdirs();
     }
 }

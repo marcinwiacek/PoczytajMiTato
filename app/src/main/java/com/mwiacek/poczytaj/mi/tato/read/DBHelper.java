@@ -12,7 +12,6 @@ import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 
 public class DBHelper extends SQLiteOpenHelper {
 
@@ -26,6 +25,7 @@ public class DBHelper extends SQLiteOpenHelper {
     private final static String COLUMN_DATETIME = "dt";
     private final static String COLUMN_TYP = "typ";
     private final static String COLUMN_HIDDEN = "hidden";
+    private final static String COLUMN_PAGE_NUMBER = "page_number";
 
     public DBHelper(Context context) {
         super(context, "pages.db", null, 1);
@@ -41,7 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 "UNIQUE(" + COLUMN_URL + "))"
         );
         db.execSQL("create table " + COMPLETED_TABLE_NAME + " " +
-                "(" + COLUMN_TYP + " integer, " +
+                "(" + COLUMN_TYP + " integer, " + COLUMN_PAGE_NUMBER + " integer, " +
                 "UNIQUE(" + COLUMN_TYP + "))"
         );
     }
@@ -50,21 +50,25 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
     }
 
-    public boolean checkIfTypIsCompletelyRead(Page.PageTyp typ) {
+    @SuppressLint("Range")
+    public int getLastIndexPageRead(Page.PageTyp typ) {
         Cursor res = this.getReadableDatabase().rawQuery(
-                "select * from " + COMPLETED_TABLE_NAME +
+                "select " + COLUMN_PAGE_NUMBER + " from " + COMPLETED_TABLE_NAME +
                         " where " + COLUMN_TYP + "=" + typ.ordinal(), null);
-        res.moveToFirst();
-        return !res.isAfterLast();
+        if (!res.moveToFirst()) return 0;
+        return res.getInt(res.getColumnIndex(COLUMN_PAGE_NUMBER));
     }
 
-    public void setTypCompletelyRead(Page.PageTyp typ) {
+    public void setLastIndexPageRead(Page.PageTyp typ, int number) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_TYP, typ.ordinal());
+        contentValues.put(COLUMN_PAGE_NUMBER, number);
         try {
             this.getWritableDatabase().insertOrThrow(COMPLETED_TABLE_NAME,
                     null, contentValues);
         } catch (SQLException ignore) {
+            this.getWritableDatabase().update(COMPLETED_TABLE_NAME,
+                    contentValues, COLUMN_TYP + "=" + typ.ordinal(), null);
         }
     }
 
@@ -89,7 +93,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 " where " + COLUMN_URL + "='" + url + "'");
     }
 
-    public void insertPage(Page.PageTyp typ, String name, String author, String comments, String url, Date d) {
+    public boolean insertOrUpdatePage(Page.PageTyp typ, String name, String author, String comments, String url, Date d) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_TYP, typ.ordinal());
         contentValues.put(COLUMN_NAME, name);
@@ -101,19 +105,42 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_HIDDEN, 0);
         try {
             this.getWritableDatabase().insertOrThrow(PAGES_TABLE_NAME, null, contentValues);
+            return true;
         } catch (SQLException ignore) {
+            this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
+                    COLUMN_URL + "='" + url + "'", null);
+            return false;
         }
     }
 
     @SuppressLint("Range")
-    public ArrayList<Page> getAllPages(FragmentConfig.HiddenTexts hidden, Iterator<Page.PageTyp> typ,
+    public Page getPage(String url) {
+        Cursor res = this.getReadableDatabase().rawQuery(
+                "select * from " + PAGES_TABLE_NAME +
+                        " where " + COLUMN_URL + "='" + url + "'", null);
+        res.moveToFirst();
+
+        if (!res.isAfterLast()) {
+            return new Page(
+                    res.getString(res.getColumnIndex(COLUMN_NAME)),
+                    res.getString(res.getColumnIndex(COLUMN_AUTHOR)),
+                    res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
+                    res.getString(res.getColumnIndex(COLUMN_URL)),
+                    new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
+                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]);
+        }
+        return null;
+    }
+
+    @SuppressLint("Range")
+    public ArrayList<Page> getAllPages(FragmentConfig.HiddenTexts hidden, ArrayList<Page.PageTyp> typ,
                                        String authorFilter, String tagFilter) {
         ArrayList<Page> array_list = new ArrayList<>();
 
         StringBuilder types = new StringBuilder();
-        while (typ.hasNext()) {
+        for (Page.PageTyp t : typ) {
             if (types.length() > 0) types.append(",");
-            types.append("").append(typ.next().ordinal());
+            types.append("").append(t.ordinal());
         }
 
         String[] authors = null;
@@ -133,7 +160,7 @@ public class DBHelper extends SQLiteOpenHelper {
             if (authors != null) {
                 boolean ok = true;
                 for (String s : authors) {
-                    //fixme
+                    //TODO: "not "
                     if (s.trim().startsWith("not ") ==
                             res.getString(res.getColumnIndex(COLUMN_AUTHOR)).toLowerCase()
                                     .trim().equals(s.trim().replace("not ", ""))) {
@@ -150,7 +177,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 boolean ok = true;
                 String[] abc = res.getString(res.getColumnIndex(COLUMN_COMMENTS)).toLowerCase().split(",");
                 for (String s : tags) {
-                    //fixme
+                    //TODO: "not "
                     for (String ab : abc) {
                         if (ab.trim().startsWith("not ") == ab.trim().equals(s.trim()
                                 .replace("not ", ""))) {

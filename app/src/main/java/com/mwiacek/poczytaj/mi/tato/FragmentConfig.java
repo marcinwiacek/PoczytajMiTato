@@ -12,28 +12,26 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 16L; // Version of the structure for serialization
+    static final long serialVersionUID = 21L; // Version of the structure for serialization
     /* Search Fragment */
-    public HashSet<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new HashSet<>();
-    public List<String> searchHistory = new ArrayList<>();
+    public ArrayList<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new ArrayList<>();
     /* Read Fragment */
-    public HashSet<Page.PageTyp> readInfoForReadFragment = new HashSet<>();
+    public ArrayList<Page.PageTyp> readInfoForReadFragment = new ArrayList<>();
     public HiddenTexts showHiddenTexts = HiddenTexts.NONE;
     public boolean useTOR = false;
     public boolean getTextsWhenRefreshingIndex = false;
-    public boolean downloadWithWifi = true;
-    public boolean downloadWithGSM = true;
-    public boolean downloadWithOtherNet = true;
-    public boolean downloadDuringChargingOnly = false;
-    public boolean doNotDownloadWithLowBattery = true;
-    public boolean networkWithoutLimit = false;
-    public boolean downloadOnRoaming = false;
-    public boolean isDoNotDownloadWithLowStorage = true;
+    public boolean canDownloadWithWifi = true;
+    public boolean canDownloadWithGSM = true;
+    public boolean canDownloadInNetworkWithLimit = false;
+    public boolean canDownloadOnRoaming = false;
+    public boolean canDownloadWithOtherNetwork = true;
+    public boolean canDownloadWithoutCharging = true;
+    public boolean canDownloadWithLowBattery = false;
+    public boolean canDownloadWithLowStorage = false;
     public String authorFilter = "";
     public String tagFilter = "";
     public int howOftenRefreshTabInHours = -1;
@@ -42,6 +40,7 @@ public class FragmentConfig implements Serializable, Cloneable {
     public int fileNameTabNum;
     public String tabName;
     boolean searchFragmentConfig = false;
+
     FragmentConfig(int tabNum, String tabName) {
         this.fileNameTabNum = tabNum;
         this.tabName = tabName;
@@ -87,6 +86,7 @@ public class FragmentConfig implements Serializable, Cloneable {
 
     public enum HiddenTexts {
         NONE,
-        HIDDEN
+        GREEN,
+        RED
     }
 }

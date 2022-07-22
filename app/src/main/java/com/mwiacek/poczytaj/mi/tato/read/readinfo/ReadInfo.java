@@ -7,23 +7,22 @@ import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 
-import java.io.File;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public abstract class ReadInfo {
-    public abstract String getOpkoFromSinglePage(String result, File f);
 
-    public abstract void getList(final Utils.RepositoryCallback<StringBuilder> callback,
-                                 final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
-                                 final Handler resultHandler,
-                                 final ThreadPoolExecutor executor,
-                                 final DBHelper mydb, final Context context, Page.PageTyp typ,
-                                 int pagesInPartReading);
+    public abstract void processTextFromSinglePage(
+            Context context, Page p, final Handler resultHandler,
+            final ThreadPoolExecutor executor,
+            final Utils.RepositoryCallback<String[]> callbackAfterMainFile,
+            final Utils.RepositoryCallback<String> callbackAfterEveryImage,
+            final Utils.RepositoryCallback<String> completeCallback);
 
-    public abstract void getList(final Utils.RepositoryCallback<StringBuilder> callback,
-                                 final Utils.RepositoryCallback<StringBuilder> callbackOnTheEnd,
+    public abstract void getList(final Context context,
                                  final Handler resultHandler,
-                                 final DBHelper mydb, final Context context, Page.PageTyp typ,
-                                 int pagesInPartReading);
+                                 final DBHelper mydb, Page.PageTyp typ,
+                                 int pageStart, int pageStop,
+                                 final Utils.RepositoryCallback<Page.PageTyp> callback);
+
 
 }

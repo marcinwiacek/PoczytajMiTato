@@ -2,14 +2,18 @@ package com.mwiacek.poczytaj.mi.tato;
 
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.OpenableColumns;
 import android.text.Html;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,6 +22,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 
 import java.io.BufferedInputStream;
@@ -29,15 +34,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -53,8 +64,8 @@ public class Utils {
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .setTitle("Poczytaj mi tato")
                 .setMessage(message)
-                .setPositiveButton("OK", OKListener)
-                .setNegativeButton("Cancel", CancelListener);
+                .setPositiveButton("OK", OKListener);
+        if (CancelListener != null) builder.setNegativeButton("Cancel", CancelListener);
         if (view != null) builder.setView(view);
         builder.show();
     }
@@ -83,7 +94,7 @@ public class Utils {
         }
     }
 
-    public static void writeFile(File f, String s) {
+    public static void writeTextFile(File f, String s) {
         FileOutputStream outputStream;
         try {
             f.createNewFile();
@@ -96,7 +107,7 @@ public class Utils {
         }
     }
 
-    public static String readFile(File f) {
+    public static String readTextFile(File f) {
         StringBuilder r = new StringBuilder();
         try {
             FileInputStream fIn = new FileInputStream(f);
@@ -112,12 +123,26 @@ public class Utils {
         return r.toString();
     }
 
-    public static String getDiskCacheFolder(Context context) {
-        return context.getExternalCacheDir() == null ?
-                context.getCacheDir().getPath() : context.getExternalCacheDir().getPath();
+    public static String readTextFile(InputStream is) {
+        StringBuilder s = new StringBuilder();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String str;
+            if (is != null) {
+                while ((str = reader.readLine()) != null) {
+                    s.append(str);
+                }
+            }
+        } catch (IOException ignore) {
+        }
+        return s.toString();
     }
 
-    public static StringBuilder getPageContent(String address) throws Exception {
+    public static String getDiskCacheFolder(Context context) {
+        return context.getCacheDir().getPath();
+    }
+
+    public static StringBuilder getTextPageContent(String address) throws Exception {
         StringBuilder content = new StringBuilder();
         if (address.isEmpty()) {
             throw new Exception("Empty URL");
@@ -143,44 +168,64 @@ public class Utils {
         return content;
     }
 
-    public static void getPage(
-            final String URL,
+    public static void getTextPage(
+            final String url,
             final RepositoryCallback<StringBuilder> callback,
             final Handler resultHandler,
             final ThreadPoolExecutor executor) {
         executor.execute(() -> {
             try {
-                StringBuilder result = Utils.getPageContent(URL);
-                resultHandler.post(() -> callback.onComplete(result));
+                StringBuilder result = Utils.getTextPageContent(url);
+                if (callback != null) {
+                    resultHandler.post(() -> callback.onComplete(result));
+                }
             } catch (Exception ignore) {
             }
         });
     }
 
-    public static void downloadFileWithDownloadManager(String url, String title, Context context) {
-        if (url.length() == 0) {
-            return;
-        }
-
-        if (url.contains(".htm") || url.contains("artrage.pl")) {
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setData(Uri.parse(url));
-            context.startActivity(i);
-            return;
-        }
-       /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_DENIED) {
-                ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+    public static void getBinaryPages(
+            Context context,
+            final ArrayList<String> URL,
+            final RepositoryCallback<String> callback,
+            final RepositoryCallback<String> callbackAfterAll,
+            final Handler resultHandler,
+            final ThreadPoolExecutor executor) {
+        executor.execute(() -> {
+            try {
+                for (String url2 : URL) {
+                    URL url = new URL(url2.replace(" ", "%20"));
+                    HttpURLConnection connection = url.getProtocol().equals("https") ?
+                            (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
+                    connection.setReadTimeout(5000); // 5 seconds
+                    connection.connect();
+                    if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                        continue;
+                    }
+                    try {
+                        OutputStream outputStream =
+                                new FileOutputStream(Page.getLongCacheFileName(context, url2));
+                        int byteRead;
+                        while ((byteRead = connection.getInputStream().read()) != -1) {
+                            outputStream.write(byteRead);
+                        }
+                        outputStream.close();
+                        if (callback != null) {
+                            resultHandler.post(() -> callback.onComplete(url2));
+                        }
+                    } finally {
+                        connection.disconnect();
+                    }
+                }
+                if (callbackAfterAll != null) {
+                    resultHandler.post(() -> callbackAfterAll.onComplete(null));
+                }
+            } catch (Exception ignore) {
             }
-            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_DENIED) {
-                return;
-            }
-        }*/
-//        File path = Environment.getExternalStoragePublicDirectory(
-        //              Environment.DIRECTORY_DOWNLOADS);
+        });
+    }
 
+    public static void downloadFileWithDownloadManagerAfterGrantingPermission(String url, String title, Context context) {
         DownloadManager downloadmanager = (DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
         File f = new File("" + uri);
@@ -188,7 +233,7 @@ public class Utils {
         DownloadManager.Request request = new DownloadManager.Request(uri);
         request.setTitle(f.getName());
         request.setDescription(title);
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName());
         downloadmanager.enqueue(request);
     }
@@ -212,15 +257,28 @@ public class Utils {
         out.write(content.getBytes());
     }
 
-    public static void createEPUB(Context context, Uri file, String tabName, List<Page> list,
-                                  HashSet<Page.PageTyp> types) {
+    @SuppressLint("QueryPermissionsNeeded")
+    public static void createEPUB(Context context, Uri file, List<Page> list,
+                                  ArrayList<Page.PageTyp> types) {
         if (file == null) return;
-        NotificationCompat.Builder builder =
-                Notifications.setupNotification(Notifications.Channels.ZAPIS_W_URZADZENIU, context,
-                        "Tworzenie pliku EPUB");
+        NotificationCompat.Builder builder = Notifications.setupNotification(context,
+                Notifications.Channels.ZAPIS_W_URZADZENIU, "Tworzenie pliku EPUB");
         Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+
+        String tytul = "";
+        Cursor fileCursor = context.getContentResolver().query(file,
+                new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
+        if (fileCursor != null && fileCursor.moveToFirst()) {
+            int index = fileCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            if (index != -1) {
+                tytul = fileCursor.getString(index);
+            }
+        }
+
+        @SuppressLint("SimpleDateFormat") String d0 = (new SimpleDateFormat("ddMMyyyy HH:mm:ss"))
+                .format(new Date());
+
         try {
-            String shortFileName = tabName.replaceAll("[^A-Za-z0-9]", "") + ".zip";
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(
                     context.getContentResolver().openOutputStream(file)));
 
@@ -240,11 +298,16 @@ public class Utils {
             String tocContentOpf3 = "";
             for (int j = 0; j < list.size(); j++) {
                 Page p = list.get(j);
-                File f = p.getCacheFileName(context);
+                File f = p.getCacheFile(context);
+                Date date = new Date();
                 if (f.exists()) {
-                    Date date = new Date();
                     date.setTime(f.lastModified());
                     @SuppressLint("SimpleDateFormat") String d = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")).format(date);
+
+                    @SuppressLint("SimpleDateFormat") String d2 =
+                            (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")).format(p.dt);
+
+                    String fileContent = readTextFile(f);
 
                     Utils.addZipFile("OEBPS/" + j + ".xhtml", out,
                             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -253,16 +316,17 @@ public class Utils {
                                     "xmlns:epub=\"http://www.idpf.org/2007/ops\"\n" +
                                     "xml:lang=\"pl\" lang=\"pl\">\n" +
                                     "<head>\n" +
-                                    "<!-- typ " + p.typ.name() + " -->" +
+                                    "<!-- typ " + p.typ.name() + " -->\n" +
                                     "<title>" + p.name + "</title>\n" +
                                     "<link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\" />\n" +
                                     "</head>\n" +
                                     "<body xml:lang=\"pl\" lang=\"pl\">\n" +
                                     "Autor: " + p.author + "<br/>\n" +
                                     "Info: " + p.tags + "<br/>\n" +
-                                    "Pobrane: <a href=\"" + p.url + "\">" + d + "</a><br/>\n" +
+                                    "Czas: " + d2 + "<br/>\n" +
+                                    "Pobrano: <a href=\"" + p.url + "\">" + d + "</a><br/>\n" +
                                     "<hr/>\n" +
-                                    readFile(f) +
+                                    fileContent +
                                     "</body>\n</html>");
                     tocTocNCX.append("<navPoint id=\"index_").append(j).append("\" playOrder=\"")
                             .append(j).append("\">\n")
@@ -283,6 +347,21 @@ public class Utils {
 
                     if (tocContentOpf3.isEmpty()) {
                         tocContentOpf3 = "<reference href=\"" + j + ".xhtml\" type=\"text\" title=\"Tekst\"/>\n";
+                    }
+
+                    for (String s : findImagesUrlInHTML(fileContent)) {
+                        for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
+                            if (s.endsWith("." + extension)) {
+                                Utils.addZipFile("OEBPS/" + s, out,
+                                        new FileInputStream(Page.getCacheDirectory(context) +
+                                                File.separator + s));
+                                tocContentOpf1.append("<item id=\"").append(s).append("\" media-type=\"")
+                                        .append(MimeTypeMap.getSingleton().getMimeTypeFromExtension(
+                                                "." + extension)).append("\" href=\"")
+                                        .append(s).append("\" properties=\"image\" />\n");
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -311,7 +390,7 @@ public class Utils {
                             "<meta name=\"dtb:maxPageNumber\" content=\"0\"/>\n" +
                             "</head>\n" +
                             "<docTitle>\n" +
-                            "<text>tytul</text>\n" +
+                            "<text>" + tytul + " (" + d0 + ")</text>\n" +
                             "</docTitle>\n" +
                             "<navMap>\n" +
                             tocTocNCX +
@@ -350,12 +429,12 @@ public class Utils {
                     "<metadata>\n" +
                     "<dc:identifier id=\"bookid\">urn:uuid:e5953946-ea06-4599-9a53-f5c652b89f5c</dc:identifier>\n" +
                     "<dc:language>pl-PL</dc:language>\n" +
-                    "<meta name=\"generator\" content=\"Poczytaj Mi Tato z Google Play\"/>\n" +
-                    "<dc:title>title</dc:title>\n" +
+                    "<meta name=\"generator\" content=\"PoczytajMiTato z Google Play\"/>\n" +
+                    "<dc:title>" + tytul + " (" + d0 + ")</dc:title>\n" +
                     "<dc:description>\n" +
-                    "title\n" +
+                    tytul + " (" + d0 + ")" +
                     "</dc:description>\n" +
-                    "<dc:creator id=\"creator-0\">A.zbiorowy+Poczytaj Mi Tato z Google Play</dc:creator>\n" +
+                    "<dc:creator id=\"creator-0\">A.zbiorowy+PoczytajMiTato z Google Play</dc:creator>\n" +
                     "<meta refines=\"#creator-0\" property=\"role\" scheme=\"marc:relators\">aut</meta>\n" +
                     "<meta refines=\"#creator-0\" property=\"file-as\">A.zbiorowy+Poczytaj Mi Tato z Google Play</meta>\n" +
                     "<meta name=\"cover\" content=\"cover\"></meta>\n" +
@@ -388,7 +467,7 @@ public class Utils {
                             "xmlns:epub=\"http://www.idpf.org/2007/ops\"\n" +
                             "xml:lang=\"pl\" lang=\"pl\">\n" +
                             "<head>\n" +
-                            "<title>title</title>\n" +
+                            "<title>" + tytul + " (" + d0 + ")</title>\n" +
                             "<link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\" />\n" +
                             "</head>\n" +
                             "<body xml:lang=\"pl\" lang=\"pl\">\n" +
@@ -400,19 +479,22 @@ public class Utils {
 
             out.close();
 
-           /* Intent intent = new Intent();
-            intent.setDataAndType(Uri.fromFile(new File(longFileName)),
-                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(".ZIP"));
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            PendingIntent pendingIntent = null;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                pendingIntent = PendingIntent.getActivity(context,
-                        0, intent, PendingIntent.FLAG_IMMUTABLE);
-            }*/
-
-            // builder.setContentText("Zapisano plik EPUB " + shortFileName).setContentIntent(pendingIntent);
-            // Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+            Intent chooserIntent = new Intent(Intent.ACTION_VIEW);
+            chooserIntent.setDataAndType(file, "application/zip");
+            chooserIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            if (chooserIntent.resolveActivity(context.getPackageManager()) == null) {
+                Uri uri = Uri.parse("market://search?q=" + "application/zip");
+                chooserIntent = new Intent(Intent.ACTION_VIEW, uri);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    builder.setContentText("Zapisano plik " + tytul)
+                            .setContentIntent(PendingIntent.getActivity(context, 0, chooserIntent,
+                                    PendingIntent.FLAG_MUTABLE))
+                            .setSubText("Kliknij, żeby otworzyć");
+                }
+                Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+            }
         } catch (Exception e) {
             builder.setContentText("Błąd zapisu pliku EPUB");
             Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
@@ -421,11 +503,189 @@ public class Utils {
         }
     }
 
+    /* Function is making few passes to avoid extreme memory usage.
+       We try to be quite conservative and parse possible files - errors are returned only in
+       some "big" problems
+     */
+    public static void importEPUB(Context context, Uri uri, DBHelper myDB) {
+        if (uri == null) return;
+        try {
+            HashSet<String> imageNames = new HashSet<>();
+            HashSet<String> imagesToRead = new HashSet<>();
+            ZipInputStream zipfile = new ZipInputStream(context.getContentResolver().openInputStream(
+                    Uri.parse(uri.toString())));
+            ZipEntry entry;
+            // pass 1 - get all image names in file and search for mimetype
+            String mimetype = "";
+            while ((entry = zipfile.getNextEntry()) != null) {
+                if (entry.getName().equals("mimetype")) {
+                    String sss = "";
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(zipfile));
+                    String str;
+                    while ((str = reader.readLine()) != null) {
+                        sss += str;
+                    }
+                    mimetype = sss;
+                    if (!sss.equals("application/epub+zip")) {
+                        break;
+                    }
+                }
+                for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
+                    if (entry.getName().startsWith("OEBPS/") &&
+                            entry.getName().endsWith("." + extension)) {
+                        if (imageNames.contains(
+                                entry.getName().replace("OEBPS/",""))) {
+                            dialog(context, "Plik EPUB ma zły format (podwójne pliki)", null,
+                                    (dialog, which) -> {
+                                    }, null);
+                            zipfile.close();
+                            return;
+                        }
+                        imageNames.add(entry.getName().replace("OEBPS/",""));
+                    }
+                }
+            }
+            zipfile.close();
+            if (!mimetype.equals("application/epub+zip")) {
+                dialog(context, "Plik EPUB ma zły format (błąd mimetype)", null,
+                        (dialog, which) -> {
+                        }, null);
+                return;
+            }
+            int recognizedButIgnored = 0;
+            int recognizedAndImported = 0;
+            // pass 2 - parse text files
+            zipfile = new ZipInputStream(context.getContentResolver().openInputStream(
+                    Uri.parse(uri.toString())));
+            while ((entry = zipfile.getNextEntry()) != null) {
+                /* These two xhtml files are allowed */
+                if (entry.getName().equals("OEBPS/cover-page.xhtml") || entry.getName().equals("OEBPS/toc.xhtml")) {
+                    continue;
+                }
+                if (entry.getName().startsWith("OEBPS/") && entry.getName().endsWith(".xhtml")) {
+                    String sss = "";
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(zipfile));
+                    String str;
+                    while ((str = reader.readLine()) != null) {
+                        sss += str;
+                    }
+                    Page.PageTyp typ = null;
+                    for (Page.PageTyp pt : Page.PageTyp.values()) {
+                        if (sss.contains("<!-- typ " + pt.name() + " -->")) {
+                            typ = pt;
+                            break;
+                        }
+                    }
+                    if (typ == null) continue;
+                    String tytul="";
+                    String author = findBetween(sss, "Autor: ", "<br/>", 0);
+                    String tags = findBetween(sss, "Info: ", "<br/>", 0);
+                    String url = findBetween(sss, "Pobrano: <a href=\"", "\"", 0);
+                    if (author.isEmpty() || tags.isEmpty() || url.isEmpty()) continue;
+                    String created = findBetween(sss, "Czas: ", "<br/>\n", 0);
+                    @SuppressLint("SimpleDateFormat") SimpleDateFormat format =
+                            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                    Date date = new Date(0);
+                    try {
+                        date = format.parse(created);
+                    } catch (ParseException e) {
+                        date = null;
+                    }
+                    if (date == null) continue;
+                    String modified = findBetween(sss, url + "\">", "</a>", 0);
+                    @SuppressLint("SimpleDateFormat") SimpleDateFormat format2 =
+                            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                    Date date2 = new Date(0);
+                    try {
+                        date2 = format2.parse(modified);
+                    } catch (ParseException e) {
+                        modified = "";
+                    }
+                    if (modified.isEmpty()) continue;
+                    boolean correctImage = true;
+                    for (String s : findImagesUrlInHTML(sss)) {
+                        correctImage = false;
+                        for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
+                            if (s.endsWith("." + extension) &&
+                                    imageNames.contains(s) && !imagesToRead.contains(s)) {
+                                correctImage = true;
+                                break;
+                            }
+                        }
+                        if (!correctImage) break;
+                    }
+                    if (!correctImage) continue;
+                    Page p = myDB.getPage(url);
+                    boolean doimport = false;
+                    if (p == null) {
+                        doimport = true;
+                        recognizedAndImported++;
+                    } else {
+                        File f = p.getCacheFile(context);
+                        Date date3 = new Date();
+                        date3.setTime(f.lastModified());
+                        if (!date3.after(date)) {
+                            doimport = true;
+                            recognizedAndImported++;
+                        } else {
+                            recognizedButIgnored++;
+                        }
+                    }
+                    /*if (doimport) {
+                        File f = p.getCacheFile(context);
+                        f.delete();
+                        String fileContent = Utils.readTextFile(f);
+                        for (String s : findImagesUrlInHTML(fileContent)) {
+                            f = new File(Page.getCacheDirectory(context) + File.separator + s);
+                            f.delete();
+                        }
+                        writeTextFile(p.getCacheFile(context), sss);
+                        myDB.insertPage(typ, tytul, author, tags, url, date);
+                        imagesToRead.addAll(findImagesUrlInHTML(sss));
+                    }*/
+                }
+            }
+            zipfile.close();
+            // pass 3 - save binary files
+            zipfile = new ZipInputStream(context.getContentResolver().openInputStream(
+                    Uri.parse(uri.toString())));
+            while ((entry = zipfile.getNextEntry()) != null) {
+                if (!imagesToRead.contains(entry.getName().replace("OEBPS/",""))) {
+                    continue;
+                }
+            }
+            zipfile.close();
+            dialog(context, recognizedButIgnored+" tekstów rozpoznano (w starszych wersjach)\n\n"
+                    +recognizedAndImported+" tekstów zaimportowano", null,
+                    (dialog, which) -> {
+                    }, null);
+        } catch (IOException e) {
+            dialog(context, "Problem z czytaniem pliku EPUB", null,
+                    (dialog, which) -> {
+                    }, null);
+        }
+    }
+
     @SuppressWarnings("deprecation")
     public static String stripHtml(String html) {
         return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N ?
                 Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString() :
                 Html.fromHtml(html).toString();
+    }
+
+    public static ArrayList<String> findImagesUrlInHTML(String s) {
+        ArrayList<String> urls = new ArrayList<>();
+        int index = 0;
+        while (true) {
+            index = Utils.Szukaj(s, "<img", index);
+            if (index == -1) break;
+            index = Utils.Szukaj(s, "src=\"", index);
+            if (index == -1) break;
+            int index2 = Utils.Szukaj(s, "\"", index);
+            urls.add(s.substring(index, index2 - 1));
+            index = index2;
+        }
+        return urls;
     }
 
     public static String findBetween(String s, String start, String stop, int startIndex) {

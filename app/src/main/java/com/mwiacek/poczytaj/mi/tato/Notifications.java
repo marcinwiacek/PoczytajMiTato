@@ -17,21 +17,21 @@ public class Notifications {
         return null;
     }
 
-    private static void setupOneChannel(Channels channelName, String description, Context context) {
+    private static void setupOneChannel(Context context, Channels channelName, String description) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelName.name(),
-                    channelName.name(), NotificationManager.IMPORTANCE_DEFAULT);
+                    description, NotificationManager.IMPORTANCE_DEFAULT);
             channel.setDescription(description);
             Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
         }
     }
 
     public static void setupNotifications(Context context) {
-        setupOneChannel(Channels.CZYTANIE_Z_INTERNETU, "Czytanie plików z Internetu", context);
-        setupOneChannel(Channels.ZAPIS_W_URZADZENIU, "Zapis plików w urządzeniu", context);
+        setupOneChannel(context, Channels.CZYTANIE_Z_INTERNETU, "Czytanie plików z Internetu");
+        setupOneChannel(context, Channels.ZAPIS_W_URZADZENIU, "Zapis plików w urządzeniu");
     }
 
-    public static NotificationCompat.Builder setupNotification(Channels channel, Context context, String text) {
+    public static NotificationCompat.Builder setupNotification(Context context, Channels channel, String text) {
         return new NotificationCompat.Builder(context, channel.name())
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setContentTitle("Poczytaj Mi Tato")

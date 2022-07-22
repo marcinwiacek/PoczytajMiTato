@@ -41,7 +41,7 @@
                             android:layout_gravity="start"
                             app:iconifiedByDefault="false"
                             app:layout_collapseMode="pin"
-                            app:queryHint="Szukaj" />
+                            app:queryHint="Szukaj książek online" />
 
                     </androidx.appcompat.widget.Toolbar>
 

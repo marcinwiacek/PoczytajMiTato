@@ -66,7 +66,7 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         return new Utils.ItemViewHolder(LayoutInflater.from(parent.getContext()).inflate(
                 viewType == VIEW_TYPE_ITEM ?
-                        R.layout.search_book_list_item : R.layout.item_loading_list_item,
+                        R.layout.search_list_item : R.layout.loading_list_item,
                 parent, false), mOnClick);
     }
 
@@ -122,15 +122,10 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                 String[] urls = finalSt.getSearchUrl(stringToSearch, pageNumber);
                 for (String singleURL : urls) {
                     try {
-                        StringBuilder content = Utils.getPageContent(singleURL);
+                        StringBuilder content = Utils.getTextPageContent(singleURL);
                         if (!content.toString().isEmpty()) {
-                            System.out.println(
-                                    "Wyniki z serwisu " + info.name());
                             finalSt.doesItMatch(stringToSearch, singleURL, content, mData, lock,
                                     this);
-                        } else {
-                            System.out.println(
-                                    "Problem z wynikami z serwisu " + info.name());
                         }
                     } catch (Exception e) {
                         e.printStackTrace();

@@ -23,12 +23,13 @@ import com.mwiacek.poczytaj.mi.tato.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 
-public class PageListRecyclerViewAdapter extends
-        RecyclerView.Adapter<PageListRecyclerViewAdapter.TaskListRecyclerViewHolder> {
+public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private final static int REGULAR_VIEW_TYPE_ITEM = 1;
 
     private final Context context;
+    private boolean allRead = false;
+    private boolean showHidden = false;
     private ArrayList<Page> mData = new ArrayList<>();
     private Utils.OnItemClicked mOnClick;
     private String[] search;
@@ -58,7 +59,7 @@ public class PageListRecyclerViewAdapter extends
         return WordtoSpan;
     }
 
-    public void notifyAboutUpdates(String url) {
+    public void onPageUpdate(String url) {
         for (int i = 0; i < mData.size(); i++) {
             if (mData.get(i).url.equals(url)) {
                 notifyItemChanged(i);
@@ -68,10 +69,18 @@ public class PageListRecyclerViewAdapter extends
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void update(DBHelper mydb, FragmentConfig.HiddenTexts hidden, Iterator<Page.PageTyp> typ,
+    public void update(DBHelper mydb, FragmentConfig.HiddenTexts hidden, ArrayList<Page.PageTyp> typ,
                        String authorFilter, String tagFilter) {
         mData = mydb.getAllPages(hidden, typ, authorFilter, tagFilter);
         this.search = null;
+        this.allRead = true;
+        for (Page.PageTyp t : typ) {
+            if (mydb.getLastIndexPageRead(t)!=-1) {
+                this.allRead = false;
+                break;
+            }
+        }
+        this.showHidden = hidden != FragmentConfig.HiddenTexts.NONE;
         this.notifyDataSetChanged();
     }
 
@@ -82,12 +91,8 @@ public class PageListRecyclerViewAdapter extends
         this.notifyDataSetChanged();
     }
 
-    @NonNull
-    @Override
-    public TaskListRecyclerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new TaskListRecyclerViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(
-                        R.layout.read_page_list_item, parent, false));
+    void setOnClick(Utils.OnItemClicked onClick) {
+        this.mOnClick = onClick;
     }
 
     Page getItem(int position) {
@@ -98,10 +103,39 @@ public class PageListRecyclerViewAdapter extends
         return mData;
     }
 
+    private String getStringForInfoElement() {
+        if (search != null) return "Znalezione teksty: " + mData.size();
+        if (showHidden) return "";
+        if (mData.size() == 0) return "Użyj gestu swype, żeby załadować dane.";
+        if (!allRead) return "Lista tekstów jest niepełna.";
+        return "Teksty: " + mData.size(); //Ostatnie odświeżenie.
+    }
+
+    @NonNull
     @Override
-    public void onBindViewHolder(@NonNull TaskListRecyclerViewHolder holder, int position) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == REGULAR_VIEW_TYPE_ITEM) {
+            return new TaskListRecyclerViewHolder(
+                    LayoutInflater.from(parent.getContext()).inflate(R.layout.read_list_item,
+                            parent, false));
+        }
+        return new InfoTaskListRecyclerViewHolder(
+                LayoutInflater.from(parent.getContext()).inflate(R.layout.info_list_item,
+                        parent, false));
+    }
+
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+        if (viewHolder instanceof InfoTaskListRecyclerViewHolder) {
+            ((InfoTaskListRecyclerViewHolder) viewHolder).description.setText(getStringForInfoElement());
+            return;
+        }
+
+        TaskListRecyclerViewHolder holder = (TaskListRecyclerViewHolder) viewHolder;
+
         Page page = mData.get(position);
-        Object o = new ForegroundColorSpan(page.getCacheFileName(holder.itemView.getContext()).exists() ?
+        Object o = new ForegroundColorSpan(page.getCacheFile(holder.itemView.getContext()).exists() ?
                 (((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                         == Configuration.UI_MODE_NIGHT_YES) ? Color.WHITE : Color.BLUE) : Color.GRAY);
 
@@ -117,12 +151,23 @@ public class PageListRecyclerViewAdapter extends
     }
 
     @Override
-    public int getItemCount() {
-        return mData.size();
+    public int getItemViewType(int position) {
+        return position == mData.size() ? (REGULAR_VIEW_TYPE_ITEM + 1) : REGULAR_VIEW_TYPE_ITEM;
     }
 
-    void setOnClick(Utils.OnItemClicked onClick) {
-        this.mOnClick = onClick;
+    @Override
+    public int getItemCount() {
+        return mData.size() + (getStringForInfoElement().isEmpty() ? 0 : 1);
+    }
+
+    static class InfoTaskListRecyclerViewHolder extends RecyclerView.ViewHolder {
+        public TextView description;
+
+        InfoTaskListRecyclerViewHolder(View view) {
+            super(view);
+
+            description = view.findViewById(R.id.Description);
+        }
     }
 
     class TaskListRecyclerViewHolder extends RecyclerView.ViewHolder {

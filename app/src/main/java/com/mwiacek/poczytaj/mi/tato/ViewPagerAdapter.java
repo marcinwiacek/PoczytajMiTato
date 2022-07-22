@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ListIterator;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
     private final static ArrayList<FragmentConfig> configs = new ArrayList<>();
@@ -57,25 +58,29 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         return i > 1;
     }
 
-    private void checkTabMode() {
+    private void updateTabMode() {
         tabLayout.setVisibility(tabLayout.getTabCount() == 1 ? View.GONE : View.VISIBLE);
         for (Fragment f : activity.getSupportFragmentManager().getFragments()) {
             if (f instanceof ReadFragment) {
-                ((ReadFragment) f).updateLayout(!(tabLayout.getTabCount() == 1));
+                ((ReadFragment) f).onUpdateLayout(!(tabLayout.getTabCount() == 1));
             }
         }
     }
 
     public void deleteSearchTab() {
-        FragmentConfig c = null;
-        for (FragmentConfig f : configs) {
-            if (f.searchFragmentConfig) {
-                c = f;
-                break;
+        ListIterator<FragmentConfig> listIterator = configs.listIterator();
+        while (listIterator.hasNext()) {
+            FragmentConfig c = listIterator.next();
+            if (c.searchFragmentConfig) {
+                deleteTab(c);
+                /* We need to refresh menu items */
+                for (Fragment f : activity.getSupportFragmentManager().getFragments()) {
+                    if (f instanceof ReadFragment) {
+                        ((ReadFragment) f).onInvalidateMenu();
+                    }
+                }
+                return;
             }
-        }
-        if (c != null) {
-            deleteTab(c);
         }
     }
 
@@ -91,7 +96,13 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         configs.add(c);
         c.saveToInternalStorage(context);
         this.notifyItemInserted(configs.size() - 1);
-        checkTabMode();
+        updateTabMode();
+        /* We need to refresh menu items */
+        for (Fragment f : activity.getSupportFragmentManager().getFragments()) {
+            if (f instanceof ReadFragment) {
+                ((ReadFragment) f).onInvalidateMenu();
+            }
+        }
     }
 
     public void addTab(FragmentConfig config, String newName) throws CloneNotSupportedException {
@@ -101,25 +112,24 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         configs.add(config2);
         config2.saveToInternalStorage(context);
         this.notifyItemInserted(configs.size() - 1);
-        checkTabMode();
+        updateTabMode();
     }
 
     public void deleteTab(FragmentConfig config) {
-        /* Remove tab from configs */
-        int index = -1;
-        for (int i = 0; i < configs.size(); i++) {
-            if (configs.get(i).fileNameTabNum == config.fileNameTabNum) {
-                index = i;
-                break;
+        int i = 0;
+        ListIterator<FragmentConfig> listIterator = configs.listIterator();
+        while (listIterator.hasNext()) {
+            if (listIterator.next().fileNameTabNum == config.fileNameTabNum) {
+                listIterator.remove();
+                /* delete file */
+                new File(context.getFilesDir() + File.separator +
+                        "tab" + config.fileNameTabNum).delete();
+                this.notifyItemRemoved(i);
+                updateTabMode();
+                return;
             }
+            i++;
         }
-        configs.remove(index);
-        /* delete file */
-        boolean delete = new File(context.getFilesDir() + File.separator +
-                "tab" + config.fileNameTabNum).delete();
-        if (!delete) System.out.println("file not deleted");
-        this.notifyItemRemoved(index);
-        checkTabMode();
     }
 
     private void readConfigs() {
@@ -130,7 +140,6 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
                 if (file.getName().startsWith("tab")) {
                     FragmentConfig c = FragmentConfig.readFromInternalStorage(context,
                             Integer.parseInt(file.getName().substring(3)));
-                    System.out.println("x" + Integer.parseInt(file.getName().substring(3)));
                     if (c == null) {
                         file.delete();
                         correct = -1;
@@ -167,7 +176,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
     public CharSequence getPageTitle(int position) {
         if (configs.size() == 0) readConfigs();
-        checkTabMode();
+        updateTabMode();
         return configs.get(position).tabName;
     }
 
@@ -175,7 +184,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @Override
     public Fragment createFragment(int position) {
         if (configs.size() == 0) readConfigs();
-        checkTabMode();
+        updateTabMode();
         return configs.get(position).searchFragmentConfig ?
                 new SearchFragment(configs.get(position), imageCache, this) :
                 new ReadFragment(configs.get(position), this, mydb);
@@ -184,7 +193,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @Override
     public int getItemCount() {
         if (configs.size() == 0) readConfigs();
-        checkTabMode();
+        updateTabMode();
         return configs.size();
     }
 }

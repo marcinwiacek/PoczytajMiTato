@@ -2,8 +2,10 @@ package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,15 +19,19 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
@@ -45,6 +51,7 @@ public class SearchFragment extends Fragment {
     private SearchView searchView;
     private RecyclerView manyBooksRecyclerView;
     private boolean isLoadingMoreBooks = false;
+    private SingleBook lastClickedBook;
 
     public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
         this.config = config;
@@ -53,10 +60,8 @@ public class SearchFragment extends Fragment {
     }
 
     public void onBackPressed() {
-        System.out.println("jest back");
         if (manyBooksRecyclerView.isShown()) System.exit(0);
         viewSwitcher.showPrevious();
-        System.exit(0);
     }
 
     public int getTabNum() {
@@ -84,30 +89,56 @@ public class SearchFragment extends Fragment {
         }, 1000);
     }
 
+    private void download(View view, ActivityResultLauncher<String> requestPermissionLauncher) {
+        if (lastClickedBook.downloadUrl.length() == 0) {
+            return;
+        }
+        if (lastClickedBook.downloadUrl.contains(".htm") ||
+                lastClickedBook.downloadUrl.contains("artrage.pl")) {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setData(Uri.parse(lastClickedBook.downloadUrl));
+            requireContext().startActivity(i);
+            return;
+        }
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Snackbar.make(view, "Aplikacja musi znaleźć folder do pobierania." +
+                                    "Przyznaj uprawnienie WRITE_EXTERNAL_STORAGE.",
+                            Snackbar.LENGTH_INDEFINITE)
+                    .setAction("OK", view2 ->
+                            requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+                    .show();
+        } else {
+            requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.search_fragment, container, false);
         viewSwitcher = view.findViewById(R.id.viewSwitcher);
 
+        ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                result -> {
+                    if (result) Utils.downloadFileWithDownloadManagerAfterGrantingPermission(
+                            lastClickedBook.downloadUrl, lastClickedBook.title, requireContext());
+                });
+
         /* Page with single book */
-        //TextView titleTextView = view.findViewById(R.id.titleTextView);
         RecyclerView singleBookRecyclerView = view.findViewById(R.id.bookListListView);
-        //  Button mBackButton = view.findViewById(R.id.backButton);
 
         singleBookRecyclerViewAdapter = new SingleBookRecyclerViewAdapter(imageCache, getContext(),
                 position -> {
-                    SingleBook singleBook = singleBookRecyclerViewAdapter.getItem(position);
-                    Utils.downloadFileWithDownloadManager(singleBook.downloadUrl,
-                            singleBook.title, getContext());
+                    lastClickedBook = singleBookRecyclerViewAdapter.getItem(position);
+                    download(view, requestPermissionLauncher);
                 });
         singleBookRecyclerView.setAdapter(singleBookRecyclerViewAdapter);
         singleBookRecyclerView.setItemAnimator(null);
         singleBookRecyclerView.addItemDecoration(new DividerItemDecoration(requireContext(),
                 DividerItemDecoration.VERTICAL));
-
-
-        //   mBackButton.setOnClickListener(v -> viewSwitcher.showPrevious());
 
         /* Page with many books */
         searchView = view.findViewById(R.id.mySearch3);
@@ -120,8 +151,8 @@ public class SearchFragment extends Fragment {
             ManyBooks books = manyBooksRecyclerViewAdapter.getItem(position);
             SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
             if (books.items.size() == 1) {
-                Utils.downloadFileWithDownloadManager(book.downloadUrl,
-                        book.title, getContext());
+                lastClickedBook = book;
+                download(view, requestPermissionLauncher);
                 return;
             }
             singleBookRecyclerViewAdapter.refreshData(books.items);
@@ -234,16 +265,13 @@ public class SearchFragment extends Fragment {
                 int i = 0;
                 int mainIndex = 0;
                 menu.add(2, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
-                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                        .setChecked(config.useTOR);
+                        .setCheckable(true).setChecked(config.useTOR);
                 for (String s : hm.keySet()) {
-                    menu.add(2, i++, mainIndex++, s).
-                            setActionView(R.layout.checkbox_menu_item).setCheckable(true).setChecked(
-                                    config.storeInfoForSearchFragment.contains(hm.get(s)));
+                    menu.add(2, i++, mainIndex++, s).setCheckable(true).setChecked(
+                            config.storeInfoForSearchFragment.contains(hm.get(s)));
                 }
                 menu.add(3, R.string.MENU_SHOW_SEARCH_TAB, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
-                        .setActionView(R.layout.checkbox_menu_item).setCheckable(true)
-                        .setChecked(ViewPagerAdapter.isSearchTabAvailable());
+                        .setCheckable(true).setChecked(ViewPagerAdapter.isSearchTabAvailable());
                 menu.add(4, R.string.MENU_WRITE_MAIL_TO_AUTHOR, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     menu.setGroupDividerEnabled(true);

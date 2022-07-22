@@ -4,11 +4,12 @@
     <string name="MENU_DELETE_TAB">Usuń zakładkę</string>
     <string name="MENU_CHANGE_TAB_NAME">Zmień nazwę zakładki</string>
     <string name="MENU_SHOW_SEARCH_TAB">Pokaż zakładkę SZUKAJ</string>
-    <string name="MENU_EXPORT_EPUB">Zrób EPUB (widoczne i pobrane)</string>
+    <string name="MENU_EXPORT_EPUB">Zapisz EPUB (widoczne i pobrane)</string>
     <string name="MENU_IMPORT_EPUB">Importuj EPUB</string>
-    <string name="MENU_SHOW_HIDDEN">Pokaż ukryte</string>
+    <string name="MENU_SHOW_GREEN">Pokaż zielone</string>
+    <string name="MENU_SHOW_RED">Pokaż czerwone</string>
     <string name="MENU_USE_TOR">Używaj TOR</string>
-    <string name="MENU_NETWORK_WITHOUT_LIMIT">Sieć musi być bez limitu</string>
+    <string name="MENU_NETWORK_WITH_LIMIT">Sieć może być z limitem danym</string>
     <string name="MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY">Nie pobieraj przy niskiej baterii</string>
     <string name="MENU_WRITE_MAIL_TO_AUTHOR">Napisz maila do autora</string>
     <string name="MENU_GET_UNREAD_TEXTS">Pobierz niepobrane teksty</string>

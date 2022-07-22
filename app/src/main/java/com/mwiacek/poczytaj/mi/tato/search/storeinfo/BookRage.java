@@ -21,7 +21,7 @@ public class BookRage extends StoreInfo {
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
                                ArrayList<ManyBooks> books, ReentrantLock lock,
                                ManyBooksRecyclerViewAdapter adapter) {
-        int startSearchPosition, fromPosition, fromPosition2, toPosition = 0, sortOrder = 1;
+        int startSearchPosition, fromPosition, fromPosition2, toPosition = 0;
         String s;
         SingleBook singleBook;
         boolean added = false;
