@@ -59,9 +59,10 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
         return WordtoSpan;
     }
 
-    public void onPageUpdate(String url) {
+    public void onPageUpdate(String url, DBHelper db) {
         for (int i = 0; i < mData.size(); i++) {
             if (mData.get(i).url.equals(url)) {
+                mData.set(i, db.getPage(url));
                 notifyItemChanged(i);
                 break;
             }
@@ -75,7 +76,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
         this.search = null;
         this.allRead = true;
         for (Page.PageTyp t : typ) {
-            if (mydb.getLastIndexPageRead(t)!=-1) {
+            if (mydb.getLastIndexPageRead(t) != -1) {
                 this.allRead = false;
                 break;
             }
@@ -119,7 +120,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
                     LayoutInflater.from(parent.getContext()).inflate(R.layout.read_list_item,
                             parent, false));
         }
-        return new InfoTaskListRecyclerViewHolder(
+        return new Utils.InfoTaskListRecyclerViewHolder(
                 LayoutInflater.from(parent.getContext()).inflate(R.layout.info_list_item,
                         parent, false));
     }
@@ -127,8 +128,8 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
-        if (viewHolder instanceof InfoTaskListRecyclerViewHolder) {
-            ((InfoTaskListRecyclerViewHolder) viewHolder).description.setText(getStringForInfoElement());
+        if (viewHolder instanceof Utils.InfoTaskListRecyclerViewHolder) {
+            ((Utils.InfoTaskListRecyclerViewHolder) viewHolder).description.setText(getStringForInfoElement());
             return;
         }
 
@@ -158,16 +159,6 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
     @Override
     public int getItemCount() {
         return mData.size() + (getStringForInfoElement().isEmpty() ? 0 : 1);
-    }
-
-    static class InfoTaskListRecyclerViewHolder extends RecyclerView.ViewHolder {
-        public TextView description;
-
-        InfoTaskListRecyclerViewHolder(View view) {
-            super(view);
-
-            description = view.findViewById(R.id.Description);
-        }
     }
 
     class TaskListRecyclerViewHolder extends RecyclerView.ViewHolder {

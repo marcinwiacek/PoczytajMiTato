@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BookRage extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
+        if (pageNumber != 1) return new String[]{};
         return new String[]{"https://artrage.pl/bookrage", "https://artrage.pl/bookrage/quick"};
     }
 
@@ -24,7 +25,6 @@ public class BookRage extends StoreInfo {
         int startSearchPosition, fromPosition, fromPosition2, toPosition = 0;
         String s;
         SingleBook singleBook;
-        boolean added = false;
         Date expiryDate;
         float price = (float) 0;
 
@@ -88,10 +88,8 @@ public class BookRage extends StoreInfo {
                     !singleBook.title.toLowerCase().contains(name.toLowerCase())) {
                 continue;
             }
-            if (addBook(singleBook, books, lock, adapter)) {
-                added = true;
-            }
+            addBook(singleBook, books, lock, adapter);
         }
-        return added;
+        return false;
     }
 }

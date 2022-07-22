@@ -10,9 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class UpolujEbooka extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
-        //najpopularniejsze
-        return new String[]{"https://upolujebooka.pl/szukaj," +
-                pageNumber + "," + name + ".html?order_by=1"};
+        return new String[]{"https://upolujebooka.pl/szukaj," + pageNumber + "," + name + ".html?order_by=1"};
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
@@ -21,7 +19,6 @@ public class UpolujEbooka extends StoreInfo {
         int startSearchPosition, fromPosition, toPosition = 0;
         String s, s2;
         SingleBook singleBook;
-        boolean added = false;
 
         while (true) {
             startSearchPosition = toPosition;
@@ -53,10 +50,8 @@ public class UpolujEbooka extends StoreInfo {
             }
             singleBook.price = Float.parseFloat(s2);
 
-            if (addBook(singleBook, books, lock, adapter)) {
-                added = true;
-            }
+            addBook(singleBook, books, lock, adapter);
         }
-        return (pageContent.indexOf("rel=\"next\">następna</a></li>") != -1) && added;
+        return pageContent.indexOf("rel=\"next\">następna</a></li>") != -1;
     }
 }

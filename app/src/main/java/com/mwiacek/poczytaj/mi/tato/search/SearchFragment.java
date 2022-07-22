@@ -8,7 +8,6 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -50,7 +49,6 @@ public class SearchFragment extends Fragment {
     private ViewSwitcher viewSwitcher;
     private SearchView searchView;
     private RecyclerView manyBooksRecyclerView;
-    private boolean isLoadingMoreBooks = false;
     private SingleBook lastClickedBook;
 
     public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
@@ -66,27 +64,6 @@ public class SearchFragment extends Fragment {
 
     public int getTabNum() {
         return config.fileNameTabNum;
-    }
-
-    private void loadMoreBooks(Context context) {
-        NetworkInfo activeNetwork = ((ConnectivityManager) context
-                .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-        if (!isConnected) {
-            Toast.makeText(context, "Potrzebny internet!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        // rowsArrayList.add(null);
-        // manyBooksRecyclerView.post(() -> manyBooksRecyclerViewAdapter.notifyItemInserted(rowsArrayList.size() - 1));
-
-        new Handler().postDelayed(() -> {
-            //    rowsArrayList.remove(rowsArrayList.size() - 1);
-            //     int scrollPosition = rowsArrayList.size();
-            //     manyBooksRecyclerViewAdapter.notifyItemRemoved(scrollPosition);
-            manyBooksRecyclerViewAdapter.makeSearch(requireContext(), true, searchView.getQuery().toString());
-            //  manyBooksRecyclerViewAdapter.notifyDataSetChanged();
-            isLoadingMoreBooks = false;
-        }, 1000);
     }
 
     private void download(View view, ActivityResultLauncher<String> requestPermissionLauncher) {
@@ -172,13 +149,19 @@ public class SearchFragment extends Fragment {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
 
-                if (isLoadingMoreBooks) return;
+                if (mProgressBar.getMax() != 0) return;
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                if (linearLayoutManager != null &&
-                        linearLayoutManager.findLastCompletelyVisibleItemPosition() >
-                                manyBooksRecyclerViewAdapter.getItemCount() - 7) {
-                    isLoadingMoreBooks = true;
-                    loadMoreBooks(requireContext());
+                if (linearLayoutManager != null && linearLayoutManager.findLastCompletelyVisibleItemPosition() >
+                        manyBooksRecyclerViewAdapter.getItemCount() - 5) {
+                    NetworkInfo activeNetwork = ((ConnectivityManager) requireContext()
+                            .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+                    boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+                    if (!isConnected) {
+                        Toast.makeText(requireContext(), "Potrzebny internet!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    manyBooksRecyclerViewAdapter.makeSearch(false,
+                            searchView.getQuery().toString());
                 }
             }
         });
@@ -186,7 +169,8 @@ public class SearchFragment extends Fragment {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                manyBooksRecyclerViewAdapter.makeSearch(requireContext(), false, query);
+                manyBooksRecyclerViewAdapter.clear();
+                manyBooksRecyclerViewAdapter.makeSearch(true, query);
                 return false;
             }
 
@@ -200,55 +184,6 @@ public class SearchFragment extends Fragment {
             searchView.setQuery("", true);
             searchView.clearFocus();
         });
-        //     searchButton.setOnClickListener(v -> {
-//          InputMethodManager imm = (InputMethodManager) view.getSystemService(Context.INPUT_METHOD_SERVICE);
-//          imm.hideSoftInputFromWindow(mSearchTextView.getWindowToken(), 0);
-
-    /*        searchButton.setEnabled(false);
-            searchTextView.setEnabled(false);
-            config.searchHistory.add(searchTextView.getText().toString());
-            searchTextAdapter = new ArrayAdapter<>(getActivity(),
-                    android.R.layout.simple_dropdown_item_1line, config.searchHistory);
-            searchTextView.setAdapter(searchTextAdapter);
-            manyBooksRecyclerViewAdapter.makeSearch(false);
-        });
-
-        // mSearchTextView.setText("warszawo naprzód");
-        // mSearchButton.callOnClick();
-
-        searchTextAdapter = new ArrayAdapter<>(getActivity(),
-                android.R.layout.simple_dropdown_item_1line, config.searchHistory);
-        searchTextView.setAdapter(searchTextAdapter);
-        searchTextView.setThreshold(0);
-        searchTextView.setOnTouchListener((paramView, paramMotionEvent) -> {
-            searchTextAdapter.getFilter().filter(null);
-            searchTextView.showDropDown();
-            return false;
-        });
-        searchTextView.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN &&
-                    keyCode == KeyEvent.KEYCODE_ENTER) {
-                searchTextView.dismissDropDown();
-                searchButton.callOnClick();
-                return true;
-            }
-            return false;
-        });
-        searchTextView.setOnItemClickListener(
-                (parent, view1, position, id) -> searchButton.callOnClick());
-        searchTextView.addTextChangedListener(new TextWatcher() {
-            public void afterTextChanged(Editable s) {
-                searchTextAdapter.getFilter().filter(null);
-                if (searchTextView.isShown()) searchTextView.showDropDown();
-                searchButton.setEnabled(searchTextView.length() != 0);
-            }
-
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-        });*/
 
         toolbar.addMenuProvider(new MenuProvider() {
             private final LinkedHashMap<String, StoreInfo.StoreInfoTyp> hm = new LinkedHashMap<String,
@@ -264,8 +199,8 @@ public class SearchFragment extends Fragment {
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
                 int i = 0;
                 int mainIndex = 0;
-                menu.add(2, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
-                        .setCheckable(true).setChecked(config.useTOR);
+                //  menu.add(2, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
+                //          .setCheckable(true).setChecked(config.useTOR);
                 for (String s : hm.keySet()) {
                     menu.add(2, i++, mainIndex++, s).setCheckable(true).setChecked(
                             config.storeInfoForSearchFragment.contains(hm.get(s)));

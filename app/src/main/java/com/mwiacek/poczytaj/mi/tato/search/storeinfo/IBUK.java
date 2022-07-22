@@ -21,7 +21,6 @@ public class IBUK extends StoreInfo {
         int startSearchPosition, fromPosition, toPosition = 0;
         String s, s2;
         SingleBook singleBook;
-        boolean added = false;
         while (true) {
             startSearchPosition = toPosition;
             fromPosition = pageContent.indexOf("<div class=\"bookitem\">", startSearchPosition);
@@ -55,10 +54,8 @@ public class IBUK extends StoreInfo {
             }
             singleBook.price = Float.parseFloat(s2.replace(",", "."));
 
-            if (addBook(singleBook, books, lock, adapter)) {
-                added = true;
-            }
+            addBook(singleBook, books, lock, adapter);
         }
-        return (pageContent.indexOf("<div class=\"pagination font-size14\">") != -1) && added;
+        return pageContent.indexOf("<div class=\"pagination font-size14\">") != -1;
     }
 }

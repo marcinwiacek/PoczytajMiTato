@@ -108,7 +108,7 @@ public class ReadFragment extends Fragment {
 
     /* Called, when page with concrete url needs to be updated in the list */
     public void onPageUpdate(String url) {
-        pageListAdapter.onPageUpdate(url);
+        pageListAdapter.onPageUpdate(url, db);
     }
 
     /* Called, when pages with concrete PageTyp need to be updated in the list */
@@ -142,14 +142,6 @@ public class ReadFragment extends Fragment {
         frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
     }
 
-    private void informAllReadTabsAboutUpdate(Page.PageTyp typ) {
-        for (Fragment ff : getParentFragmentManager().getFragments()) {
-            if (ff instanceof ReadFragment) {
-                ((ReadFragment) ff).onPageUpdate(typ);
-            }
-        }
-    }
-
     private void setupRefresh() {
         WorkManager.getInstance(requireContext())
                 .cancelAllWorkByTag("poczytajmitato" + config.fileNameTabNum);
@@ -174,7 +166,7 @@ public class ReadFragment extends Fragment {
         WorkManager.getInstance(requireContext()).enqueue(request);
     }
 
-    private void readTextFromInternet(Page p, SearchView searchView, WebView webView, boolean deleteBefore) {
+    private void readTextFromInternet(Page p, WebView webView, boolean deleteBefore) {
         if (deleteBefore) {
             File f = p.getCacheFile(getContext());
             f.delete();
@@ -185,7 +177,7 @@ public class ReadFragment extends Fragment {
             }
         }
         if (webView != null) {
-            webViewLoadingString = "<div width=100%>Czytanie pliku " + p.url;
+            webViewLoadingString = "<div style='word-break: break-all;'>Czytanie pliku " + p.url;
             webView.loadDataWithBaseURL(null, webViewLoadingString, MIME_TYPE,
                     ENCODING, null);
         }
@@ -210,22 +202,14 @@ public class ReadFragment extends Fragment {
                     if (webView != null) {
                         webViewLoadingString = "";
                     }
+                    db.disableUpdatedOnServer(p.url);
                     for (Fragment ff : getParentFragmentManager().getFragments()) {
                         if (ff instanceof ReadFragment) {
                             ((ReadFragment) ff).onPageUpdate(p.url);
                         }
                     }
                     if (webView != null) {
-                        String page = mainPageContentOnTheEnd;
-                        if (!searchView.getQuery().toString().trim().isEmpty()) {
-                            String[] toSearch = searchView.getQuery().toString().trim().split(" ");
-                            for (String ts : toSearch) {
-                                page = Utils.findText(page, ts.trim());
-                            }
-                        }
-                        webView.loadDataWithBaseURL(
-                                null, page
-                                        .replaceAll("src=\"", "src=\"" + URL_PREFIX) + "</div>",
+                        webView.loadDataWithBaseURL(null, renderPage(mainPageContentOnTheEnd),
                                 MIME_TYPE, ENCODING, null
                         );
                     }
@@ -241,6 +225,27 @@ public class ReadFragment extends Fragment {
                                 (config.showHiddenTexts == FragmentConfig.HiddenTexts.RED ?
                                         android.R.color.holo_red_dark : android.R.color.holo_green_dark)
                 ));
+    }
+
+    private String renderPage(String s) {
+        String page = s;
+        if (!searchView.getQuery().toString().trim().isEmpty()) {
+            String[] toSearch = searchView.getQuery().toString().trim().split(" ");
+            for (String ts : toSearch) {
+                page = Utils.findText(page, ts.trim());
+            }
+        }
+        return "<html><head><body style='text-align:justify'>" +
+                page.replaceAll("src=\"", "src=\"" + URL_PREFIX) +
+                "</body></html>";
+    }
+
+    public void informAllReadTabsAboutUpdate(Page.PageTyp typ) {
+        for (Fragment ff : getParentFragmentManager().getFragments()) {
+            if (ff instanceof ReadFragment) {
+                ((ReadFragment) ff).onPageUpdate(typ);
+            }
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -313,7 +318,7 @@ public class ReadFragment extends Fragment {
         refresh2.setOnRefreshListener(() -> {
             Page p = pageListAdapter.getItem(positionInPageList);
             db.setPageTop(p.url, 0);
-            readTextFromInternet(p, searchView, webView, true);
+            readTextFromInternet(p, webView, true);
             refresh2.setRefreshing(false);
         });
 
@@ -352,8 +357,8 @@ public class ReadFragment extends Fragment {
                 menu.add(2, R.string.MENU_CHANGE_TAB_NAME, mainIndex++, R.string.MENU_CHANGE_TAB_NAME);
                 menu.add(2, R.string.MENU_SHOW_SEARCH_TAB, mainIndex++, R.string.MENU_SHOW_SEARCH_TAB)
                         .setCheckable(true).setChecked(ViewPagerAdapter.isSearchTabAvailable());
-                menu.add(3, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
-                        .setCheckable(true).setChecked(config.useTOR);
+                //   menu.add(3, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
+                //           .setCheckable(true).setChecked(config.useTOR);
                 menu.add(3, R.string.MENU_GET_TEXTS_WITH_INDEX, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
                         .setCheckable(true).setChecked(config.getTextsWhenRefreshingIndex);
                 for (String s : hm.keySet()) {
@@ -603,11 +608,11 @@ public class ReadFragment extends Fragment {
                         if (f.exists()) {
                             continue;
                         }
-                        readTextFromInternet(p, searchView, webView, false);
+                        readTextFromInternet(p, webView, false);
                     }
                 } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_TEXTS) {
                     for (Page p : pageListAdapter.getAllItems()) {
-                        readTextFromInternet(p, searchView, webView, true);
+                        readTextFromInternet(p, webView, true);
                     }
                 } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_INDEX_PAGES) {
                     refresh.setRefreshing(true);
@@ -630,18 +635,24 @@ public class ReadFragment extends Fragment {
             File f = p.getCacheFile(requireContext());
             positionInPageList = position;
             if (f.exists()) {
-                String s = Utils.readTextFile(f);
-                if (!searchView.getQuery().toString().trim().isEmpty()) {
-                    String[] toSearch = searchView.getQuery().toString().trim().split(" ");
-                    for (String ts : toSearch) {
-                        s = Utils.findText(s, ts.trim());
-                    }
+                if (p.updatedOnServer) {
+                    Utils.dialog(requireContext(),
+                            "Na serwerze może być nowa wersja tekstu. Czy chcesz odświeżyć?",
+                            null,
+                            (dialog, which) -> {
+                                readTextFromInternet(p, webView, false);
+                                dialog.dismiss();
+                            }, (dialog, which) -> {
+                                webView.loadDataWithBaseURL(null,
+                                        renderPage(Utils.readTextFile(f)), MIME_TYPE, ENCODING, null);
+                                dialog.dismiss();
+                            });
+                } else {
+                    webView.loadDataWithBaseURL(null, renderPage(Utils.readTextFile(f)),
+                            MIME_TYPE, ENCODING, null);
                 }
-                webView.loadDataWithBaseURL(null,
-                        s.replaceAll("src=\"", "src=\"" + URL_PREFIX),
-                        MIME_TYPE, ENCODING, null);
             } else {
-                readTextFromInternet(p, searchView, webView, false);
+                readTextFromInternet(p, webView, false);
             }
             viewSwitcher.showNext();
         });
@@ -658,7 +669,8 @@ public class ReadFragment extends Fragment {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
 
-                if (loadingMorePages) return;
+                if (loadingMorePages || config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE ||
+                        pageListAdapter.getItemCount() == 1) return;
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager)
                         recyclerView.getLayoutManager();
                 if (linearLayoutManager != null &&
@@ -727,6 +739,10 @@ public class ReadFragment extends Fragment {
         }).attachToRecyclerView(pageList);
 
         refresh.setOnRefreshListener(() -> {
+            if (config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE) {
+                refresh.setRefreshing(false);
+                return;
+            }
             refresh.setRefreshing(true);
             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                     config.readInfoForReadFragment, false, true,
@@ -787,7 +803,12 @@ public class ReadFragment extends Fragment {
 
         mImportEPUB = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(),
-                uri -> Utils.importEPUB(requireContext(), uri, db));
+                uri -> {
+                    Utils.importEPUB(requireContext(), uri, db);
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment,
+                            config.authorFilter, config.tagFilter);
+                });
 
         return view;
     }

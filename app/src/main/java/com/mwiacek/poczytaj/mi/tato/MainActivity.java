@@ -23,12 +23,9 @@ import java.io.File;
 import java.lang.reflect.Field;
 
 /*
-TODO EPUB import
-TODO sync w background
 TODO czerwone teksty (niewidoczne na serwerze)
-TODO up down przy szukaniu
-TODO brak miniaturek w search
-TODO tor
+TODO up down przy szukaniu - FloatingActionButton
+TODO TOR
 TODO Google Books ?
 TODO sortowanie szukania ?
 TODO sync z szukaniem systemowym ?
@@ -62,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
                 (getResources().getConfiguration().uiMode &
-                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+                        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this,
                     com.google.android.material.R.color.design_dark_default_color_background
             ));

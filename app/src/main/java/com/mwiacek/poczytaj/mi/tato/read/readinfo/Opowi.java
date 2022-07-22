@@ -62,7 +62,7 @@ public class Opowi extends ReadInfo {
                         final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
                         int pageStart, int pageStop,
-                        final Utils.RepositoryCallback<Page.PageTyp> callback ) {
+                        final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
             int index = pageStart;
@@ -71,7 +71,7 @@ public class Opowi extends ReadInfo {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(typ.ordinal(),
                         Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                "Czytanie "+typ.name()+" - strona " + index).build());
+                                "Czytanie " + typ.name() + " - strona " + index).build());
                 url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
                 String result = Utils.getTextPageContent(url).toString();
@@ -87,8 +87,8 @@ public class Opowi extends ReadInfo {
                     }
                     indeks = indeks2;
                 }
-                if (callback != null && haveNewEntryOnThisPage) {
-                    resultHandler.post(() -> callback.onComplete(typ));
+                if (callbackOnUpdatedPage != null && haveNewEntryOnThisPage) {
+                    resultHandler.post(() -> callbackOnUpdatedPage.onComplete(typ));
                 }
                 if (!result.contains("rel=\"next\">Dalej &raquo;</a>")) {
                     mydb.setLastIndexPageRead(typ, -1);
@@ -100,11 +100,11 @@ public class Opowi extends ReadInfo {
                     break;
                 }
             }
-            if (haveNewEntry) {
+            if (haveNewEntry && pageStart == 1) {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                typ.name() + " - nowe strony").build());
+                                typ.name() + " - nowe strony lub wersje stron").build());
             } else {
                 Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
             }

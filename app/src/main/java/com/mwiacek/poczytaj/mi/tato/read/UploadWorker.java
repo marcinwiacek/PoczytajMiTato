@@ -37,12 +37,14 @@ public class UploadWorker extends ListenableWorker {
             FragmentConfig config = FragmentConfig.readFromInternalStorage(getApplicationContext(),
                     getInputData().getInt("TabNum", -1));
             if (config != null) {
-                for (Page.PageTyp typ : config.readInfoForReadFragment) {
-                    //fixme notify all in callback
-                 //   Page.getReadInfo(typ).getList(null, null, null,
-                //            new DBHelper(getApplicationContext()), getApplicationContext(), typ,
-                //            3 );
-                }
+              /*  Page.getList(getApplicationContext(), null, null,
+                        new DBHelper(getApplicationContext()),
+                        config.readInfoForReadFragment, false, true,
+                        t -> ViewPagerAdapter.informAllReadTabsAboutUpdate(
+                                this.getApplicationContext().
+                        ),
+                        result -> {});
+               */
             }
         }).start();
         return future;

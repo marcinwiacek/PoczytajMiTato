@@ -26,6 +26,7 @@ public class DBHelper extends SQLiteOpenHelper {
     private final static String COLUMN_TYP = "typ";
     private final static String COLUMN_HIDDEN = "hidden";
     private final static String COLUMN_PAGE_NUMBER = "page_number";
+    private final static String COLUMN_UPDATED_ON_SERVER = "updated_on_server";
 
     public DBHelper(Context context) {
         super(context, "pages.db", null, 1);
@@ -38,6 +39,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 COLUMN_AUTHOR + " text, " + COLUMN_DATETIME + " real, " +
                 COLUMN_HIDDEN + " integer, " + COLUMN_COMMENTS + " text, " +
                 COLUMN_URL + " text, " + COLUMN_TOP + " integer, " +
+                COLUMN_UPDATED_ON_SERVER + " integer, " +
                 "UNIQUE(" + COLUMN_URL + "))"
         );
         db.execSQL("create table " + COMPLETED_TABLE_NAME + " " +
@@ -93,7 +95,14 @@ public class DBHelper extends SQLiteOpenHelper {
                 " where " + COLUMN_URL + "='" + url + "'");
     }
 
-    public boolean insertOrUpdatePage(Page.PageTyp typ, String name, String author, String comments, String url, Date d) {
+    public void disableUpdatedOnServer(String url) {
+        this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
+                " set " + COLUMN_UPDATED_ON_SERVER + "=0" +
+                " where " + COLUMN_URL + "='" + url + "'");
+    }
+
+    public boolean insertOrUpdatePage(Page.PageTyp typ, String name, String author, String comments,
+                                      String url, Date d) {
         ContentValues contentValues = new ContentValues();
         contentValues.put(COLUMN_TYP, typ.ordinal());
         contentValues.put(COLUMN_NAME, name);
@@ -103,13 +112,18 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_TOP, 0);
         contentValues.put(COLUMN_DATETIME, d.getTime());
         contentValues.put(COLUMN_HIDDEN, 0);
+        contentValues.put(COLUMN_UPDATED_ON_SERVER, 0);
         try {
             this.getWritableDatabase().insertOrThrow(PAGES_TABLE_NAME, null, contentValues);
             return true;
         } catch (SQLException ignore) {
+            Page p = getPage(url);
+            boolean oldVersionIsDifferent = !p.name.equals(name) || !p.author.equals(author) ||
+                    !p.tags.equals(comments) || !d.equals(p.dt);
+            contentValues.put(COLUMN_UPDATED_ON_SERVER, oldVersionIsDifferent ? 1 : 0);
             this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
                     COLUMN_URL + "='" + url + "'", null);
-            return false;
+            return oldVersionIsDifferent;
         }
     }
 
@@ -127,7 +141,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
                     res.getString(res.getColumnIndex(COLUMN_URL)),
                     new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
-                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]);
+                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))],
+                    res.getInt(res.getColumnIndex(COLUMN_UPDATED_ON_SERVER)) == 1);
         }
         return null;
     }
@@ -198,7 +213,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
                     res.getString(res.getColumnIndex(COLUMN_URL)),
                     new Date(res.getLong(res.getColumnIndex(COLUMN_DATETIME))),
-                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]));
+                    Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))],
+                    res.getInt(res.getColumnIndex(COLUMN_UPDATED_ON_SERVER)) == 1));
             res.moveToNext();
         }
         return array_list;

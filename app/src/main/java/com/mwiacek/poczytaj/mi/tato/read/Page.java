@@ -23,14 +23,16 @@ public class Page {
     public String url;
     public Date dt;
     public PageTyp typ;
+    public boolean updatedOnServer;
 
-    Page(String name, String author, String comments, String url, Date dt, PageTyp typ) {
+    Page(String name, String author, String comments, String url, Date dt, PageTyp typ, boolean updatedOnServer) {
         this.name = name;
         this.author = author;
         this.tags = comments;
         this.url = url;
         this.dt = dt;
         this.typ = typ;
+        this.updatedOnServer = updatedOnServer;
     }
 
     public static ReadInfo getReadInfo(Page.PageTyp t) {
@@ -42,13 +44,14 @@ public class Page {
                                final ThreadPoolExecutor executor,
                                final DBHelper mydb, final ArrayList<PageTyp> typ,
                                boolean allPages, boolean firstPages,
-                               final Utils.RepositoryCallback<Page.PageTyp> callbackAfterEachPage,
+                               final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage,
                                final Utils.RepositoryCallback<String> callbackOnTheEnd) {
         executor.execute(() -> {
             for (Page.PageTyp t : typ) {
-                int i = firstPages? 1: mydb.getLastIndexPageRead(t);
+                int i = firstPages ? 1 : mydb.getLastIndexPageRead(t);
+                if (!allPages && i == -1) continue;
                 getReadInfo(t).getList(context, resultHandler, mydb, t,
-                        allPages ? 1 : i, allPages ? -1 : i + 2, callbackAfterEachPage);
+                        allPages ? 1 : i, allPages ? -1 : i + 2, callbackOnUpdatedPage);
             }
             if (callbackOnTheEnd != null)
                 resultHandler.post(() -> callbackOnTheEnd.onComplete(""));

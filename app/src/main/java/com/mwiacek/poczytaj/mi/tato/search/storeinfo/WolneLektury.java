@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class WolneLektury extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
+        if (pageNumber != 1) return new String[]{};
         return new String[]{"https://wolnelektury.pl/szukaj/?q=" + name};
     }
 

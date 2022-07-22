@@ -55,13 +55,12 @@ public abstract class StoreInfo {
             nb.items.add(singleBook);
             nb.itemsPositionForManyBooksList = 0;
             allBooks.add(nb);
-            Handler handler = new Handler(Looper.getMainLooper()) {
+            new Handler(Looper.getMainLooper()) {
                 @Override
                 public void handleMessage(Message msg) {
                     adapter.notifyItemRangeInserted(allBooks.size() - 2, 1);
                 }
-            };
-            handler.sendEmptyMessage(1);
+            }.sendEmptyMessage(1);
             return true;
         } finally {
             lock.unlock();

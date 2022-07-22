@@ -41,10 +41,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.zip.ZipEntry;
@@ -150,7 +148,7 @@ public class Utils {
         URL url = new URL(address);
         HttpURLConnection connection = url.getProtocol().equals("https") ?
                 (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
-        connection.setReadTimeout(5000); // 5 seconds
+        connection.setReadTimeout(15000); // 5 seconds
         connection.connect();
         if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
             return content;
@@ -238,7 +236,7 @@ public class Utils {
         downloadmanager.enqueue(request);
     }
 
-    public static void addZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {
+    public static void addFileToZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {
         byte[] data = new byte[1000];
 
         BufferedInputStream origin = new BufferedInputStream(f, 1000);
@@ -251,7 +249,7 @@ public class Utils {
         origin.close();
     }
 
-    public static void addZipFile(String name, ZipOutputStream out, String content) throws IOException {
+    public static void addFileToZipFile(String name, ZipOutputStream out, String content) throws IOException {
         ZipEntry entry = new ZipEntry(name);
         out.putNextEntry(entry);
         out.write(content.getBytes());
@@ -289,7 +287,7 @@ public class Utils {
                 if (arr[0] == Page.PageTyp.FANTASTYKA_POCZEKALNIA) coverName = "cover2.jpg";
                 if (arr[0] == Page.PageTyp.FANTASTYKA_ARCHIWUM) coverName = "cover3.jpg";
             }
-            Utils.addZipFile("OEBPS/" + coverName, out, context.getAssets().open(coverName));
+            Utils.addFileToZipFile("OEBPS/" + coverName, out, context.getAssets().open(coverName));
 
             StringBuilder tocTocNCX = new StringBuilder();
             StringBuilder tocTocXHTML = new StringBuilder();
@@ -309,7 +307,7 @@ public class Utils {
 
                     String fileContent = readTextFile(f);
 
-                    Utils.addZipFile("OEBPS/" + j + ".xhtml", out,
+                    addFileToZipFile("OEBPS/" + j + ".xhtml", out,
                             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                                     "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n" +
                                     "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
@@ -352,7 +350,7 @@ public class Utils {
                     for (String s : findImagesUrlInHTML(fileContent)) {
                         for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
                             if (s.endsWith("." + extension)) {
-                                Utils.addZipFile("OEBPS/" + s, out,
+                                Utils.addFileToZipFile("OEBPS/" + s, out,
                                         new FileInputStream(Page.getCacheDirectory(context) +
                                                 File.separator + s));
                                 tocContentOpf1.append("<item id=\"").append(s).append("\" media-type=\"")
@@ -366,17 +364,17 @@ public class Utils {
                 }
             }
 
-            Utils.addZipFile("mimetype", out, "application/epub+zip");
-            Utils.addZipFile("META-INF/container.xml",
+            addFileToZipFile("mimetype", out, "application/epub+zip");
+            addFileToZipFile("META-INF/container.xml",
                     out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n" +
                             "<rootfiles>\n" +
                             "<rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n" +
                             "</rootfiles>\n" +
                             "</container>");
-            Utils.addZipFile("OEBPS/style.css", out, "body {text-align:justify}");
+            addFileToZipFile("OEBPS/style.css", out, "body {text-align:justify}");
 
-            Utils.addZipFile("OEBPS/toc.ncx", out,
+            addFileToZipFile("OEBPS/toc.ncx", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\"\n" +
                             "xmlns:py=\"http://genshi.edgewall.org/\"\n" +
@@ -397,7 +395,7 @@ public class Utils {
                             "</navMap>\n" +
                             "</ncx>\n");
 
-            Utils.addZipFile("OEBPS/toc.xhtml", out,
+            addFileToZipFile("OEBPS/toc.xhtml", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">\n" +
                             "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
@@ -419,7 +417,7 @@ public class Utils {
                             "</body>\n" +
                             "</html>");
 
-            Utils.addZipFile("OEBPS/content.opf", out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            addFileToZipFile("OEBPS/content.opf", out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                     "<package xmlns=\"http://www.idpf.org/2007/opf\"\n" +
                     "xmlns:opf=\"http://www.idpf.org/2007/opf\"\n" +
                     "xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n" +
@@ -460,7 +458,7 @@ public class Utils {
                     "</guide>\n" +
                     "</package>");
 
-            Utils.addZipFile("OEBPS/cover-page.xhtml", out,
+            addFileToZipFile("OEBPS/cover-page.xhtml", out,
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<!DOCTYPE html>\n" +
                             "<html xmlns=\"http://www.w3.org/1999/xhtml\"\n" +
@@ -498,7 +496,6 @@ public class Utils {
         } catch (Exception e) {
             builder.setContentText("Błąd zapisu pliku EPUB");
             Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
-
             e.printStackTrace();
         }
     }
@@ -534,14 +531,14 @@ public class Utils {
                     if (entry.getName().startsWith("OEBPS/") &&
                             entry.getName().endsWith("." + extension)) {
                         if (imageNames.contains(
-                                entry.getName().replace("OEBPS/",""))) {
+                                entry.getName().replace("OEBPS/", ""))) {
                             dialog(context, "Plik EPUB ma zły format (podwójne pliki)", null,
                                     (dialog, which) -> {
                                     }, null);
                             zipfile.close();
                             return;
                         }
-                        imageNames.add(entry.getName().replace("OEBPS/",""));
+                        imageNames.add(entry.getName().replace("OEBPS/", ""));
                     }
                 }
             }
@@ -559,7 +556,8 @@ public class Utils {
                     Uri.parse(uri.toString())));
             while ((entry = zipfile.getNextEntry()) != null) {
                 /* These two xhtml files are allowed */
-                if (entry.getName().equals("OEBPS/cover-page.xhtml") || entry.getName().equals("OEBPS/toc.xhtml")) {
+                if (entry.getName().equals("OEBPS/cover-page.xhtml") ||
+                        entry.getName().equals("OEBPS/toc.xhtml")) {
                     continue;
                 }
                 if (entry.getName().startsWith("OEBPS/") && entry.getName().endsWith(".xhtml")) {
@@ -577,12 +575,14 @@ public class Utils {
                         }
                     }
                     if (typ == null) continue;
-                    String tytul="";
+                    String tytul = findBetween(sss, "<title>", "</title>", 0);
                     String author = findBetween(sss, "Autor: ", "<br/>", 0);
                     String tags = findBetween(sss, "Info: ", "<br/>", 0);
                     String url = findBetween(sss, "Pobrano: <a href=\"", "\"", 0);
-                    if (author.isEmpty() || tags.isEmpty() || url.isEmpty()) continue;
-                    String created = findBetween(sss, "Czas: ", "<br/>\n", 0);
+                    System.out.println("'" + tytul + "'" + author + "'" + tags + "'" + url + "'" + typ.ordinal());
+                    if (tytul.isEmpty() || author.isEmpty() || url.isEmpty()) continue;
+                    String created = findBetween(sss, "Czas: ", "<br/>", 0);
+                    System.out.println("ala" + created);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                     Date date = new Date(0);
@@ -593,6 +593,7 @@ public class Utils {
                     }
                     if (date == null) continue;
                     String modified = findBetween(sss, url + "\">", "</a>", 0);
+                    System.out.println(modified);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format2 =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                     Date date2 = new Date(0);
@@ -602,6 +603,7 @@ public class Utils {
                         modified = "";
                     }
                     if (modified.isEmpty()) continue;
+                    System.out.println(format + " " + modified);
                     boolean correctImage = true;
                     for (String s : findImagesUrlInHTML(sss)) {
                         correctImage = false;
@@ -631,18 +633,23 @@ public class Utils {
                             recognizedButIgnored++;
                         }
                     }
-                    /*if (doimport) {
-                        File f = p.getCacheFile(context);
-                        f.delete();
-                        String fileContent = Utils.readTextFile(f);
-                        for (String s : findImagesUrlInHTML(fileContent)) {
-                            f = new File(Page.getCacheDirectory(context) + File.separator + s);
+                    if (doimport) {
+                        if (p != null) {
+                            File f = p.getCacheFile(context);
                             f.delete();
+                            String fileContent = Utils.readTextFile(f);
+                            for (String s : findImagesUrlInHTML(fileContent)) {
+                                f = new File(Page.getCacheDirectory(context) +
+                                        File.separator + s);
+                                f.delete();
+                            }
                         }
-                        writeTextFile(p.getCacheFile(context), sss);
-                        myDB.insertPage(typ, tytul, author, tags, url, date);
+                        myDB.insertOrUpdatePage(typ, tytul, author, tags, url, date);
+                        p = myDB.getPage(url);
+                        writeTextFile(p.getCacheFile(context),
+                                findBetween(sss, "<hr/>", "</body>", 0));
                         imagesToRead.addAll(findImagesUrlInHTML(sss));
-                    }*/
+                    }
                 }
             }
             zipfile.close();
@@ -650,13 +657,14 @@ public class Utils {
             zipfile = new ZipInputStream(context.getContentResolver().openInputStream(
                     Uri.parse(uri.toString())));
             while ((entry = zipfile.getNextEntry()) != null) {
-                if (!imagesToRead.contains(entry.getName().replace("OEBPS/",""))) {
+                if (!imagesToRead.contains(entry.getName().replace("OEBPS/", ""))) {
                     continue;
                 }
             }
             zipfile.close();
-            dialog(context, recognizedButIgnored+" tekstów rozpoznano (w starszych wersjach)\n\n"
-                    +recognizedAndImported+" tekstów zaimportowano", null,
+            dialog(context, recognizedButIgnored +
+                            " tekstów rozpoznano i zignorowano (w pliku nie ma nowych wersji)\n\n"
+                            + recognizedAndImported + " tekstów zaimportowano", null,
                     (dialog, which) -> {
                     }, null);
         } catch (IOException e) {
@@ -746,4 +754,15 @@ public class Utils {
             itemView.setOnClickListener(v -> onClick.onItemClick(getAbsoluteAdapterPosition()));
         }
     }
+
+    public static class InfoTaskListRecyclerViewHolder extends RecyclerView.ViewHolder {
+        public TextView description;
+
+        public InfoTaskListRecyclerViewHolder(View view) {
+            super(view);
+
+            description = view.findViewById(R.id.Description);
+        }
+    }
+
 }

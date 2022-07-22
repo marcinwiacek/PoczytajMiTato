@@ -1,14 +1,13 @@
 package com.mwiacek.poczytaj.mi.tato.search;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,139 +30,61 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private final static int REGULAR_VIEW_TYPE_ITEM = 1;
+
     private final static Executor executor = Executors.newSingleThreadExecutor();
-    private final static int VIEW_TYPE_ITEM = 0;
     private final FragmentConfig config;
     private final ArrayList<ManyBooks> mData = new ArrayList<>();
     private final ReentrantLock lock = new ReentrantLock();
-    //private final Button mSearchButton;
-    //   private final AutoCompleteTextView mSearchTextView;
     private final ProgressBar mProgressBar;
     private final ImageCache mImageCache;
     private final Utils.OnItemClicked mOnClick;
     private int pageNumber = 0;
-    private int sitesProcessed;
+    private int sitesProcessed = 0;
+    private boolean foundSomething = false;
 
     public ManyBooksRecyclerViewAdapter(FragmentConfig config,
-                                        //Button mSearchButton,
-                                        // AutoCompleteTextView mSearchTextView,
                                         ProgressBar mProgressBar, ImageCache imageCache,
                                         Utils.OnItemClicked mOnClick) {
         this.config = config;
-        //  this.mSearchButton = mSearchButton;
-        //  this.mSearchTextView = mSearchTextView;
         this.mProgressBar = mProgressBar;
         this.mImageCache = imageCache;
         this.mOnClick = mOnClick;
+        this.mProgressBar.setMax(0);
+    }
+
+    public void clear() {
+        mData.clear();
+        notifyDataSetChanged();
+        pageNumber = 0;
     }
 
     ManyBooks getItem(int position) {
+        if (mProgressBar.getMax() != 0 && position == mData.size()) return null;
         return mData.get(position);
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new Utils.ItemViewHolder(LayoutInflater.from(parent.getContext()).inflate(
-                viewType == VIEW_TYPE_ITEM ?
-                        R.layout.search_list_item : R.layout.loading_list_item,
-                parent, false), mOnClick);
+        if (viewType == REGULAR_VIEW_TYPE_ITEM) {
+            return new Utils.ItemViewHolder(LayoutInflater.from(parent.getContext()).inflate(
+                    R.layout.search_list_item, parent, false), mOnClick);
+        }
+        return new Utils.InfoTaskListRecyclerViewHolder(LayoutInflater.from(parent.getContext()).inflate(
+                R.layout.info_list_item, parent, false));
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
-
-        if (viewHolder instanceof Utils.ItemViewHolder) {
-            populateItemRows((Utils.ItemViewHolder) viewHolder, position);
+        if (viewHolder instanceof Utils.InfoTaskListRecyclerViewHolder) {
+            ((Utils.InfoTaskListRecyclerViewHolder) viewHolder).description.setText("Szukanie");
+            return;
         }
-        //} else if (viewHolder instanceof LoadingViewHolder) {
-//            showLoadingView((LoadingViewHolder) viewHolder, position);
-//        }
-
-    }
-
-    @Override
-    public int getItemCount() {
-        return mData.size();
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        return mData.get(position) == null ? (VIEW_TYPE_ITEM + 1) : VIEW_TYPE_ITEM;
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    public void makeSearch(Context context, boolean pageNumberAdd, String stringToSearch) {
-        if (!pageNumberAdd) {
-            mData.clear();
-            notifyDataSetChanged();
-        }
-        pageNumber = pageNumberAdd ? pageNumber + 1 : 0;
-        sitesProcessed = 0;
-        StoreInfo st;
-        Toast.makeText(context, "szukanie", Toast.LENGTH_LONG);
-        for (StoreInfo.StoreInfoTyp info : config.storeInfoForSearchFragment) {
-            if (info == StoreInfo.StoreInfoTyp.IBUK) {
-                st = new IBUK();
-            } else if (info == StoreInfo.StoreInfoTyp.BOOKRAGE) {
-                st = new BookRage();
-            } else if (info == StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA) {
-                st = new UpolujEbooka();
-            } else if (info == StoreInfo.StoreInfoTyp.WOLNE_LEKTURY) {
-                st = new WolneLektury();
-            } else if (info == StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW) {
-                st = new EbookiSwiatCzytnikow();
-            } else {
-                continue;
-            }
-            StoreInfo finalSt = st;
-            executor.execute(() -> {
-                mProgressBar.setProgress(0);
-                String[] urls = finalSt.getSearchUrl(stringToSearch, pageNumber);
-                for (String singleURL : urls) {
-                    try {
-                        StringBuilder content = Utils.getTextPageContent(singleURL);
-                        if (!content.toString().isEmpty()) {
-                            finalSt.doesItMatch(stringToSearch, singleURL, content, mData, lock,
-                                    this);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    mProgressBar.setProgress(mProgressBar.getProgress() +
-                            (100 / config.storeInfoForSearchFragment.size() / urls.length));
-                }
-                sitesProcessed++;
-                if (sitesProcessed == config.storeInfoForSearchFragment.size()) {
-                    new Handler(Looper.getMainLooper()) {
-                        @Override
-                        public void handleMessage(Message msg) {
-                            mProgressBar.setProgress(0);
-                            //mSearchButton.setEnabled(true);
-                            //mSearchTextView.setEnabled(true);
-                            //   mAdapter.notifyDataSetChanged();
-                            /*Collections.sort(mData, new Comparator<CustomData>() {
-                                @Override
-                                public int compare(CustomData lhs, CustomData rhs) {
-                                    // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
-                                    return lhs.getId() > rhs.getId() ? -1 : (lhs.customInt < rhs.customInt ) ? 1 : 0;
-                                }
-                            });*/
-                        }
-                    }.sendEmptyMessage(1);
-                }
-            });
-        }
-    }
-
-//    private void showLoadingView(LoadingViewHolder viewHolder, int position) {
-    //  }
-
-    private void populateItemRows(Utils.ItemViewHolder viewHolder, int position) {
-        if (mData.get(position) == null) return;
+        Utils.ItemViewHolder holder = (Utils.ItemViewHolder) viewHolder;
         List<SingleBook> books = mData.get(position).items;
         SingleBook book = books.get(mData.get(position).itemsPositionForManyBooksList);
-        viewHolder.titleText.setText(book.title);
+        holder.titleText.setText(book.title);
         String s = "";
         if (book.downloadUrl.contains(".epub") && books.size() == 1) {
             s = "Pobierz";
@@ -177,21 +98,86 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                     new SimpleDateFormat("d.M");
             s = s + " do " + dateFormat.format(book.offerExpiryDate);
         }
-        viewHolder.priceText.setText(s);
-        if (book.authors != null) viewHolder.authorText.setText(book.authors[0]);
+        holder.priceText.setText(s);
+        if (book.authors != null) holder.authorText.setText(book.authors[0]);
         mImageCache.getImageFromCache(this.mProgressBar.getContext(),
-                book.smallThumbnailUrl, viewHolder, position);
+                book.smallThumbnailUrl, holder, position);
     }
 
-    /*
-    private static class LoadingViewHolder extends RecyclerView.ViewHolder {
-        ProgressBar progressBar;
+    @Override
+    public int getItemCount() {
+        return mData.size() + (mProgressBar.getMax() != 0 ? 1 : 0);
+    }
 
-        public LoadingViewHolder(@NonNull View itemView) {
-            super(itemView);
-            progressBar = itemView.findViewById(R.id.progressBar);
+    @Override
+    public int getItemViewType(int position) {
+        return getItem(position) == null ? REGULAR_VIEW_TYPE_ITEM + 1 : REGULAR_VIEW_TYPE_ITEM;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void makeSearch(boolean newSearch, String stringToSearch) {
+        if (pageNumber == -1) return;
+        pageNumber = newSearch ? 0 : pageNumber + 1;
+        mProgressBar.setMax(config.storeInfoForSearchFragment.size());
+        mProgressBar.setProgress(0);
+        mProgressBar.setVisibility(View.VISIBLE);
+        new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                notifyItemInserted(mData.size());
+            }
+        }.sendEmptyMessage(1);
+        sitesProcessed = 0;
+        foundSomething = false;
+        for (StoreInfo.StoreInfoTyp info : config.storeInfoForSearchFragment) {
+            StoreInfo st;
+            if (info == StoreInfo.StoreInfoTyp.IBUK) {
+                st = new IBUK();
+            } else if (info == StoreInfo.StoreInfoTyp.BOOKRAGE) {
+                st = new BookRage();
+            } else if (info == StoreInfo.StoreInfoTyp.UPOLUJ_EBOOKA) {
+                st = new UpolujEbooka();
+            } else if (info == StoreInfo.StoreInfoTyp.WOLNE_LEKTURY) {
+                st = new WolneLektury();
+            } else if (info == StoreInfo.StoreInfoTyp.EBOOKI_SWIAT_CZYTNIKOW) {
+                st = new EbookiSwiatCzytnikow();
+            } else {
+                continue;
+            }
+            executor.execute(() -> {
+                String[] urls = st.getSearchUrl(stringToSearch, pageNumber);
+                mProgressBar.setMax(mProgressBar.getMax() + urls.length - 1);
+                for (String singleURL : urls) {
+                    try {
+                        System.out.println(singleURL);
+                        StringBuilder content = Utils.getTextPageContent(singleURL);
+                        if (!content.toString().isEmpty()) {
+                            if (st.doesItMatch(stringToSearch, singleURL, content, mData, lock,
+                                    this)) {
+                                foundSomething = true;
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    mProgressBar.setProgress(mProgressBar.getProgress() + 1);
+                }
+                sitesProcessed++;
+                new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        if (sitesProcessed == config.storeInfoForSearchFragment.size()) {
+                            mProgressBar.setMax(0);
+                            mProgressBar.setVisibility(View.GONE);
+                            notifyItemRemoved(mData.size() + 1);
+                            if (!foundSomething) {
+                                pageNumber = -1;
+                            }
+                        }
+                    }
+                }.sendEmptyMessage(1);
+            });
         }
     }
-     */
 }
 

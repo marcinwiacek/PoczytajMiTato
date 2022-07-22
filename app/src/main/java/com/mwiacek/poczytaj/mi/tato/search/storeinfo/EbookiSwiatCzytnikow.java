@@ -10,9 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class EbookiSwiatCzytnikow extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
-        //popularne
-        return new String[]{"https://ebooki.swiatczytnikow.pl/szukaj/" +
-                name + "?strona=" + pageNumber};
+        return new String[]{"https://ebooki.swiatczytnikow.pl/szukaj/" + name + "?strona=" + pageNumber};
     }
 
     public boolean doesItMatch(String name, String url, StringBuilder pageContent,
@@ -21,7 +19,6 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
         int startSearchPosition, fromPosition, toPosition = 0;
         String s, s2;
         SingleBook singleBook;
-        boolean added = false;
 
         while (true) {
             startSearchPosition = toPosition;
@@ -41,7 +38,7 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
 
             singleBook.offerExpiryDate = null;
             singleBook.smallThumbnailUrl = "https://" +
-                    Utils.findBetween(s, "<img src=\"", "\"", 0);
+                    Utils.findBetween(s, "data-srcset=\"", "\"", 0);
 
             s2 = Utils.findBetween(s, "<div class=\"title\">", "</div>", 0);
             singleBook.title = Utils.findBetween(s2, "\">", "</a>",
@@ -66,10 +63,8 @@ public class EbookiSwiatCzytnikow extends StoreInfo {
             singleBook.price = s2.equals("") ?
                     (float) 0.0 : Float.parseFloat(s2.replace(",", "."));
 
-            if (addBook(singleBook, books, lock, adapter)) {
-                added = true;
-            }
+            addBook(singleBook, books, lock, adapter);
         }
-        return (pageContent.indexOf("\">następna »</a></div>") != -1 && added);
+        return pageContent.indexOf("\">następna »</a></div>") != -1;
     }
 }

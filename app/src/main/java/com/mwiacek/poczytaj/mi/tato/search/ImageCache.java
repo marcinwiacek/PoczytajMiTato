@@ -29,8 +29,7 @@ public class ImageCache {
                 .getMemoryClass() * 1024 * 1024 / 8);
     }
 
-    public void getImageFromCache(Context context, String name,
-                                  Utils.ItemViewHolder holder,
+    public void getImageFromCache(Context context, String name, Utils.ItemViewHolder holder,
                                   int position) {
         if (name == null || name.isEmpty()) return;
 

@@ -112,7 +112,7 @@ public class Fantastyka extends ReadInfo {
     public void processTextFromSinglePage(
             Context context, Page p,
             final Handler resultHandler,
-            final ThreadPoolExecutor executor ,
+            final ThreadPoolExecutor executor,
             final Utils.RepositoryCallback<String[]> callbackAfterMainFileWithResourceList,
             final Utils.RepositoryCallback<String> callbackAfterEveryImage,
             final Utils.RepositoryCallback<String> completeCallback) {
@@ -155,7 +155,7 @@ public class Fantastyka extends ReadInfo {
                         final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
                         int pageStart, int pageStop,
-                        final Utils.RepositoryCallback<Page.PageTyp> callback) {
+                        final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
             int index = pageStart;
@@ -164,7 +164,7 @@ public class Fantastyka extends ReadInfo {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                "Czytanie "+typ.name()+" - strona " + index).build());
+                                "Czytanie " + typ.name() + " - strona " + index).build());
 
                 if (typ == Page.PageTyp.FANTASTYKA_POCZEKALNIA) {
                     url = "/opowiadania/wszystkie" +
@@ -191,8 +191,8 @@ public class Fantastyka extends ReadInfo {
                     }
                     indeks = indeks2;
                 }
-                if (callback != null && haveNewEntryOnThisPage) {
-                    resultHandler.post(() -> callback.onComplete(typ));
+                if (callbackOnUpdatedPage != null && haveNewEntryOnThisPage) {
+                    resultHandler.post(() -> callbackOnUpdatedPage.onComplete(typ));
                 }
                 if (result.contains("<a href=\"" + url + "\" title=\"koniec\">")) {
                     mydb.setLastIndexPageRead(typ, -1);
@@ -204,11 +204,11 @@ public class Fantastyka extends ReadInfo {
                     break;
                 }
             }
-            if (haveNewEntry) {
+            if (haveNewEntry && pageStart == 1) {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                typ.name() + " - nowe strony").build());
+                                typ.name() + " - nowe strony lub wersje stron").build());
             } else {
                 Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
             }
