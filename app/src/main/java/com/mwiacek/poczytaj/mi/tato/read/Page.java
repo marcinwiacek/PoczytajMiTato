@@ -68,7 +68,7 @@ public class Page {
         }
         s = s.replaceAll("[^A-Za-z0-9]", "");
         for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
-            if (s.toLowerCase().endsWith(extension)) {
+            if (thisUrl.toLowerCase().endsWith(extension)) {
                 s += "." + extension;
                 break;
             }
