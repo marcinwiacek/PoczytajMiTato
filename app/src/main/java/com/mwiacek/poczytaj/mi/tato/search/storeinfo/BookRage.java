@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BookRage extends StoreInfo {
     public String[] getSearchUrl(String name, int pageNumber) {
-        if (pageNumber != 1) return new String[]{};
+        if (pageNumber > 1) return new String[]{};
         return new String[]{"https://artrage.pl/bookrage", "https://artrage.pl/bookrage/quick"};
     }
 

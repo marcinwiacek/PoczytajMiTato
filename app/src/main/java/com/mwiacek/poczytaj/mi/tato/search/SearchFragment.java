@@ -21,6 +21,7 @@ import android.widget.ViewSwitcher;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -30,7 +31,6 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
@@ -44,12 +44,11 @@ public class SearchFragment extends Fragment {
     private final FragmentConfig config;
     private final ImageCache imageCache;
     private final ViewPagerAdapter topPagerAdapter;
+    private ViewSwitcher viewSwitcher;
     private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;
     private SingleBookRecyclerViewAdapter singleBookRecyclerViewAdapter;
-    private ViewSwitcher viewSwitcher;
-    private SearchView searchView;
-    private RecyclerView manyBooksRecyclerView;
     private SingleBook lastClickedBook;
+    private RecyclerView manyBooksRecyclerView;
 
     public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
         this.config = config;
@@ -66,26 +65,29 @@ public class SearchFragment extends Fragment {
         return config.fileNameTabNum;
     }
 
-    private void download(View view, ActivityResultLauncher<String> requestPermissionLauncher) {
+    private void download(ActivityResultLauncher<String> requestPermissionLauncher) {
         if (lastClickedBook.downloadUrl.length() == 0) {
             return;
         }
-        if (lastClickedBook.downloadUrl.contains(".htm") ||
-                lastClickedBook.downloadUrl.contains("artrage.pl")) {
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setData(Uri.parse(lastClickedBook.downloadUrl));
-            requireContext().startActivity(i);
+        if (lastClickedBook.downloadUrl.contains(".htm") || lastClickedBook.downloadUrl.contains("artrage.pl")) {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(lastClickedBook.downloadUrl)));
             return;
         }
-
         if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            Snackbar.make(view, "Aplikacja musi znaleźć folder do pobierania." +
-                                    "Przyznaj uprawnienie WRITE_EXTERNAL_STORAGE.",
-                            Snackbar.LENGTH_INDEFINITE)
-                    .setAction("OK", view2 ->
-                            requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
-                    .show();
+            new AlertDialog.Builder(requireContext())
+                    .setIcon(android.R.drawable.ic_dialog_info)
+                    .setTitle("Poczytaj mi tato")
+                    .setMessage("Potrzebne uprawnienie WRITE_EXTERNAL_STORAGE. Bez niego aplikacja " +
+                            "musi otworzyć link w przeglądarce.")
+                    .setPositiveButton("PRZYZNAJ", (dialog, which) -> {
+                        requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton("W PRZEGLĄDARCE", (dialog, which) -> {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(lastClickedBook.downloadUrl)));
+                        dialog.dismiss();
+                    }).show();
         } else {
             requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
@@ -106,11 +108,10 @@ public class SearchFragment extends Fragment {
 
         /* Page with single book */
         RecyclerView singleBookRecyclerView = view.findViewById(R.id.bookListListView);
-
         singleBookRecyclerViewAdapter = new SingleBookRecyclerViewAdapter(imageCache, getContext(),
                 position -> {
                     lastClickedBook = singleBookRecyclerViewAdapter.getItem(position);
-                    download(view, requestPermissionLauncher);
+                    download(requestPermissionLauncher);
                 });
         singleBookRecyclerView.setAdapter(singleBookRecyclerViewAdapter);
         singleBookRecyclerView.setItemAnimator(null);
@@ -118,7 +119,7 @@ public class SearchFragment extends Fragment {
                 DividerItemDecoration.VERTICAL));
 
         /* Page with many books */
-        searchView = view.findViewById(R.id.mySearch3);
+        SearchView searchView = view.findViewById(R.id.mySearch3);
         ProgressBar mProgressBar = view.findViewById(R.id.progressBar3);
         manyBooksRecyclerView = view.findViewById(R.id.booksListListView);
         Toolbar toolbar = view.findViewById(R.id.toolbar3);
@@ -129,7 +130,7 @@ public class SearchFragment extends Fragment {
             SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
             if (books.items.size() == 1) {
                 lastClickedBook = book;
-                download(view, requestPermissionLauncher);
+                download(requestPermissionLauncher);
                 return;
             }
             singleBookRecyclerViewAdapter.refreshData(books.items);
@@ -155,8 +156,7 @@ public class SearchFragment extends Fragment {
                         manyBooksRecyclerViewAdapter.getItemCount() - 5) {
                     NetworkInfo activeNetwork = ((ConnectivityManager) requireContext()
                             .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-                    boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-                    if (!isConnected) {
+                    if (!(activeNetwork != null && activeNetwork.isConnectedOrConnecting())) {
                         Toast.makeText(requireContext(), "Potrzebny internet!", Toast.LENGTH_SHORT).show();
                         return;
                     }

@@ -1,6 +1,5 @@
 package com.mwiacek.poczytaj.mi.tato;
 
-
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
 import android.os.Build;
@@ -89,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
             final Field touchSlopField = RecyclerView.class.getDeclaredField("mTouchSlop");
             touchSlopField.setAccessible(true);
             final int touchSlop = (int) touchSlopField.get(recyclerView);
-            touchSlopField.set(recyclerView, touchSlop);//6 is empirical value
+            touchSlopField.set(recyclerView, touchSlop * 0.5);
         } catch (Exception ignore) {
         }
 

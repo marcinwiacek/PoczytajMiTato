@@ -43,14 +43,14 @@ public class Page {
                                final Handler resultHandler,
                                final ThreadPoolExecutor executor,
                                final DBHelper mydb, final ArrayList<PageTyp> typ,
-                               boolean allPages, boolean firstPages,
+                               String tabName, boolean allPages, boolean firstPages,
                                final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage,
                                final Utils.RepositoryCallback<String> callbackOnTheEnd) {
         executor.execute(() -> {
             for (Page.PageTyp t : typ) {
                 int i = firstPages ? 1 : mydb.getLastIndexPageRead(t);
                 if (!allPages && i == -1) continue;
-                getReadInfo(t).getList(context, resultHandler, mydb, t,
+                getReadInfo(t).getList(context, resultHandler, mydb, t, tabName,
                         allPages ? 1 : i, allPages ? -1 : i + 2, callbackOnUpdatedPage);
             }
             if (callbackOnTheEnd != null)
@@ -59,7 +59,14 @@ public class Page {
     }
 
     public static String getShortCacheFileName(String thisUrl) {
-        String s = thisUrl.replaceAll("[^A-Za-z0-9]", "");
+        String s = thisUrl;
+        for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
+            if (s.toLowerCase().endsWith(extension)) {
+                s = s.substring(0, s.length() - 1 - extension.length());
+                break;
+            }
+        }
+        s = s.replaceAll("[^A-Za-z0-9]", "");
         for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
             if (s.toLowerCase().endsWith(extension)) {
                 s += "." + extension;

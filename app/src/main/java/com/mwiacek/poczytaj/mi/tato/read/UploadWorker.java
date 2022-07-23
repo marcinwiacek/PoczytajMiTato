@@ -2,8 +2,12 @@ package com.mwiacek.poczytaj.mi.tato.read;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.core.os.HandlerCompat;
 import androidx.work.ListenableWorker;
 import androidx.work.WorkerParameters;
 import androidx.work.impl.utils.futures.SettableFuture;
@@ -13,6 +17,8 @@ import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
 /* Synchronization for lists in tab in background */
 public class UploadWorker extends ListenableWorker {
+    private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
+
     public UploadWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
     }
@@ -24,27 +30,31 @@ public class UploadWorker extends ListenableWorker {
         SettableFuture<Result> future = SettableFuture.create();
         future.set(Result.success());
 
-       /* final ConnectivityManager connMgr = (ConnectivityManager)
-                this.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final android.net.NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        final android.net.NetworkInfo mobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (wifi.isConnectedOrConnecting ()) {
-        } else if (mobile.isConnectedOrConnecting ()) {
-        } else {
-        }*/
-        if (getInputData().getInt("TabNum", -1) == -1) return future;
+        FragmentConfig config = FragmentConfig.readFromInternalStorage(getApplicationContext(),
+                getInputData().getInt("TabNum", -1));
+        if (config == null) {
+            future.set(Result.failure());
+            return future;
+        }
+
+        ConnectivityManager mgr = (ConnectivityManager)
+                getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (!((config.canDownloadWithGSM &&
+                mgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).isConnectedOrConnecting()) ||
+                (config.canDownloadWithWifi &&
+                        mgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnectedOrConnecting()) ||
+                (config.canDownloadWithOtherNetwork && mgr.getActiveNetworkInfo() != null &&
+                        mgr.getActiveNetworkInfo().isConnectedOrConnecting()))) {
+            future.set(Result.failure());
+            return future;
+        }
+
         new Thread(() -> {
-            FragmentConfig config = FragmentConfig.readFromInternalStorage(getApplicationContext(),
-                    getInputData().getInt("TabNum", -1));
-            if (config != null) {
-              /*  Page.getList(getApplicationContext(), null, null,
-                        new DBHelper(getApplicationContext()),
-                        config.readInfoForReadFragment, false, true,
-                        t -> ViewPagerAdapter.informAllReadTabsAboutUpdate(
-                                this.getApplicationContext().
-                        ),
-                        result -> {});
-               */
+            for (Page.PageTyp t : config.readInfoForReadFragment) {
+                //fixme - we should update GUI too
+                Page.getReadInfo(t).getList(getApplicationContext(),
+                        mainThreadHandler, new DBHelper(getApplicationContext()), t, "",
+                        1, 3, null);
             }
         }).start();
         return future;

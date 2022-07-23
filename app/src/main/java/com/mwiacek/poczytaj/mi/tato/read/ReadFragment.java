@@ -148,22 +148,24 @@ public class ReadFragment extends Fragment {
         if (config.howOftenRefreshTabInHours == -1) return;
         Constraints constraints = new Constraints.Builder()
                 .setRequiresBatteryNotLow(!config.canDownloadWithLowBattery)
-                .setRequiresCharging(!config.canDownloadWithoutCharging)
+                .setRequiresCharging(!config.canDownloadWithoutCharger)
+                .setRequiresStorageNotLow(!config.canDownloadWithLowStorage)
                 .setRequiredNetworkType(!config.canDownloadOnRoaming ? NetworkType.NOT_ROAMING :
                         (config.canDownloadInNetworkWithLimit ? NetworkType.METERED : NetworkType.UNMETERED))
-                .setRequiresStorageNotLow(!config.canDownloadWithLowStorage)
                 .build();
-        WorkRequest request = new PeriodicWorkRequest.Builder(UploadWorker.class,
+        WorkRequest.Builder request = new PeriodicWorkRequest.Builder(UploadWorker.class,
+                //   15,TimeUnit.MINUTES)
                 config.howOftenRefreshTabInHours, TimeUnit.HOURS)
-                .setBackoffCriteria(BackoffPolicy.LINEAR,
-                        config.howOftenTryToRefreshTabAfterErrorInMinutes,
-                        TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .setInputData(new Data.Builder()
                         .putInt("TabNum", config.fileNameTabNum).build())
-                .addTag("poczytajmitato" + config.fileNameTabNum)
-                .build();
-        WorkManager.getInstance(requireContext()).enqueue(request);
+                .addTag("poczytajmitato" + config.fileNameTabNum);
+        if (config.howOftenTryToRefreshTabAfterErrorInMinutes != -1) {
+            request.setBackoffCriteria(BackoffPolicy.LINEAR,
+                    config.howOftenTryToRefreshTabAfterErrorInMinutes,
+                    TimeUnit.MINUTES);
+        }
+        WorkManager.getInstance(requireContext()).enqueue(request.build());
     }
 
     private void readTextFromInternet(Page p, WebView webView, boolean deleteBefore) {
@@ -389,12 +391,15 @@ public class ReadFragment extends Fragment {
                 menu.add(4, R.string.MENU_DOWNLOAD_ON_OTHER_NET, mainIndex++, R.string.MENU_DOWNLOAD_ON_OTHER_NET)
                         .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
                         .setChecked(config.canDownloadWithOtherNetwork);
-                menu.add(4, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING, mainIndex++, R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING)
+                menu.add(4, R.string.MENU_DOWNLOAD_WITHOUT_CHARGER, mainIndex++, R.string.MENU_DOWNLOAD_WITHOUT_CHARGER)
                         .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
-                        .setChecked(config.canDownloadWithoutCharging);
-                menu.add(4, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY, mainIndex++, R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY)
+                        .setChecked(config.canDownloadWithoutCharger);
+                menu.add(4, R.string.MENU_DOWNLOAD_WITH_LOW_BATTERY, mainIndex++, R.string.MENU_DOWNLOAD_WITH_LOW_BATTERY)
                         .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
                         .setChecked(config.canDownloadWithLowBattery);
+                menu.add(4, R.string.MENU_DOWNLOAD_WITH_LOW_STORAGE, mainIndex++, R.string.MENU_DOWNLOAD_WITH_LOW_STORAGE)
+                        .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
+                        .setChecked(config.canDownloadWithLowStorage);
                 menu.add(4, R.string.MENU_NETWORK_WITH_LIMIT, mainIndex++, R.string.MENU_NETWORK_WITH_LIMIT)
                         .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
                         .setChecked(config.canDownloadInNetworkWithLimit);
@@ -522,10 +527,12 @@ public class ReadFragment extends Fragment {
                     config.canDownloadWithGSM = menuItem.isChecked();
                 } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ON_OTHER_NET) {
                     config.canDownloadWithOtherNetwork = menuItem.isChecked();
-                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_ONLY_ON_CHARGING) {
-                    config.canDownloadWithoutCharging = menuItem.isChecked();
-                } else if (menuItem.getItemId() == R.string.MENU_DONT_DOWNLOAD_WITH_LOW_BATTERY) {
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_WITHOUT_CHARGER) {
+                    config.canDownloadWithoutCharger = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_WITH_LOW_BATTERY) {
                     config.canDownloadWithLowBattery = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_DOWNLOAD_WITH_LOW_STORAGE) {
+                    config.canDownloadWithLowStorage = menuItem.isChecked();
                 } else if (menuItem.getItemId() == R.string.MENU_NETWORK_WITH_LIMIT) {
                     config.canDownloadInNetworkWithLimit = menuItem.isChecked();
                 } else if (menuItem.getTitle().toString().startsWith("Pobierz co")) {
@@ -617,7 +624,7 @@ public class ReadFragment extends Fragment {
                 } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_INDEX_PAGES) {
                     refresh.setRefreshing(true);
                     Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                            config.readInfoForReadFragment, true, false,
+                            config.readInfoForReadFragment, config.tabName, true, false,
                             p -> informAllReadTabsAboutUpdate(p),
                             result -> refresh.setRefreshing(false));
                 } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
@@ -670,7 +677,8 @@ public class ReadFragment extends Fragment {
                 super.onScrolled(recyclerView, dx, dy);
 
                 if (loadingMorePages || config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE ||
-                        pageListAdapter.getItemCount() == 1) return;
+                        pageListAdapter.getItemCount() == 1 || !searchView.getQuery().toString().isEmpty())
+                    return;
                 LinearLayoutManager linearLayoutManager = (LinearLayoutManager)
                         recyclerView.getLayoutManager();
                 if (linearLayoutManager != null &&
@@ -679,7 +687,8 @@ public class ReadFragment extends Fragment {
                     loadingMorePages = true;
                     new Handler().postDelayed(() ->
                             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                                    config.readInfoForReadFragment, false, false,
+                                    config.readInfoForReadFragment, config.tabName,
+                                    false, false,
                                     pt -> informAllReadTabsAboutUpdate(pt),
                                     result -> loadingMorePages = false), 0);
                 }
@@ -739,13 +748,14 @@ public class ReadFragment extends Fragment {
         }).attachToRecyclerView(pageList);
 
         refresh.setOnRefreshListener(() -> {
-            if (config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE) {
+            if (config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE
+                    || !searchView.getQuery().toString().isEmpty()) {
                 refresh.setRefreshing(false);
                 return;
             }
             refresh.setRefreshing(true);
             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                    config.readInfoForReadFragment, false, true,
+                    config.readInfoForReadFragment, config.tabName, false, true,
                     this::informAllReadTabsAboutUpdate,
                     result -> refresh.setRefreshing(false));
         });

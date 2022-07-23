@@ -176,7 +176,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 boolean ok = true;
                 for (String s : authors) {
                     //TODO: "not "
-                    if (s.trim().startsWith("not ") ==
+                    if (s.trim().toLowerCase().startsWith("not ") ==
                             res.getString(res.getColumnIndex(COLUMN_AUTHOR)).toLowerCase()
                                     .trim().equals(s.trim().replace("not ", ""))) {
                         ok = false;
@@ -194,7 +194,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 for (String s : tags) {
                     //TODO: "not "
                     for (String ab : abc) {
-                        if (ab.trim().startsWith("not ") == ab.trim().equals(s.trim()
+                        if (ab.trim().toLowerCase().startsWith("not ") == ab.trim().equals(s.trim()
                                 .replace("not ", ""))) {
                             ok = false;
                             break;

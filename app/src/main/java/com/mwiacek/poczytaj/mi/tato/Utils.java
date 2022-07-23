@@ -93,10 +93,9 @@ public class Utils {
     }
 
     public static void writeTextFile(File f, String s) {
-        FileOutputStream outputStream;
         try {
             f.createNewFile();
-            outputStream = new FileOutputStream(f, false);
+            FileOutputStream outputStream = new FileOutputStream(f, false);
             outputStream.write(s.getBytes());
             outputStream.flush();
             outputStream.close();
@@ -108,13 +107,12 @@ public class Utils {
     public static String readTextFile(File f) {
         StringBuilder r = new StringBuilder();
         try {
-            FileInputStream fIn = new FileInputStream(f);
-            BufferedReader myReader = new BufferedReader(new InputStreamReader(fIn));
-            String aDataRow = "";
-            while ((aDataRow = myReader.readLine()) != null) {
-                r.append(aDataRow);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                r.append(line);
             }
-            myReader.close();
+            reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -462,20 +460,18 @@ public class Utils {
 
             out.close();
 
-            Intent chooserIntent = new Intent(Intent.ACTION_VIEW);
-            chooserIntent.setDataAndType(file, "application/zip");
-            chooserIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            if (chooserIntent.resolveActivity(context.getPackageManager()) == null) {
-                Uri uri = Uri.parse("market://search?q=" + "application/zip");
-                chooserIntent = new Intent(Intent.ACTION_VIEW, uri);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(file, "application/zip");
+            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            if (intent.resolveActivity(context.getPackageManager()) == null) {
+                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + "application/zip"));
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    builder.setContentText("Zapisano plik " + tytul)
-                            .setContentIntent(PendingIntent.getActivity(context, 0, chooserIntent,
-                                    PendingIntent.FLAG_MUTABLE))
-                            .setSubText("Kliknij, żeby otworzyć");
-                }
+                builder.setContentText("Zapisano plik " + tytul)
+                        .setContentIntent(PendingIntent.getActivity(context, 0, intent,
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ?
+                                        PendingIntent.FLAG_MUTABLE : 0))
+                        .setSubText("Kliknij, żeby otworzyć");
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
             }
         } catch (Exception e) {
@@ -564,13 +560,12 @@ public class Utils {
                     String author = findBetween(sss.toString(), "Autor: ", "<br/>", 0);
                     String tags = findBetween(sss.toString(), "Info: ", "<br/>", 0);
                     String url = findBetween(sss.toString(), "Pobrano: <a href=\"", "\"", 0);
-                    System.out.println("'" + tytul + "'" + author + "'" + tags + "'" + url + "'" + typ.ordinal());
+                    //System.out.println("'" + tytul + "'" + author + "'" + tags + "'" + url + "'" + typ.ordinal());
                     if (tytul.isEmpty() || author.isEmpty() || url.isEmpty()) continue;
                     String created = findBetween(sss.toString(), "Czas: ", "<br/>", 0);
-                    System.out.println("ala" + created);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-                    Date date = new Date(0);
+                    Date date;
                     try {
                         date = format.parse(created);
                     } catch (ParseException e) {
@@ -578,17 +573,15 @@ public class Utils {
                     }
                     if (date == null) continue;
                     String modified = findBetween(sss.toString(), url + "\">", "</a>", 0);
-                    System.out.println(modified);
                     @SuppressLint("SimpleDateFormat") SimpleDateFormat format2 =
                             new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-                    Date date2 = new Date(0);
+                    Date date2;
                     try {
                         date2 = format2.parse(modified);
                     } catch (ParseException e) {
                         modified = "";
                     }
                     if (modified.isEmpty()) continue;
-                    System.out.println(format + " " + modified);
                     boolean correctImage = true;
                     for (String s : findImagesUrlInHTML(sss.toString())) {
                         correctImage = false;
@@ -645,6 +638,13 @@ public class Utils {
                 if (!imagesToRead.contains(entry.getName().replace("OEBPS/", ""))) {
                     continue;
                 }
+                OutputStream outputStream = new FileOutputStream(Page.getLongCacheFileName(context,
+                        entry.getName().replace("OEBPS/", "")));
+                int byteRead;
+                while ((byteRead = zipfile.read()) != -1) {
+                    outputStream.write(byteRead);
+                }
+                outputStream.close();
             }
             zipfile.close();
             dialog(context, recognizedButIgnored +

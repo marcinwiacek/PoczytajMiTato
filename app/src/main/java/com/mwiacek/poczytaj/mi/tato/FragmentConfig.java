@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 21L; // Version of the structure for serialization
+    static final long serialVersionUID = 24L; // Version of the structure for serialization
     /* Search Fragment */
     public ArrayList<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new ArrayList<>();
     /* Read Fragment */
@@ -28,13 +28,13 @@ public class FragmentConfig implements Serializable, Cloneable {
     public boolean canDownloadInNetworkWithLimit = false;
     public boolean canDownloadOnRoaming = false;
     public boolean canDownloadWithOtherNetwork = true;
-    public boolean canDownloadWithoutCharging = true;
     public boolean canDownloadWithLowBattery = false;
     public boolean canDownloadWithLowStorage = false;
+    public boolean canDownloadWithoutCharger = true;
     public String authorFilter = "";
     public String tagFilter = "";
     public int howOftenRefreshTabInHours = -1;
-    public int howOftenTryToRefreshTabAfterErrorInMinutes = -1;
+    public int howOftenTryToRefreshTabAfterErrorInMinutes = 30;
     /* tab related info */
     public int fileNameTabNum;
     public String tabName;

@@ -49,7 +49,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
                     x = x.replace(Utils.BEFORE_HIGHLIGHT, "");
                     int j = x.indexOf(Utils.AFTER_HIGHLIGHT);
                     x = x.replace(Utils.AFTER_HIGHLIGHT, "");
-                    WordtoSpan.setSpan(new BackgroundColorSpan(Color.YELLOW),
+                    WordtoSpan.setSpan(new BackgroundColorSpan(Color.GREEN),
                             i, j, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     WordtoSpan.setSpan(new UnderlineSpan(),
                             i, j, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -109,7 +109,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
         if (showHidden) return "";
         if (mData.size() == 0) return "Użyj gestu swype, żeby załadować dane.";
         if (!allRead) return "Lista tekstów jest niepełna.";
-        return "Teksty: " + mData.size(); //Ostatnie odświeżenie.
+        return "Teksty: " + mData.size(); //Ostatnie odświeżenie...
     }
 
     @NonNull

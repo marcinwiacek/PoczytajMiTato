@@ -61,7 +61,7 @@ public class Opowi extends ReadInfo {
     public void getList(final Context context,
                         final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
-                        int pageStart, int pageStop,
+                        String tabName, int pageStart, int pageStop,
                         final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
@@ -69,9 +69,8 @@ public class Opowi extends ReadInfo {
             boolean haveNewEntry = false;
             while (true) {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(typ.ordinal(),
-                        Notifications.setupNotification(context,
-                                Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                "Czytanie " + typ.name() + " - strona " + index).build());
+                        Notifications.setupNotification(context, Notifications.Channels.CZYTANIE_Z_INTERNETU,
+                                "Czytanie w zakładce " + tabName + " - strona " + index).build());
                 url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
                 String result = Utils.getTextPageContent(url).toString();
@@ -104,7 +103,7 @@ public class Opowi extends ReadInfo {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                typ.name() + " - nowe strony lub wersje stron").build());
+                                "Nowości w zakładce " + tabName).build());
             } else {
                 Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
             }
