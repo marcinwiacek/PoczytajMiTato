@@ -349,6 +349,7 @@ public class Utils {
             }
 
             addFileToZipFile("mimetype", out, EPUB_MIME_TYPE);
+
             addFileToZipFile("META-INF/container.xml",
                     out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n" +
@@ -356,6 +357,7 @@ public class Utils {
                             "<rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n" +
                             "</rootfiles>\n" +
                             "</container>");
+
             addFileToZipFile("OEBPS/style.css", out, "body {text-align:justify}");
 
             addFileToZipFile("OEBPS/toc.ncx", out,
@@ -386,7 +388,7 @@ public class Utils {
                             "xmlns:epub=\"http://www.idpf.org/2007/ops\"\n" +
                             "xml:lang=\"pl\" lang=\"pl\">\n" +
                             "<head>\n" +
-                            "<title>title</title>\n" +
+                            "<title>\" + tytul + \" (\" + d0 + \")</title>\n" +
                             "<link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\" />\n" +
                             "</head>\n" +
                             "<body xml:lang=\"pl\" lang=\"pl\">\n" +
@@ -462,10 +464,10 @@ public class Utils {
             out.close();
 
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(file, "application/epub+zip");
+            intent.setDataAndType(file, EPUB_MIME_TYPE);
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             if (intent.resolveActivity(context.getPackageManager()) == null) {
-                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + "application/epub+zip"));
+                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + EPUB_MIME_TYPE));
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 builder.setContentText("Zapisano plik " + tytul)
