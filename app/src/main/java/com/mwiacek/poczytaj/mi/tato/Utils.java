@@ -461,10 +461,10 @@ public class Utils {
             out.close();
 
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(file, "application/zip");
+            intent.setDataAndType(file, "application/epub+zip");
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             if (intent.resolveActivity(context.getPackageManager()) == null) {
-                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + "application/zip"));
+                intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + "application/epub+zip"));
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 builder.setContentText("Zapisano plik " + tytul)

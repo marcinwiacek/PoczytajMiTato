@@ -361,8 +361,8 @@ public class ReadFragment extends Fragment {
                         .setCheckable(true).setChecked(ViewPagerAdapter.isSearchTabAvailable());
                 //   menu.add(3, R.string.MENU_USE_TOR, mainIndex++, R.string.MENU_USE_TOR)
                 //           .setCheckable(true).setChecked(config.useTOR);
-                menu.add(3, R.string.MENU_GET_TEXTS_WITH_INDEX, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
-                        .setCheckable(true).setChecked(config.getTextsWhenRefreshingIndex);
+                //menu.add(3, R.string.MENU_GET_TEXTS_WITH_INDEX, mainIndex++, R.string.MENU_GET_TEXTS_WITH_INDEX)
+                //        .setCheckable(true).setChecked(config.getTextsWhenRefreshingIndex);
                 for (String s : hm.keySet()) {
                     menu.add(3, i++, mainIndex++, s).setCheckable(true)
                             .setChecked(config.readInfoForReadFragment.contains(hm.get(s)));
@@ -790,7 +790,7 @@ public class ReadFragment extends Fragment {
         setSearchHintColor();
 
         mCreateEPUB = registerForActivityResult(
-                new ActivityResultContracts.CreateDocument("application/zip"), //epub+zip
+                new ActivityResultContracts.CreateDocument("application/epub+zip"),
                 uri -> Utils.createEPUB(getContext(), uri, pageListAdapter.getAllItems(),
                         config.readInfoForReadFragment));
 
