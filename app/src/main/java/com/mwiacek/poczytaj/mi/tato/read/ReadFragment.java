@@ -613,7 +613,7 @@ public class ReadFragment extends Fragment {
                 } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
                     mCreateEPUB.launch(config.tabName);
                 } else if (menuItem.getItemId() == R.string.MENU_IMPORT_EPUB) {
-                    mImportEPUB.launch(new String[]{"application/zip"});
+                    mImportEPUB.launch(new String[]{Utils.EPUB_MIME_TYPE});
                 }
                 return false;
             }
@@ -790,7 +790,7 @@ public class ReadFragment extends Fragment {
         setSearchHintColor();
 
         mCreateEPUB = registerForActivityResult(
-                new ActivityResultContracts.CreateDocument("application/epub+zip"),
+                new ActivityResultContracts.CreateDocument(Utils.EPUB_MIME_TYPE),
                 uri -> Utils.createEPUB(getContext(), uri, pageListAdapter.getAllItems(),
                         config.readInfoForReadFragment));
 

@@ -54,6 +54,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class Utils {
     public final static String BEFORE_HIGHLIGHT = "<ins style='background-color:green'>";
     public final static String AFTER_HIGHLIGHT = "</ins>";
+    public final static String EPUB_MIME_TYPE = "application/epub+zip";
 
     public static void dialog(Context context, String message, View view,
                               android.content.DialogInterface.OnClickListener OKListener,
@@ -347,7 +348,7 @@ public class Utils {
                 }
             }
 
-            addFileToZipFile("mimetype", out, "application/epub+zip");
+            addFileToZipFile("mimetype", out, EPUB_MIME_TYPE);
             addFileToZipFile("META-INF/container.xml",
                     out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                             "<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n" +
@@ -504,7 +505,7 @@ public class Utils {
                         sss.append(str);
                     }
                     mimetype = sss.toString();
-                    if (!sss.toString().equals("application/epub+zip")) {
+                    if (!sss.toString().equals(EPUB_MIME_TYPE)) {
                         break;
                     }
                 }
@@ -524,7 +525,7 @@ public class Utils {
                 }
             }
             zipfile.close();
-            if (!mimetype.equals("application/epub+zip")) {
+            if (!mimetype.equals(EPUB_MIME_TYPE)) {
                 dialog(context, "Plik EPUB ma zły format (błąd mimetype)", null,
                         (dialog, which) -> {
                         }, null);
