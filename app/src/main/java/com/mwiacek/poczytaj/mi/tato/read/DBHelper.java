@@ -11,6 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 public class DBHelper extends SQLiteOpenHelper {
@@ -173,13 +174,16 @@ public class DBHelper extends SQLiteOpenHelper {
 
         while (!res.isAfterLast()) {
             if (authors != null) {
-                boolean ok = true;
+                boolean ok = false;
                 for (String s : authors) {
-                    //TODO: "not "
-                    if (s.trim().toLowerCase().startsWith("not ") ==
-                            res.getString(res.getColumnIndex(COLUMN_AUTHOR)).toLowerCase()
-                                    .trim().equals(s.trim().replace("not ", ""))) {
-                        ok = false;
+                    ok = s.trim().toLowerCase().startsWith("not ");
+                    if (res.getString(res.getColumnIndex(COLUMN_AUTHOR)).toLowerCase()
+                            .trim().equals(s.trim().replace("not ", ""))) {
+                        if (s.trim().toLowerCase().startsWith("not ")) {
+                            ok = false;
+                            break;
+                        }
+                        ok =true;
                         break;
                     }
                 }
@@ -189,20 +193,26 @@ public class DBHelper extends SQLiteOpenHelper {
                 }
             }
             if (tags != null && !res.getString(res.getColumnIndex(COLUMN_COMMENTS)).isEmpty()) {
-                boolean ok = true;
-                String[] abc = res.getString(res.getColumnIndex(COLUMN_COMMENTS)).toLowerCase().split(",");
+                String[] abc = res.getString(res.getColumnIndex(COLUMN_COMMENTS))
+                        .toLowerCase().split(",");
+                boolean found = false;
                 for (String s : tags) {
-                    //TODO: "not "
+                    found = false;
                     for (String ab : abc) {
-                        if (ab.trim().toLowerCase().startsWith("not ") == ab.trim().equals(s.trim()
-                                .replace("not ", ""))) {
-                            ok = false;
+                        if (ab.trim().equals(s.trim().replace("not ", ""))) {
+                            found = true;
                             break;
                         }
                     }
-                    if (!ok) break;
+                    if (s.trim().startsWith("not ")) {
+                            found = !found;
+                            if (!found) break;
+                    }
+                    if (!s.trim().startsWith("not ") && !found) {
+                        break;
+                    }
                 }
-                if (!ok) {
+                if (!found) {
                     res.moveToNext();
                     continue;
                 }

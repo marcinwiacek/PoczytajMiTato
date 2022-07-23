@@ -418,24 +418,16 @@ public class ReadFragment extends Fragment {
                             "Podaj autorów (oddzielonych przecinkiem). " +
                                     "\"not \" na początku autora oznacza zaprzeczenie.", input,
                             (dialog, which) -> {
-                                menuItem.setChecked(input.getText().toString().isEmpty());
+                                menuItem.setChecked(!input.getText().toString().isEmpty());
                                 if (!config.authorFilter.equals(input.getText().toString().trim())) {
                                     config.authorFilter = input.getText().toString().trim();
                                     pageListAdapter.update(db, config.showHiddenTexts,
                                             config.readInfoForReadFragment,
                                             config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                            }, (dialog, which) -> {
-                                dialog.dismiss();
-                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
-                                    config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment,
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
                                 }
                                 config.saveToInternalStorage(getContext());
+                            }, (dialog, which) -> {
+                                dialog.dismiss();
                             });
                     return false;
                 } else if (menuItem.getItemId() == R.string.MENU_LOCAL_TAG_FILTER) {
@@ -445,25 +437,16 @@ public class ReadFragment extends Fragment {
                             "Podaj tagi (oddzielone przecinkiem). " +
                                     "\"not \" na początku taga oznacza zaprzeczenie.", input,
                             (dialog, which) -> {
-                                menuItem.setChecked(input.getText().toString().isEmpty());
+                                menuItem.setChecked(!input.getText().toString().isEmpty());
                                 if (!config.tagFilter.equals(input.getText().toString().trim())) {
                                     config.tagFilter = input.getText().toString().trim();
                                     pageListAdapter.update(db, config.showHiddenTexts,
                                             config.readInfoForReadFragment,
                                             config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
-                                }
-                            }, (dialog, which) -> {
-                                dialog.dismiss();
-                                menuItem.setChecked(false);
-                                if (!config.tagFilter.equals(input.getText().toString().trim())) {
-                                    config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
-                                            config.readInfoForReadFragment,
-                                            config.authorFilter, config.tagFilter);
-                                    config.saveToInternalStorage(getContext());
                                 }
                                 config.saveToInternalStorage(getContext());
+                            }, (dialog, which) -> {
+                                dialog.dismiss();
                             });
                     return false;
                 }
