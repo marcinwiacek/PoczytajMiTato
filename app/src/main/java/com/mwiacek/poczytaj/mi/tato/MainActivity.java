@@ -1,6 +1,7 @@
 package com.mwiacek.poczytaj.mi.tato;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,7 +32,13 @@ TODO sync z szukaniem systemowym ?
  */
 public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
-    private ViewPagerAdapter viewPagerAdapter;
+    public static ViewPagerAdapter viewPagerAdapter;
+
+    private static Context mContext;
+
+    public static Context getContext() {
+        return mContext;
+    }
 
     @Override
     public void onBackPressed() {
@@ -56,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mContext = getApplicationContext();
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
                 (getResources().getConfiguration().uiMode &
                         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
@@ -66,11 +75,9 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        ImageCache mImageCache = new ImageCache(getApplicationContext());
-        DBHelper mydb = new DBHelper(getApplicationContext());
-
         viewPagerAdapter = new ViewPagerAdapter(this, getApplicationContext(),
-                mImageCache, mydb, findViewById(R.id.tab_layout), this);
+                //mImageCache, mydb,
+                findViewById(R.id.tab_layout), this);
         viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(viewPagerAdapter);
         new TabLayoutMediator(findViewById(R.id.tab_layout), viewPager,
@@ -81,16 +88,16 @@ public class MainActivity extends AppCompatActivity {
 
         //https://stackoverflow.com/questions/61772241/how-to-make-viewpager2-less-sensitive-to-swipe
         //https://issuetracker.google.com/issues/123006042
-        try {
+      /*  try {
             final Field recyclerViewField = ViewPager2.class.getDeclaredField("pagesRecyclerView");
             recyclerViewField.setAccessible(true);
             final RecyclerView recyclerView = (RecyclerView) recyclerViewField.get(viewPager);
             final Field touchSlopField = RecyclerView.class.getDeclaredField("mTouchSlop");
             touchSlopField.setAccessible(true);
             final int touchSlop = (int) touchSlopField.get(recyclerView);
-            touchSlopField.set(recyclerView, touchSlop * 0.5);
+            touchSlopField.set(recyclerView, touchSlop * 10);
         } catch (Exception ignore) {
-        }
+        }*/
 
         new File(Utils.getDiskCacheFolder(getApplicationContext()), Page.CACHE_SUB_DIRECTORY).mkdirs();
     }

@@ -1,6 +1,7 @@
 package com.mwiacek.poczytaj.mi.tato;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -24,20 +25,22 @@ import java.util.Comparator;
 import java.util.ListIterator;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
-    private final static ArrayList<FragmentConfig> configs = new ArrayList<>();
+    public final static ArrayList<FragmentConfig> configs = new ArrayList<>();
+    public final ViewPagerAdapter topPageAdapter = this;
     private final Context context;
-    private final ImageCache imageCache;
-    private final DBHelper mydb;
+  //  private final ImageCache imageCache;
+  //  private final DBHelper mydb;
     private final TabLayout tabLayout;
     private final AppCompatActivity activity;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, Context context,
-                            ImageCache imageCache, DBHelper mydb, TabLayout tabLayout,
+                            //ImageCache imageCache, DBHelper mydb,
+                            TabLayout tabLayout,
                             AppCompatActivity activity) {
         super(fragmentActivity);
         this.context = context;
-        this.imageCache = imageCache;
-        this.mydb = mydb;
+    //    this.imageCache = imageCache;
+      //  this.mydb = mydb;
         this.tabLayout = tabLayout;
         this.activity = activity;
     }
@@ -68,9 +71,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     }
 
     public void deleteSearchTab() {
-        ListIterator<FragmentConfig> listIterator = configs.listIterator();
-        while (listIterator.hasNext()) {
-            FragmentConfig c = listIterator.next();
+        for (FragmentConfig c : configs) {
             if (c.searchFragmentConfig) {
                 deleteTab(c);
                 /* We need to refresh menu items */
@@ -154,13 +155,19 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
             Collections.sort(configs, comparator);
         }
         if (f == null || correct < 1) {
-            FragmentConfig c = new FragmentConfig(0, "FANTASTYKA");
+            FragmentConfig c = new FragmentConfig(0, "BIBLIOTEKA");
             c.readInfoForReadFragment.add(Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
             c.searchFragmentConfig = false;
             configs.add(c);
             c.saveToInternalStorage(context);
 
-            c = new FragmentConfig(1, "OPOWI");
+            c = new FragmentConfig(1, "POCZEKALNIA");
+            c.readInfoForReadFragment.add(Page.PageTyp.FANTASTYKA_POCZEKALNIA);
+            c.searchFragmentConfig = false;
+            configs.add(c);
+            c.saveToInternalStorage(context);
+
+            c = new FragmentConfig(2, "OPOWI");
             c.readInfoForReadFragment.add(Page.PageTyp.OPOWI_FANTASTYKA);
             c.searchFragmentConfig = false;
             configs.add(c);
@@ -185,9 +192,14 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         if (configs.size() == 0) readConfigs();
         updateTabMode();
-        return configs.get(position).searchFragmentConfig ?
-                new SearchFragment(configs.get(position), imageCache, this) :
-                new ReadFragment(configs.get(position), this, mydb);
+        if (configs.get(position).searchFragmentConfig) {
+            return new SearchFragment(configs.get(position), /*imageCache*/ null, this);
+        }
+        Fragment f = new ReadFragment();
+        Bundle args = new Bundle();
+        args.putInt("configNum", position);
+        f.setArguments(args);
+        return f;
     }
 
     @Override

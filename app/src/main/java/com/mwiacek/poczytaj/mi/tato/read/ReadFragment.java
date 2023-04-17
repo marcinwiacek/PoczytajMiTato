@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -52,9 +53,11 @@ import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
+import com.mwiacek.poczytaj.mi.tato.MainActivity;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.ViewPagerAdapter;
+import com.mwiacek.poczytaj.mi.tato.search.ImageCache;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -70,8 +73,9 @@ public class ReadFragment extends Fragment {
     private final static String ENCODING = "UTF-8";
     private final static String URL_PREFIX = "https://mwiacek.com/ffiles/img/";
 
-    private final FragmentConfig config;
-    private final DBHelper db;
+    private FragmentConfig config = null;
+    private final DBHelper db =  new DBHelper(MainActivity.getContext());
+
     private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -80,7 +84,7 @@ public class ReadFragment extends Fragment {
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
 
-    private final ViewPagerAdapter topPagerAdapter;
+    private ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
     private SwipeRefreshLayout refresh;
@@ -96,10 +100,7 @@ public class ReadFragment extends Fragment {
     private String webViewLoadingString = "";
     private boolean loadingMorePages = false;
 
-    public ReadFragment(FragmentConfig config, ViewPagerAdapter topPagerAdapter, DBHelper mydb) {
-        this.topPagerAdapter = topPagerAdapter;
-        this.config = config;
-        this.db = mydb;
+    public ReadFragment() {
     }
 
     public int getTabNum() {
@@ -138,8 +139,8 @@ public class ReadFragment extends Fragment {
     public void onUpdateLayout(boolean withMargin) {
         int actionBarSize = (int) requireContext().getTheme().obtainStyledAttributes(
                 new int[]{android.R.attr.actionBarSize}).getDimension(0, 0);
-        pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
-        frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
+        if (pageList!=null) pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
+        if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
     }
 
     private void setupRefresh() {
@@ -243,7 +244,7 @@ public class ReadFragment extends Fragment {
     }
 
     public void informAllReadTabsAboutUpdate(Page.PageTyp typ) {
-        for (Fragment ff : getParentFragmentManager().getFragments()) {
+        for (Fragment ff : getFragmentManager().getFragments()) {
             if (ff instanceof ReadFragment) {
                 ((ReadFragment) ff).onPageUpdate(typ);
             }
@@ -253,6 +254,8 @@ public class ReadFragment extends Fragment {
     @SuppressLint("NotifyDataSetChanged")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        Bundle args = this.getArguments();
+        this.config = ViewPagerAdapter.configs.get(args.getInt("configNum"));
         View view = inflater.inflate(R.layout.read_fragment, container, false);
         viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
@@ -567,7 +570,7 @@ public class ReadFragment extends Fragment {
                     EditText input = new EditText(getContext());
                     Utils.dialog(requireContext(), "Nazwa nowej zakładki", input,
                             (dialog, which) -> {
-                                try {
+                               try {
                                     topPagerAdapter.addTab(config, input.getText().toString());
                                 } catch (CloneNotSupportedException e) {
                                     e.printStackTrace();
