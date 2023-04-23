@@ -35,6 +35,7 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.os.HandlerCompat;
 import androidx.core.view.MenuProvider;
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -140,7 +141,7 @@ public class ReadFragment extends Fragment {
         int actionBarSize = (int) requireContext().getTheme().obtainStyledAttributes(
                 new int[]{android.R.attr.actionBarSize}).getDimension(0, 0);
         if (pageList!=null) pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
-        if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
+     //   if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
     }
 
     private void setupRefresh() {
@@ -180,7 +181,8 @@ public class ReadFragment extends Fragment {
             }
         }
         if (webView != null) {
-            webViewLoadingString = "<div style='word-break: break-all;'>Czytanie pliku " + p.url;
+            webViewLoadingString = "<div style='word-break: break-all;'><h1>"+p.name+"</h1><p>"+
+                    "Czytanie pliku " + p.url;
             webView.loadDataWithBaseURL(null, webViewLoadingString, MIME_TYPE,
                     ENCODING, null);
         }
@@ -261,7 +263,7 @@ public class ReadFragment extends Fragment {
 
         /* Page with webview */
         SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
-        frameLayout = view.findViewById(R.id.frameLayout);
+      //  frameLayout = view.findViewById(R.id.frameLayout);
         webView = view.findViewById(R.id.webview);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) &&
                 ((requireContext().getResources().getConfiguration().uiMode &
@@ -285,6 +287,10 @@ public class ReadFragment extends Fragment {
                         requireContext(), new File(requireContext().getCacheDir(),"ffiles")))
                 .setHttpAllowed(false).setDomain("mwiacek.com").build();
         */
+       // webView.getSettings().setUseWideViewPort(false);
+       // webView.getSettings().setLoadWithOverviewMode(false);
+       // webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
         webView.setWebViewClient(new WebViewClientCompat() {
             private WebResourceResponse shouldIntercept(String url) {
                 for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
@@ -306,7 +312,6 @@ public class ReadFragment extends Fragment {
                 webView.scrollTo(0, db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
             }
 
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return shouldIntercept(request.getUrl().toString());
@@ -649,6 +654,7 @@ public class ReadFragment extends Fragment {
             }
             viewSwitcher.showNext();
         });
+
         pageList.setAdapter(pageListAdapter);
         pageList.addItemDecoration(new DividerItemDecoration(requireContext(),
                 DividerItemDecoration.VERTICAL));
@@ -680,6 +686,7 @@ public class ReadFragment extends Fragment {
                 }
             }
         });
+
         pageListAdapter.update(db, config.showHiddenTexts, config.readInfoForReadFragment,
                 config.authorFilter, config.tagFilter);
 

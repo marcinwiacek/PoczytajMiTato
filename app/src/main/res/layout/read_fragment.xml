@@ -10,84 +10,65 @@
         android:layout_height="match_parent"
         android:inAnimation="@android:anim/slide_in_left">
 
-        <androidx.coordinatorlayout.widget.CoordinatorLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:inAnimation="@android:anim/slide_in_left"
-            android:outAnimation="@android:anim/slide_out_right">
-
-            <com.google.android.material.appbar.AppBarLayout
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:fitsSystemWindows="false">
-
-                <com.google.android.material.appbar.CollapsingToolbarLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    app:layout_scrollFlags="scroll|enterAlways">
-
-                    <androidx.appcompat.widget.Toolbar
-                        android:id="@+id/toolbar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/colorPrimary"
-                        android:theme="?attr/actionBarTheme"
-                        app:layout_collapseMode="pin">
-
-                        <androidx.appcompat.widget.SearchView
-                            android:id="@+id/mySearch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="start"
-                            app:iconifiedByDefault="false"
-                            app:layout_collapseMode="pin"
-                            app:queryHint="Szukaj" />
-
-                    </androidx.appcompat.widget.Toolbar>
-
-                </com.google.android.material.appbar.CollapsingToolbarLayout>
-
-            </com.google.android.material.appbar.AppBarLayout>
-
-            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                android:id="@+id/swiperefresh"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/pagesRecyclerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingBottom="?attr/actionBarSize"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-        </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-        <androidx.coordinatorlayout.widget.CoordinatorLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <FrameLayout
-                android:id="@+id/frameLayout"
+            <com.google.android.material.appbar.AppBarLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingBottom="?attr/actionBarSize">
+                android:layout_height="match_parent">
+
+                <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/colorPrimary"
+                    android:theme="?attr/actionBarTheme">
+
+                    <androidx.appcompat.widget.SearchView
+                        android:id="@+id/mySearch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        app:iconifiedByDefault="false"
+                        app:queryHint="Szukaj" />
+
+                </androidx.appcompat.widget.Toolbar>
 
                 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                    android:id="@+id/swiperefresh2"
+                    android:id="@+id/swiperefresh"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 
-                    <WebView
-                        android:id="@+id/webview"
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/pagesRecyclerView"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
                 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-            </FrameLayout>
-        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+            </com.google.android.material.appbar.AppBarLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swiperefresh2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="false"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+                <WebView
+                    android:id="@+id/webview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+            </androidx.core.widget.NestedScrollView>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
     </ViewSwitcher>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

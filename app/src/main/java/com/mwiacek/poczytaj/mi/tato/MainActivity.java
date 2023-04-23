@@ -33,7 +33,6 @@ TODO sync z szukaniem systemowym ?
 public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
     public static ViewPagerAdapter viewPagerAdapter;
-
     private static Context mContext;
 
     public static Context getContext() {
@@ -65,9 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         mContext = getApplicationContext();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-                (getResources().getConfiguration().uiMode &
-                        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
+        if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this,
                     com.google.android.material.R.color.design_dark_default_color_background
             ));
@@ -83,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(findViewById(R.id.tab_layout), viewPager,
                 (tab, position) -> tab.setText(viewPagerAdapter.getPageTitle(position))
         ).attach();
+        viewPager. setUserInputEnabled(false);
 
         Notifications.setupNotifications(getApplicationContext());
 

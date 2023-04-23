@@ -24,7 +24,8 @@
                 <com.google.android.material.appbar.CollapsingToolbarLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    app:layout_scrollFlags="scroll|enterAlways">
+                    app:layout_scrollFlags="scroll|enterAlways"
+               >
 
                     <androidx.appcompat.widget.Toolbar
                         android:id="@+id/toolbar3"
@@ -32,7 +33,8 @@
                         android:layout_height="wrap_content"
                         android:background="?attr/colorPrimary"
                         android:theme="?attr/actionBarTheme"
-                        app:layout_collapseMode="pin">
+                        app:layout_collapseMode="pin"
+                        >
 
                         <androidx.appcompat.widget.SearchView
                             android:id="@+id/mySearch3"
