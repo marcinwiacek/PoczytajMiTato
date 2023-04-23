@@ -3,24 +3,19 @@ package com.mwiacek.poczytaj.mi.tato;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayoutMediator;
-import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.read.ReadFragment;
-import com.mwiacek.poczytaj.mi.tato.search.ImageCache;
 import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
 
 import java.io.File;
-import java.lang.reflect.Field;
 
 /*
 TODO czerwone teksty (niewidoczne na serwerze)
@@ -31,9 +26,9 @@ TODO sortowanie szukania ?
 TODO sync z szukaniem systemowym ?
  */
 public class MainActivity extends AppCompatActivity {
-    private ViewPager2 viewPager;
     public static ViewPagerAdapter viewPagerAdapter;
     private static Context mContext;
+    private ViewPager2 viewPager;
 
     public static Context getContext() {
         return mContext;
@@ -80,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(findViewById(R.id.tab_layout), viewPager,
                 (tab, position) -> tab.setText(viewPagerAdapter.getPageTitle(position))
         ).attach();
-        viewPager. setUserInputEnabled(false);
+        viewPager.setUserInputEnabled(false);
 
         Notifications.setupNotifications(getApplicationContext());
 

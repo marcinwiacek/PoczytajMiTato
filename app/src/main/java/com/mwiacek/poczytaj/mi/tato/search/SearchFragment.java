@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
+import com.mwiacek.poczytaj.mi.tato.MainActivity;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.ViewPagerAdapter;
@@ -41,19 +42,16 @@ import java.io.File;
 import java.util.LinkedHashMap;
 
 public class SearchFragment extends Fragment {
-    private final FragmentConfig config;
-    private final ImageCache imageCache;
-    private final ViewPagerAdapter topPagerAdapter;
+    private final ImageCache imageCache = new ImageCache(MainActivity.getContext());
+    private final ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
+    private FragmentConfig config = null;
     private ViewSwitcher viewSwitcher;
     private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;
     private SingleBookRecyclerViewAdapter singleBookRecyclerViewAdapter;
     private SingleBook lastClickedBook;
     private RecyclerView manyBooksRecyclerView;
 
-    public SearchFragment(FragmentConfig config, ImageCache imageCache, ViewPagerAdapter topPagerAdapter) {
-        this.config = config;
-        this.imageCache = imageCache;
-        this.topPagerAdapter = topPagerAdapter;
+    public SearchFragment() {
     }
 
     public void onBackPressed() {
@@ -96,6 +94,8 @@ public class SearchFragment extends Fragment {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        this.config = ViewPagerAdapter.configs.get(this.getArguments().getInt("configNum"));
+
         View view = inflater.inflate(R.layout.search_fragment, container, false);
         viewSwitcher = view.findViewById(R.id.viewSwitcher);
 

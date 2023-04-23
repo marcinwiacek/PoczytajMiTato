@@ -11,10 +11,8 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.google.android.material.tabs.TabLayout;
-import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.read.ReadFragment;
-import com.mwiacek.poczytaj.mi.tato.search.ImageCache;
 import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
 import com.mwiacek.poczytaj.mi.tato.search.storeinfo.StoreInfo;
 
@@ -28,8 +26,8 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public final static ArrayList<FragmentConfig> configs = new ArrayList<>();
     public final ViewPagerAdapter topPageAdapter = this;
     private final Context context;
-  //  private final ImageCache imageCache;
-  //  private final DBHelper mydb;
+    //  private final ImageCache imageCache;
+    //  private final DBHelper mydb;
     private final TabLayout tabLayout;
     private final AppCompatActivity activity;
 
@@ -39,8 +37,8 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
                             AppCompatActivity activity) {
         super(fragmentActivity);
         this.context = context;
-    //    this.imageCache = imageCache;
-      //  this.mydb = mydb;
+        //    this.imageCache = imageCache;
+        //  this.mydb = mydb;
         this.tabLayout = tabLayout;
         this.activity = activity;
     }
@@ -192,12 +190,9 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         if (configs.size() == 0) readConfigs();
         updateTabMode();
-        if (configs.get(position).searchFragmentConfig) {
-            return new SearchFragment(configs.get(position), /*imageCache*/ null, this);
-        }
-        Fragment f = new ReadFragment();
         Bundle args = new Bundle();
         args.putInt("configNum", position);
+        Fragment f = configs.get(position).searchFragmentConfig ? new SearchFragment() : new ReadFragment();
         f.setArguments(args);
         return f;
     }

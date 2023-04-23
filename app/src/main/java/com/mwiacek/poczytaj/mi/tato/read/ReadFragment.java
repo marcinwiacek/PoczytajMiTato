@@ -12,7 +12,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.InputType;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -30,12 +29,10 @@ import android.widget.ViewSwitcher;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.os.HandlerCompat;
 import androidx.core.view.MenuProvider;
-import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -58,7 +55,6 @@ import com.mwiacek.poczytaj.mi.tato.MainActivity;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 import com.mwiacek.poczytaj.mi.tato.ViewPagerAdapter;
-import com.mwiacek.poczytaj.mi.tato.search.ImageCache;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -73,10 +69,7 @@ public class ReadFragment extends Fragment {
     private final static String MIME_TYPE = "text/html; charset=UTF-8";
     private final static String ENCODING = "UTF-8";
     private final static String URL_PREFIX = "https://mwiacek.com/ffiles/img/";
-
-    private FragmentConfig config = null;
-    private final DBHelper db =  new DBHelper(MainActivity.getContext());
-
+    private final DBHelper db = new DBHelper(MainActivity.getContext());
     private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -84,8 +77,8 @@ public class ReadFragment extends Fragment {
             new LinkedBlockingQueue<>()
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
-
-    private ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
+    private final ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
+    private FragmentConfig config = null;
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
     private SwipeRefreshLayout refresh;
@@ -140,8 +133,8 @@ public class ReadFragment extends Fragment {
     public void onUpdateLayout(boolean withMargin) {
         int actionBarSize = (int) requireContext().getTheme().obtainStyledAttributes(
                 new int[]{android.R.attr.actionBarSize}).getDimension(0, 0);
-        if (pageList!=null) pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
-     //   if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
+        if (pageList != null) pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
+        //   if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
     }
 
     private void setupRefresh() {
@@ -181,7 +174,7 @@ public class ReadFragment extends Fragment {
             }
         }
         if (webView != null) {
-            webViewLoadingString = "<div style='word-break: break-all;'><h1>"+p.name+"</h1><p>"+
+            webViewLoadingString = "<div style='word-break: break-all;'><h1>" + p.name + "</h1><p>" +
                     "Czytanie pliku " + p.url;
             webView.loadDataWithBaseURL(null, webViewLoadingString, MIME_TYPE,
                     ENCODING, null);
@@ -256,14 +249,14 @@ public class ReadFragment extends Fragment {
     @SuppressLint("NotifyDataSetChanged")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        Bundle args = this.getArguments();
-        this.config = ViewPagerAdapter.configs.get(args.getInt("configNum"));
+
+        this.config = ViewPagerAdapter.configs.get(this.getArguments().getInt("configNum"));
         View view = inflater.inflate(R.layout.read_fragment, container, false);
         viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
         /* Page with webview */
         SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
-      //  frameLayout = view.findViewById(R.id.frameLayout);
+        //  frameLayout = view.findViewById(R.id.frameLayout);
         webView = view.findViewById(R.id.webview);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) &&
                 ((requireContext().getResources().getConfiguration().uiMode &
@@ -287,9 +280,9 @@ public class ReadFragment extends Fragment {
                         requireContext(), new File(requireContext().getCacheDir(),"ffiles")))
                 .setHttpAllowed(false).setDomain("mwiacek.com").build();
         */
-       // webView.getSettings().setUseWideViewPort(false);
-       // webView.getSettings().setLoadWithOverviewMode(false);
-       // webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        // webView.getSettings().setUseWideViewPort(false);
+        // webView.getSettings().setLoadWithOverviewMode(false);
+        // webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         webView.setWebViewClient(new WebViewClientCompat() {
             private WebResourceResponse shouldIntercept(String url) {
@@ -575,7 +568,7 @@ public class ReadFragment extends Fragment {
                     EditText input = new EditText(getContext());
                     Utils.dialog(requireContext(), "Nazwa nowej zakładki", input,
                             (dialog, which) -> {
-                               try {
+                                try {
                                     topPagerAdapter.addTab(config, input.getText().toString());
                                 } catch (CloneNotSupportedException e) {
                                     e.printStackTrace();

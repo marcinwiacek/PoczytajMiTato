@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,16 +145,19 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
             } else {
                 continue;
             }
+            Log.d("test", "making search");
             executor.execute(() -> {
                 String[] urls = st.getSearchUrl(stringToSearch, pageNumber);
                 mProgressBar.setMax(mProgressBar.getMax() + urls.length - 1);
                 for (String singleURL : urls) {
                     try {
                         StringBuilder content = Utils.getTextPageContent(singleURL);
+                        Log.d("test", content.toString());
                         if (!content.toString().isEmpty()) {
                             if (st.doesItMatch(stringToSearch, singleURL, content, mData, lock,
                                     this)) {
                                 foundSomething = true;
+                                Log.d("test", "found smth");
                             }
                         }
                     } catch (Exception e) {

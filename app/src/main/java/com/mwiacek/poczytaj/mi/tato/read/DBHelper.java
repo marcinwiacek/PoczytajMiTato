@@ -11,7 +11,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 
 public class DBHelper extends SQLiteOpenHelper {
@@ -183,7 +182,7 @@ public class DBHelper extends SQLiteOpenHelper {
                             ok = false;
                             break;
                         }
-                        ok =true;
+                        ok = true;
                         break;
                     }
                 }
@@ -205,8 +204,8 @@ public class DBHelper extends SQLiteOpenHelper {
                         }
                     }
                     if (s.trim().startsWith("not ")) {
-                            found = !found;
-                            if (!found) break;
+                        found = !found;
+                        if (!found) break;
                     }
                     if (!s.trim().startsWith("not ") && !found) {
                         break;
