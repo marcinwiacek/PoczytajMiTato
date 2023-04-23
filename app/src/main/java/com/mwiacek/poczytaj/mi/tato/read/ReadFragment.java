@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -255,13 +256,23 @@ public class ReadFragment extends Fragment {
         viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
         /* Page with webview */
-        SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
+
         //  frameLayout = view.findViewById(R.id.frameLayout);
+        SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
         webView = view.findViewById(R.id.webview);
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) &&
-                ((requireContext().getResources().getConfiguration().uiMode &
+
+        if (((requireContext().getResources().getConfiguration().uiMode &
                         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
-            WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_ON);
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_ON);
+            }
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY)) {
+                WebSettingsCompat.setForceDarkStrategy(webView.getSettings(),
+                        WebSettingsCompat.DARK_STRATEGY_USER_AGENT_DARKENING_ONLY);
+            }
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.getSettings(),true);
+            }
         }
         /* 1. We could load images locally using relative URLs with setAllowFileAccess(true)
               and it works, but is not very recommended.
