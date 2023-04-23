@@ -68,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         viewPagerAdapter = new ViewPagerAdapter(this, getApplicationContext(),
-                //mImageCache, mydb,
                 findViewById(R.id.tab_layout), this);
         viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(viewPagerAdapter);

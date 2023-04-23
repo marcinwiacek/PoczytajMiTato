@@ -12,7 +12,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.InputType;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -85,7 +84,6 @@ public class ReadFragment extends Fragment {
     private SwipeRefreshLayout refresh;
     private ViewSwitcher viewSwitcher;
     private WebView webView;
-    private FrameLayout frameLayout;
     private SearchView searchView;
     private Toolbar toolbar;
 
@@ -149,7 +147,7 @@ public class ReadFragment extends Fragment {
                 .setRequiredNetworkType(!config.canDownloadOnRoaming ? NetworkType.NOT_ROAMING :
                         (config.canDownloadInNetworkWithLimit ? NetworkType.METERED : NetworkType.UNMETERED))
                 .build();
-        WorkRequest.Builder request = new PeriodicWorkRequest.Builder(UploadWorker.class,
+        WorkRequest.Builder<PeriodicWorkRequest.Builder, PeriodicWorkRequest> request = new PeriodicWorkRequest.Builder(UploadWorker.class,
                 //   15,TimeUnit.MINUTES)
                 config.howOftenRefreshTabInHours, TimeUnit.HOURS)
                 .setConstraints(constraints)
@@ -250,17 +248,15 @@ public class ReadFragment extends Fragment {
     @SuppressLint("NotifyDataSetChanged")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
         this.config = ViewPagerAdapter.configs.get(this.getArguments().getInt("configNum"));
         View view = inflater.inflate(R.layout.read_fragment, container, false);
+
         viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
         /* Page with webview */
-
         //  frameLayout = view.findViewById(R.id.frameLayout);
-        SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
-        webView = view.findViewById(R.id.webview);
 
+        webView = view.findViewById(R.id.webview);
         if (((requireContext().getResources().getConfiguration().uiMode &
                         Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
@@ -294,7 +290,6 @@ public class ReadFragment extends Fragment {
         // webView.getSettings().setUseWideViewPort(false);
         // webView.getSettings().setLoadWithOverviewMode(false);
         // webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
         webView.setWebViewClient(new WebViewClientCompat() {
             private WebResourceResponse shouldIntercept(String url) {
                 for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
@@ -329,6 +324,7 @@ public class ReadFragment extends Fragment {
             }
         });
 
+        SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
         refresh2.setOnRefreshListener(() -> {
             Page p = pageListAdapter.getItem(positionInPageList);
             db.setPageTop(p.url, 0);
@@ -337,9 +333,8 @@ public class ReadFragment extends Fragment {
         });
 
         /* Page with list */
-        searchView = view.findViewById(R.id.mySearch);
         refresh = view.findViewById(R.id.swiperefresh);
-        pageList = view.findViewById(R.id.pagesRecyclerView);
+
         toolbar = view.findViewById(R.id.toolbar);
         toolbar.addMenuProvider(new MenuProvider() {
             private final LinkedHashMap<String, Page.PageTyp> hm = new LinkedHashMap<String, Page.PageTyp>() {{
@@ -659,6 +654,7 @@ public class ReadFragment extends Fragment {
             viewSwitcher.showNext();
         });
 
+        pageList = view.findViewById(R.id.pagesRecyclerView);
         pageList.setAdapter(pageListAdapter);
         pageList.addItemDecoration(new DividerItemDecoration(requireContext(),
                 DividerItemDecoration.VERTICAL));
@@ -757,6 +753,7 @@ public class ReadFragment extends Fragment {
                     result -> refresh.setRefreshing(false));
         });
 
+        searchView = view.findViewById(R.id.mySearch);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

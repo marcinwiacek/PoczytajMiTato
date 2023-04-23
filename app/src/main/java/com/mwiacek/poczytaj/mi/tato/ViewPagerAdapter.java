@@ -24,21 +24,14 @@ import java.util.ListIterator;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
     public final static ArrayList<FragmentConfig> configs = new ArrayList<>();
-    public final ViewPagerAdapter topPageAdapter = this;
     private final Context context;
-    //  private final ImageCache imageCache;
-    //  private final DBHelper mydb;
     private final TabLayout tabLayout;
     private final AppCompatActivity activity;
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, Context context,
-                            //ImageCache imageCache, DBHelper mydb,
-                            TabLayout tabLayout,
-                            AppCompatActivity activity) {
+                            TabLayout tabLayout, AppCompatActivity activity) {
         super(fragmentActivity);
         this.context = context;
-        //    this.imageCache = imageCache;
-        //  this.mydb = mydb;
         this.tabLayout = tabLayout;
         this.activity = activity;
     }
