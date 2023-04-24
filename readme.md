@@ -14,10 +14,20 @@ Wersja 2.0.1 - 4.2023
    wraz z drugą zakładką) i zmiany orientacji - poprawka błędu z konstruktorem
    fragmentów
 6. po kliknięciu na powiadomienie jesteśmy przeniesieni do aplikacji
+7. dodane uprawnienie POST_NOTIFICATIONS (wymagane, żeby pokazywać powiadomienia)
 
 Uwagi:
 1. aplikacja nie zawsze scrolluje do ostatnio czytanego miejsca
    (prawdopodobnie związanie ze NestedScrollView)
+2. aplikacja nie zbiera żadnych danych o urządzeniu czy użytkowniku
+   (ani nigdzie ich nie wysyła)
+
+Obecnie wymagane uprawnienia:
+1. POST_NOTIFICATIONS - powiadomienia
+2. INTERNET - to chyba oczywiste
+3. ACCESS_NETWORK_STATE - żeby móc czytać pliki ze stron w tle po włączeniu
+   funkcji przez użytkownika
+4. WRITE_EXTERNAL_STORAGE - bez niego nie można pobrać pliku EPUB
 
 Wersja 2.0 - 2022
 1. Dodano czytanie tekstów, import i eksport z EPUB (strony fantastyka.pl i opowi.pl).
