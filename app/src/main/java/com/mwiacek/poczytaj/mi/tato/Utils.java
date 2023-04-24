@@ -164,7 +164,7 @@ public class Utils {
             final ThreadPoolExecutor executor) {
         executor.execute(() -> {
             try {
-                StringBuilder result = Utils.getTextPageContent(url,updatecallback,resultHandler);
+                StringBuilder result = Utils.getTextPageContent(url, updatecallback, resultHandler);
                 if (callback != null) {
                     resultHandler.post(() -> callback.onComplete(result));
                 }
@@ -199,7 +199,7 @@ public class Utils {
                         int byteRead, len = 0;
                         while ((byteRead = connection.getInputStream().read()) != -1) {
                             outputStream.write(byteRead);
-                            len+=byteRead;
+                            len += byteRead;
                             if (updatecallback != null) {
                                 int finalLen = len;
                                 resultHandler.post(() -> updatecallback.onComplete(finalLen));
@@ -223,7 +223,7 @@ public class Utils {
     }
 
     public static void downloadFileWithDownloadManagerAfterGrantingPermission(String url, String title, Context context) {
-       Log.d("test","downloading");
+        Log.d("test", "downloading");
         DownloadManager downloadmanager = (DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
         File f = new File("" + uri);

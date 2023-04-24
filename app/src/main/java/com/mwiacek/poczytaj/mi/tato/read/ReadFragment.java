@@ -92,7 +92,7 @@ public class ReadFragment extends Fragment {
     private ActivityResultLauncher<String[]> mImportEPUB;
     private int positionInPageList;
     private String webViewLoadingString = "";
-    private String webViewLoadingStringProgress = "";
+    private final String webViewLoadingStringProgress = "";
     private boolean loadingMorePages = false;
 
     public ReadFragment() {
@@ -185,7 +185,7 @@ public class ReadFragment extends Fragment {
                 updateIndicator -> {
                     if (webView != null) {
                         webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]*<p>",
-                                "Postęp "+updateIndicator+"<p>");
+                                "Postęp " + updateIndicator + "<p>");
                         webView.loadDataWithBaseURL(null,
                                 webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
                     }

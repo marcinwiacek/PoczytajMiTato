@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -150,7 +149,7 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                 mProgressBar.setMax(mProgressBar.getMax() + urls.length - 1);
                 for (String singleURL : urls) {
                     try {
-                        StringBuilder content = Utils.getTextPageContent(singleURL,null,null);
+                        StringBuilder content = Utils.getTextPageContent(singleURL, null, null);
                         if (!content.toString().isEmpty()) {
                             if (st.doesItMatch(stringToSearch, singleURL, content, mData, lock,
                                     this)) {

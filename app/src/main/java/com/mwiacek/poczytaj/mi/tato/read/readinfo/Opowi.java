@@ -74,7 +74,7 @@ public class Opowi extends ReadInfo {
                                 "Czytanie w zakładce " + tabName + " - strona " + index, tabNum).build());
                 url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
-                String result = Utils.getTextPageContent(url,null,null).toString();
+                String result = Utils.getTextPageContent(url, null, null).toString();
                 int indeks = result.indexOf("<h2>Opowiadania z kategorii: Fantastyka</h2>");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

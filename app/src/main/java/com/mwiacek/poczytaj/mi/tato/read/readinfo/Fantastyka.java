@@ -178,7 +178,7 @@ public class Fantastyka extends ReadInfo {
                 }
 
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
-                        + url,null,null).toString();
+                        + url, null, null).toString();
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {
