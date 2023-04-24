@@ -10,6 +10,9 @@ Wersja 2.0.1 - 2023
    (można czytać na pełnym ekranie)
 3. wsparcie dla czarnego trybu w najnowszym Androidzie
 4. refaktoring kodu
+5. wsparcie dla trybu multi-window (możliwość pokazywania na ekranie
+   wraz z drugą zakładką) i zmiany orientacji - poprawka błędu z konstruktorem
+   fragmentów
 
 Wersja 2.0 - 2022
 1. Dodano czytanie tekstów, import i eksport z EPUB (strony fantastyka.pl i opowi.pl).
