@@ -53,7 +53,7 @@ public class UploadWorker extends ListenableWorker {
             for (Page.PageTyp t : config.readInfoForReadFragment) {
                 //fixme - we should update GUI too
                 Page.getReadInfo(t).getList(getApplicationContext(),
-                        mainThreadHandler, new DBHelper(getApplicationContext()), t, "",
+                        mainThreadHandler, new DBHelper(getApplicationContext()), t, "", 1,
                         1, 3, null);
             }
         }).start();

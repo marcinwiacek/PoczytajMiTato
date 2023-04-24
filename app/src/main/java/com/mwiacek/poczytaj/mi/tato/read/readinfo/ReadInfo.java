@@ -21,6 +21,6 @@ public abstract class ReadInfo {
     public abstract void getList(final Context context,
                                  final Handler resultHandler,
                                  final DBHelper mydb, Page.PageTyp typ,
-                                 String tabName, int pageStart, int pageStop,
+                                 String tabName, int tabNum, int pageStart, int pageStop,
                                  final Utils.RepositoryCallback<Page.PageTyp> callback);
 }

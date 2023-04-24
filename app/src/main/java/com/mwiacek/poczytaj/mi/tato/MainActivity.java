@@ -96,5 +96,9 @@ public class MainActivity extends AppCompatActivity {
         }*/
 
         new File(Utils.getDiskCacheFolder(getApplicationContext()), Page.CACHE_SUB_DIRECTORY).mkdirs();
+
+        if (getIntent().getExtras()!=null && getIntent().getIntExtra("tabNum",-1)!=-1) {
+            viewPager.setCurrentItem(getIntent().getIntExtra("tabNum",-1),true);
+        }
     }
 }

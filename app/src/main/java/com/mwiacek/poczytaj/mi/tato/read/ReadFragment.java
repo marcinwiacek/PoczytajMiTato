@@ -613,8 +613,8 @@ public class ReadFragment extends Fragment {
                 } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_INDEX_PAGES) {
                     refresh.setRefreshing(true);
                     Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                            config.readInfoForReadFragment, config.tabName, true, false,
-                            p -> informAllReadTabsAboutUpdate(p),
+                            config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
+                            true, false, p -> informAllReadTabsAboutUpdate(p),
                             result -> refresh.setRefreshing(false));
                 } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
                     mCreateEPUB.launch(config.tabName);
@@ -679,7 +679,7 @@ public class ReadFragment extends Fragment {
                     new Handler().postDelayed(() ->
                             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                                     config.readInfoForReadFragment, config.tabName,
-                                    false, false,
+                                    config.fileNameTabNum, false, false,
                                     pt -> informAllReadTabsAboutUpdate(pt),
                                     result -> loadingMorePages = false), 0);
                 }
@@ -747,8 +747,8 @@ public class ReadFragment extends Fragment {
             }
             refresh.setRefreshing(true);
             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                    config.readInfoForReadFragment, config.tabName, false, true,
-                    this::informAllReadTabsAboutUpdate,
+                    config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
+                    false, true, this::informAllReadTabsAboutUpdate,
                     result -> refresh.setRefreshing(false));
         });
 

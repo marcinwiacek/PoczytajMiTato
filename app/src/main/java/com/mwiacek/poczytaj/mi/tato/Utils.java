@@ -244,7 +244,7 @@ public class Utils {
                                   ArrayList<Page.PageTyp> types) {
         if (file == null) return;
         NotificationCompat.Builder builder = Notifications.setupNotification(context,
-                Notifications.Channels.ZAPIS_W_URZADZENIU, "Tworzenie pliku EPUB");
+                Notifications.Channels.ZAPIS_W_URZADZENIU, "Tworzenie pliku EPUB", -1);
         Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
 
         String tytul = "";

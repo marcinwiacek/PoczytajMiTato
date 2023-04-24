@@ -43,14 +43,14 @@ public class Page {
                                final Handler resultHandler,
                                final ThreadPoolExecutor executor,
                                final DBHelper mydb, final ArrayList<PageTyp> typ,
-                               String tabName, boolean allPages, boolean firstPages,
+                               String tabName, int tabNum, boolean allPages, boolean firstPages,
                                final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage,
                                final Utils.RepositoryCallback<String> callbackOnTheEnd) {
         executor.execute(() -> {
             for (Page.PageTyp t : typ) {
                 int i = firstPages ? 1 : mydb.getLastIndexPageRead(t);
                 if (!allPages && i == -1) continue;
-                getReadInfo(t).getList(context, resultHandler, mydb, t, tabName,
+                getReadInfo(t).getList(context, resultHandler, mydb, t, tabName, tabNum,
                         allPages ? 1 : i, allPages ? -1 : i + 2, callbackOnUpdatedPage);
             }
             if (callbackOnTheEnd != null)

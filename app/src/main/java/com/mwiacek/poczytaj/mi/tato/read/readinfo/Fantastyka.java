@@ -153,7 +153,7 @@ public class Fantastyka extends ReadInfo {
 
     public void getList(final Context context, final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
-                        String tabName, int pageStart, int pageStop,
+                        String tabName, int tabNum, int pageStart, int pageStop,
                         final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
@@ -163,7 +163,7 @@ public class Fantastyka extends ReadInfo {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                "Czytanie w zakładce " + tabName + " - strona " + index).build());
+                                "Czytanie w zakładce " + tabName + " - strona " + index, tabNum).build());
 
                 if (typ == Page.PageTyp.FANTASTYKA_POCZEKALNIA) {
                     url = "/opowiadania/wszystkie" +
@@ -207,7 +207,7 @@ public class Fantastyka extends ReadInfo {
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(
                         typ.ordinal(), Notifications.setupNotification(context,
                                 Notifications.Channels.CZYTANIE_Z_INTERNETU,
-                                "Nowości w zakładce " + tabName).build());
+                                "Nowości w zakładce " + tabName, tabNum).build());
             } else {
                 Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
             }
