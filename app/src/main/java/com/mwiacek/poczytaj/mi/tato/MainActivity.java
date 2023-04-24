@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
 
     public static Context getContext() {
-        return mContext;
+        return mContext.getApplicationContext();
     }
 
     public static ViewPagerAdapter getViewPagerAdapter() {

@@ -32,6 +32,7 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.os.HandlerCompat;
 import androidx.core.view.MenuProvider;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -68,7 +69,7 @@ public class ReadFragment extends Fragment {
     private final static String MIME_TYPE = "text/html; charset=UTF-8";
     private final static String ENCODING = "UTF-8";
     private final static String URL_PREFIX = "https://mwiacek.com/ffiles/img/";
-    private final DBHelper db = new DBHelper(MainActivity.getContext());
+    private final static DBHelper db = new DBHelper(MainActivity.getContext());
     private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -85,6 +86,7 @@ public class ReadFragment extends Fragment {
     private WebView webView;
     private SearchView searchView;
     private Toolbar toolbar;
+    private NestedScrollView nestedScrollView;
 
     private ActivityResultLauncher<String> mCreateEPUB;
     private ActivityResultLauncher<String[]> mImportEPUB;
@@ -120,7 +122,7 @@ public class ReadFragment extends Fragment {
     public void onBackPressed() {
         if (!webViewLoadingString.isEmpty()) return;
         if (pageList.isShown()) System.exit(0);
-        db.setPageTop(pageListAdapter.getItem(positionInPageList).url, webView.getScrollY());
+        db.setPageTop(pageListAdapter.getItem(positionInPageList).url, nestedScrollView.getScrollY());
         viewSwitcher.showPrevious();
         webView.loadDataWithBaseURL(null, "", MIME_TYPE, ENCODING, null);
     }
@@ -255,6 +257,8 @@ public class ReadFragment extends Fragment {
         /* Page with webview */
         //  frameLayout = view.findViewById(R.id.frameLayout);
 
+        nestedScrollView = view.findViewById(R.id.nestedscroll);
+
         webView = view.findViewById(R.id.webview);
         if (((requireContext().getResources().getConfiguration().uiMode &
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
@@ -307,7 +311,11 @@ public class ReadFragment extends Fragment {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                webView.scrollTo(0, db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
+                nestedScrollView.setScrollY(db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
+                nestedScrollView.dispatchNestedScroll(0, 0, 0,
+                        db.getPageTop(pageListAdapter.getItem(positionInPageList).url), null);
+                nestedScrollView.scrollTo(0,
+                        db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
             }
 
             @Override

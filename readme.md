@@ -15,6 +15,10 @@ Wersja 2.0.1 - 4.2023
    fragmentów
 6. po kliknięciu na powiadomienie jesteśmy przeniesieni do aplikacji
 
+Uwagi:
+1. aplikacja nie zawsze scrolluje do ostatnio czytanego miejsca
+   (prawdopodobnie związanie ze NestedScrollView)
+
 Wersja 2.0 - 2022
 1. Dodano czytanie tekstów, import i eksport z EPUB (strony fantastyka.pl i opowi.pl).
 2. Całość przepisano z użyciem androidx
