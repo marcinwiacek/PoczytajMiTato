@@ -187,7 +187,7 @@ public class Utils {
                     URL url = new URL(url2.replace(" ", "%20"));
                     HttpURLConnection connection = url.getProtocol().equals("https") ?
                             (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
-                    connection.setConnectTimeout(5000);
+                   // connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000); // 5 seconds
                     connection.connect();
                     if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
