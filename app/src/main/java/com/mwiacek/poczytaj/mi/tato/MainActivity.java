@@ -26,12 +26,16 @@ TODO sortowanie szukania ?
 TODO sync z szukaniem systemowym ?
  */
 public class MainActivity extends AppCompatActivity {
-    public static ViewPagerAdapter viewPagerAdapter;
-    private static Context mContext;
+    private static ViewPagerAdapter viewPagerAdapter;
+    private static MainActivity mContext;
     private ViewPager2 viewPager;
 
     public static Context getContext() {
         return mContext;
+    }
+
+    public static ViewPagerAdapter getViewPagerAdapter() {
+        return viewPagerAdapter;
     }
 
     @Override
@@ -57,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mContext = getApplicationContext();
+        MainActivity.mContext = this;
 
         if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this,
@@ -67,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        viewPagerAdapter = new ViewPagerAdapter(this, getApplicationContext(),
+        MainActivity.viewPagerAdapter = new ViewPagerAdapter(this,
                 findViewById(R.id.tab_layout), this);
         viewPager = findViewById(R.id.pager);
         viewPager.setAdapter(viewPagerAdapter);

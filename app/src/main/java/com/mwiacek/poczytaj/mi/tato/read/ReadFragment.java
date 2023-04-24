@@ -23,7 +23,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ViewSwitcher;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -77,7 +76,7 @@ public class ReadFragment extends Fragment {
             new LinkedBlockingQueue<>()
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
-    private final ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
+    private final ViewPagerAdapter topPagerAdapter = MainActivity.getViewPagerAdapter();
     private FragmentConfig config = null;
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
@@ -258,7 +257,7 @@ public class ReadFragment extends Fragment {
 
         webView = view.findViewById(R.id.webview);
         if (((requireContext().getResources().getConfiguration().uiMode &
-                        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_ON);
             }
@@ -267,7 +266,7 @@ public class ReadFragment extends Fragment {
                         WebSettingsCompat.DARK_STRATEGY_USER_AGENT_DARKENING_ONLY);
             }
             if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
-                WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.getSettings(),true);
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.getSettings(), true);
             }
         }
         /* 1. We could load images locally using relative URLs with setAllowFileAccess(true)

@@ -43,7 +43,7 @@ import java.util.LinkedHashMap;
 
 public class SearchFragment extends Fragment {
     private final ImageCache imageCache = new ImageCache(MainActivity.getContext());
-    private final ViewPagerAdapter topPagerAdapter = MainActivity.viewPagerAdapter;
+    private final ViewPagerAdapter topPagerAdapter = MainActivity.getViewPagerAdapter();
     private FragmentConfig config = null;
     private ViewSwitcher viewSwitcher;
     private ManyBooksRecyclerViewAdapter manyBooksRecyclerViewAdapter;

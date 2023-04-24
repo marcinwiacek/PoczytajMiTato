@@ -1,6 +1,5 @@
 package com.mwiacek.poczytaj.mi.tato;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 
@@ -24,14 +23,12 @@ import java.util.ListIterator;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
     public final static ArrayList<FragmentConfig> configs = new ArrayList<>();
-    private final Context context;
     private final TabLayout tabLayout;
     private final AppCompatActivity activity;
 
-    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, Context context,
+    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity,
                             TabLayout tabLayout, AppCompatActivity activity) {
         super(fragmentActivity);
-        this.context = context;
         this.tabLayout = tabLayout;
         this.activity = activity;
     }
@@ -86,7 +83,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         c.storeInfoForSearchFragment.add(StoreInfo.StoreInfoTyp.WOLNE_LEKTURY);
         c.fileNameTabNum = configs.get(configs.size() - 1).fileNameTabNum + 1;
         configs.add(c);
-        c.saveToInternalStorage(context);
+        c.saveToInternalStorage(MainActivity.getContext());
         this.notifyItemInserted(configs.size() - 1);
         updateTabMode();
         /* We need to refresh menu items */
@@ -102,7 +99,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         config2.tabName = newName;
         config2.fileNameTabNum = configs.get(configs.size() - 1).fileNameTabNum + 1;
         configs.add(config2);
-        config2.saveToInternalStorage(context);
+        config2.saveToInternalStorage(MainActivity.getContext());
         this.notifyItemInserted(configs.size() - 1);
         updateTabMode();
     }
@@ -114,7 +111,7 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
             if (listIterator.next().fileNameTabNum == config.fileNameTabNum) {
                 listIterator.remove();
                 /* delete file */
-                new File(context.getFilesDir() + File.separator +
+                new File(MainActivity.getContext().getFilesDir() + File.separator +
                         "tab" + config.fileNameTabNum).delete();
                 this.notifyItemRemoved(i);
                 updateTabMode();
@@ -125,12 +122,12 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     }
 
     private void readConfigs() {
-        File[] f = context.getFilesDir().listFiles();
+        File[] f = MainActivity.getContext().getFilesDir().listFiles();
         int correct = 0;
         if (f != null) {
             for (File file : f) {
                 if (file.getName().startsWith("tab")) {
-                    FragmentConfig c = FragmentConfig.readFromInternalStorage(context,
+                    FragmentConfig c = FragmentConfig.readFromInternalStorage(MainActivity.getContext(),
                             Integer.parseInt(file.getName().substring(3)));
                     if (c == null) {
                         file.delete();
@@ -150,19 +147,19 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
             c.readInfoForReadFragment.add(Page.PageTyp.FANTASTYKA_BIBLIOTEKA);
             c.searchFragmentConfig = false;
             configs.add(c);
-            c.saveToInternalStorage(context);
+            c.saveToInternalStorage(MainActivity.getContext());
 
             c = new FragmentConfig(1, "POCZEKALNIA");
             c.readInfoForReadFragment.add(Page.PageTyp.FANTASTYKA_POCZEKALNIA);
             c.searchFragmentConfig = false;
             configs.add(c);
-            c.saveToInternalStorage(context);
+            c.saveToInternalStorage(MainActivity.getContext());
 
             c = new FragmentConfig(2, "OPOWI");
             c.readInfoForReadFragment.add(Page.PageTyp.OPOWI_FANTASTYKA);
             c.searchFragmentConfig = false;
             configs.add(c);
-            c.saveToInternalStorage(context);
+            c.saveToInternalStorage(MainActivity.getContext());
 
             addSearchTab();
         }
