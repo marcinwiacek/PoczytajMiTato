@@ -44,10 +44,11 @@ public class Opowi extends ReadInfo {
             Context context, Page p,
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
+            final Utils.RepositoryCallback<Integer> readingCallback,
             final Utils.RepositoryCallback<String[]> callbackAfterMainFileWithResourceList,
             final Utils.RepositoryCallback<String> callbackAfterEveryImage,
             final Utils.RepositoryCallback<String> completeCallback) {
-        Utils.getTextPage(p.url, result -> {
+        Utils.getTextPage(p.url, null, result -> {
             int index = result.indexOf("<div id=\"content\" class=\"novel  \">");
             int index2 = result.indexOf("<div class=\"clear\"></div></div>", index);
             String mainPageText = result.substring(index, index2);
@@ -73,7 +74,7 @@ public class Opowi extends ReadInfo {
                                 "Czytanie w zakładce " + tabName + " - strona " + index, tabNum).build());
                 url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
-                String result = Utils.getTextPageContent(url).toString();
+                String result = Utils.getTextPageContent(url,null,null).toString();
                 int indeks = result.indexOf("<h2>Opowiadania z kategorii: Fantastyka</h2>");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

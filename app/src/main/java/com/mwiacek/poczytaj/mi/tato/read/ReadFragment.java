@@ -92,6 +92,7 @@ public class ReadFragment extends Fragment {
     private ActivityResultLauncher<String[]> mImportEPUB;
     private int positionInPageList;
     private String webViewLoadingString = "";
+    private String webViewLoadingStringProgress = "";
     private boolean loadingMorePages = false;
 
     public ReadFragment() {
@@ -175,12 +176,21 @@ public class ReadFragment extends Fragment {
         }
         if (webView != null) {
             webViewLoadingString = "<div style='word-break: break-all;'><h1>" + p.name + "</h1><p>" +
-                    "Czytanie pliku " + p.url;
-            webView.loadDataWithBaseURL(null, webViewLoadingString, MIME_TYPE,
+                    "Postęp 0<p>Czytanie pliku " + p.url;
+            webView.loadDataWithBaseURL(null, webViewLoadingString + "</div>", MIME_TYPE,
                     ENCODING, null);
         }
         Page.getReadInfo(p.typ).processTextFromSinglePage(requireContext(),
-                p, mainThreadHandler, threadPoolExecutor, imageURLListOnBeginning -> {
+                p, mainThreadHandler, threadPoolExecutor,
+                updateIndicator -> {
+                    if (webView != null) {
+                        webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]*<p>",
+                                "Postęp "+updateIndicator+"<p>");
+                        webView.loadDataWithBaseURL(null,
+                                webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
+                    }
+                },
+                imageURLListOnBeginning -> {
                     if (webView != null) {
                         webViewLoadingString += "<br>OK";
                         for (String s : imageURLListOnBeginning) {

@@ -3,11 +3,13 @@ package com.mwiacek.poczytaj.mi.tato.search;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,6 +27,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -63,7 +66,7 @@ public class SearchFragment extends Fragment {
         return config.fileNameTabNum;
     }
 
-    private void download(ActivityResultLauncher<String> requestPermissionLauncher) {
+    private void download(ActivityResultLauncher<String> requestPermissionLauncher, String url, String title) {
         if (lastClickedBook.downloadUrl.length() == 0) {
             return;
         }
@@ -71,6 +74,12 @@ public class SearchFragment extends Fragment {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(lastClickedBook.downloadUrl)));
             return;
         }
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            Utils.downloadFileWithDownloadManagerAfterGrantingPermission(url,title,getContext());
+            return;
+        }
+
         if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(),
                 android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             new AlertDialog.Builder(requireContext())
@@ -111,7 +120,7 @@ public class SearchFragment extends Fragment {
         singleBookRecyclerViewAdapter = new SingleBookRecyclerViewAdapter(imageCache, getContext(),
                 position -> {
                     lastClickedBook = singleBookRecyclerViewAdapter.getItem(position);
-                    download(requestPermissionLauncher);
+                    download(requestPermissionLauncher, lastClickedBook.downloadUrl, lastClickedBook.title);
                 });
         singleBookRecyclerView.setAdapter(singleBookRecyclerViewAdapter);
         singleBookRecyclerView.setItemAnimator(null);
@@ -130,7 +139,7 @@ public class SearchFragment extends Fragment {
             SingleBook book = books.items.get(books.itemsPositionForManyBooksList);
             if (books.items.size() == 1) {
                 lastClickedBook = book;
-                download(requestPermissionLauncher);
+                download(requestPermissionLauncher, lastClickedBook.downloadUrl, lastClickedBook.title);
                 return;
             }
             singleBookRecyclerViewAdapter.refreshData(books.items);

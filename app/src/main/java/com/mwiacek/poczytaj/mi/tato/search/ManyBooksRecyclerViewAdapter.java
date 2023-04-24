@@ -150,7 +150,7 @@ public class ManyBooksRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerV
                 mProgressBar.setMax(mProgressBar.getMax() + urls.length - 1);
                 for (String singleURL : urls) {
                     try {
-                        StringBuilder content = Utils.getTextPageContent(singleURL);
+                        StringBuilder content = Utils.getTextPageContent(singleURL,null,null);
                         if (!content.toString().isEmpty()) {
                             if (st.doesItMatch(stringToSearch, singleURL, content, mData, lock,
                                     this)) {

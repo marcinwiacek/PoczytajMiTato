@@ -12,6 +12,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.OpenableColumns;
 import android.text.Html;
+import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
@@ -124,7 +125,9 @@ public class Utils {
         return context.getCacheDir().getPath();
     }
 
-    public static StringBuilder getTextPageContent(String address) throws Exception {
+    public static StringBuilder getTextPageContent(
+            String address, final RepositoryCallback<Integer> updatecallback,
+            final Handler resultHandler) throws Exception {
         StringBuilder content = new StringBuilder();
         if (address.isEmpty()) {
             throw new Exception("Empty URL");
@@ -142,6 +145,9 @@ public class Utils {
             BufferedReader in = new BufferedReader(isr);
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
+                if (updatecallback != null) {
+                    resultHandler.post(() -> updatecallback.onComplete(content.length()));
+                }
                 content.append(inputLine);
             }
         } finally {
@@ -152,12 +158,13 @@ public class Utils {
 
     public static void getTextPage(
             final String url,
+            final RepositoryCallback<Integer> updatecallback,
             final RepositoryCallback<StringBuilder> callback,
             final Handler resultHandler,
             final ThreadPoolExecutor executor) {
         executor.execute(() -> {
             try {
-                StringBuilder result = Utils.getTextPageContent(url);
+                StringBuilder result = Utils.getTextPageContent(url,updatecallback,resultHandler);
                 if (callback != null) {
                     resultHandler.post(() -> callback.onComplete(result));
                 }
@@ -169,6 +176,7 @@ public class Utils {
     public static void getBinaryPages(
             Context context,
             final ArrayList<String> URL,
+            final RepositoryCallback<Integer> updatecallback,
             final RepositoryCallback<String> callback,
             final RepositoryCallback<String> callbackAfterAll,
             final Handler resultHandler,
@@ -179,6 +187,7 @@ public class Utils {
                     URL url = new URL(url2.replace(" ", "%20"));
                     HttpURLConnection connection = url.getProtocol().equals("https") ?
                             (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
+                    connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000); // 5 seconds
                     connection.connect();
                     if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
@@ -187,9 +196,14 @@ public class Utils {
                     try {
                         OutputStream outputStream =
                                 new FileOutputStream(Page.getLongCacheFileName(context, url2));
-                        int byteRead;
+                        int byteRead, len = 0;
                         while ((byteRead = connection.getInputStream().read()) != -1) {
                             outputStream.write(byteRead);
+                            len+=byteRead;
+                            if (updatecallback != null) {
+                                int finalLen = len;
+                                resultHandler.post(() -> updatecallback.onComplete(finalLen));
+                            }
                         }
                         outputStream.close();
                         if (callback != null) {
@@ -203,11 +217,13 @@ public class Utils {
                     resultHandler.post(() -> callbackAfterAll.onComplete(null));
                 }
             } catch (Exception ignore) {
+                Log.d("test", "exception in reading binary file");
             }
         });
     }
 
     public static void downloadFileWithDownloadManagerAfterGrantingPermission(String url, String title, Context context) {
+       Log.d("test","downloading");
         DownloadManager downloadmanager = (DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
         File f = new File("" + uri);

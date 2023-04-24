@@ -17,14 +17,6 @@ import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
 
 import java.io.File;
 
-/*
-TODO czerwone teksty (niewidoczne na serwerze)
-TODO up down przy szukaniu - FloatingActionButton
-TODO TOR
-TODO Google Books ?
-TODO sortowanie szukania ?
-TODO sync z szukaniem systemowym ?
- */
 public class MainActivity extends AppCompatActivity {
     private static ViewPagerAdapter viewPagerAdapter;
     private static MainActivity mContext;

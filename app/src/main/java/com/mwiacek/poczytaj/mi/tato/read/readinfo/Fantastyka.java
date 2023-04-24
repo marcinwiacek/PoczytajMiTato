@@ -113,10 +113,11 @@ public class Fantastyka extends ReadInfo {
             Context context, Page p,
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
+            final Utils.RepositoryCallback<Integer> readingCallback,
             final Utils.RepositoryCallback<String[]> callbackAfterMainFileWithResourceList,
             final Utils.RepositoryCallback<String> callbackAfterEveryImage,
             final Utils.RepositoryCallback<String> completeCallback) {
-        Utils.getTextPage(p.url, result -> {
+        Utils.getTextPage(p.url, readingCallback, result -> {
             String mainPageText = getTextFromSinglePage(result.toString(), p.getCacheFile(context))
                     .replaceAll("<img ", "<img width=\"100%\" ")
                     .replaceAll("http://", "https://");
@@ -138,7 +139,7 @@ public class Fantastyka extends ReadInfo {
                 }
             } else {
                 String finalMainPageText1 = mainPageText;
-                Utils.getBinaryPages(context, pictures, result2 -> {
+                Utils.getBinaryPages(context, pictures, readingCallback, result2 -> {
                     if (callbackAfterEveryImage != null) {
                         resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
                     }
@@ -177,7 +178,7 @@ public class Fantastyka extends ReadInfo {
                 }
 
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
-                        + url).toString();
+                        + url,null,null).toString();
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {
