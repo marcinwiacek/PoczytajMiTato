@@ -78,6 +78,7 @@ public class ReadFragment extends Fragment {
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
     private final ViewPagerAdapter topPagerAdapter = MainActivity.getViewPagerAdapter();
+    private final String webViewLoadingStringProgress = "";
     private FragmentConfig config = null;
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
@@ -87,12 +88,10 @@ public class ReadFragment extends Fragment {
     private SearchView searchView;
     private Toolbar toolbar;
     private NestedScrollView nestedScrollView;
-
     private ActivityResultLauncher<String> mCreateEPUB;
     private ActivityResultLauncher<String[]> mImportEPUB;
     private int positionInPageList;
     private String webViewLoadingString = "";
-    private final String webViewLoadingStringProgress = "";
     private boolean loadingMorePages = false;
 
     public ReadFragment() {
@@ -166,26 +165,26 @@ public class ReadFragment extends Fragment {
 
     private void readTextFromInternet(Page p, WebView webView, boolean deleteBefore) {
         if (deleteBefore) {
-            File f = p.getCacheFile(getContext());
-            f.delete();
-            String fileContent = Utils.readTextFile(f);
+            File f0 = p.getCacheFile(getContext());
+            String fileContent = Utils.readTextFile(f0);
             for (String s : Utils.findImagesUrlInHTML(fileContent)) {
-                f = new File(Page.getCacheDirectory(requireContext()) + File.separator + s);
+                File f = new File(Page.getCacheDirectory(requireContext()) + File.separator + s);
                 f.delete();
             }
+            f0.delete();
         }
         if (webView != null) {
             webViewLoadingString = "<div style='word-break: break-all;'><h1>" + p.name + "</h1><p>" +
-                    "Postęp 0<p>Czytanie pliku " + p.url;
+                    "Postęp 0 bajtów, proszę czekać<p>Czytanie pliku " + p.url;
             webView.loadDataWithBaseURL(null, webViewLoadingString + "</div>", MIME_TYPE,
                     ENCODING, null);
         }
-        Page.getReadInfo(p.typ).processTextFromSinglePage(requireContext(),
+        new Thread(() -> Page.getReadInfo(p.typ).processTextFromSinglePage(requireContext(),
                 p, mainThreadHandler, threadPoolExecutor,
                 updateIndicator -> {
                     if (webView != null) {
-                        webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]*<p>",
-                                "Postęp " + updateIndicator + "<p>");
+                        webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]* bajtów, proszę czekać<p>",
+                                "Postęp " + updateIndicator + " bajtów, proszę czekać<p>");
                         webView.loadDataWithBaseURL(null,
                                 webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
                     }
@@ -222,7 +221,7 @@ public class ReadFragment extends Fragment {
                         );
                     }
                 }
-        );
+        )).start();
     }
 
     private void setSearchHintColor() {
@@ -781,9 +780,9 @@ public class ReadFragment extends Fragment {
                         config.tagFilter)) {
                     File f = p.getCacheFile(getContext());
                     for (String ts : toSearch) {
-                        if (Utils.contaisText(p.name, ts.trim()) ||
-                                Utils.contaisText(p.tags, ts.trim()) ||
-                                Utils.contaisText(p.author, ts.trim())) {
+                        if (Utils.containsText(p.name, ts.trim()) ||
+                                Utils.containsText(p.tags, ts.trim()) ||
+                                Utils.containsText(p.author, ts.trim())) {
                             list.add(p);
                             f = null;
                             break;
@@ -793,7 +792,7 @@ public class ReadFragment extends Fragment {
                     if (!f.exists()) continue;
                     String s = Utils.readTextFile(f);
                     for (String ts : toSearch) {
-                        if (Utils.contaisText(s, ts.trim())) {
+                        if (Utils.containsText(s, ts.trim())) {
                             list.add(p);
                             break;
                         }

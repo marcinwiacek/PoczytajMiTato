@@ -139,7 +139,11 @@ public class Fantastyka extends ReadInfo {
                 }
             } else {
                 String finalMainPageText1 = mainPageText;
-                Utils.getBinaryPages(context, pictures, readingCallback, result2 -> {
+                Utils.getBinaryPages(context, pictures, result4 -> {
+                    if (readingCallback != null) {
+                        resultHandler.post(() -> readingCallback.onComplete(result4));
+                    }
+                }, result2 -> {
                     if (callbackAfterEveryImage != null) {
                         resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
                     }

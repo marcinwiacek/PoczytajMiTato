@@ -19,19 +19,20 @@ Wersja 2.0.1 - 4.2023
 6. po kliknięciu na powiadomienie jesteśmy przeniesieni do aplikacji
 7. dodane uprawnienie POST_NOTIFICATIONS (wymagane, żeby pokazywać powiadomienia)
 8. pobieranie plików w Android 13+ działa (inny model uprawnień)
+9. poprawka różnych A resource was acquired at attached stack trace but never released.
+10. poprawka związana z wolnym czytaniem obrazków (dodatkowo widać postęp)
 
 Uwagi:
 1. aplikacja nie zawsze scrolluje do ostatnio czytanego miejsca
    (prawdopodobnie związanie ze NestedScrollView)
 2. aplikacja nie zbiera żadnych danych o urządzeniu czy użytkowniku
    (ani nigdzie ich nie wysyła)
-3. TODO aplikacja nie może być blokowana przy czytaniu z internetu
-4. TODO czerwone teksty (niewidoczne na serwerze)
-5. TODO up down przy szukaniu - FloatingActionButton
-6. TODO TOR
-7. TODO Google Books ?
-8. TODO sortowanie szukania ?
-9. TODO sync z szukaniem systemowym ?
+3. TODO czerwone teksty (niewidoczne na serwerze)
+4. TODO up down przy szukaniu - FloatingActionButton
+5. TODO TOR
+6. TODO Google Books ?
+7. TODO sortowanie szukania ?
+8. TODO sync z szukaniem systemowym ?
 
 Obecnie wymagane uprawnienia:
 1. POST_NOTIFICATIONS - powiadomienia (Android >= 13)

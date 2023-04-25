@@ -136,20 +136,21 @@ public class Utils {
         HttpURLConnection connection = url.getProtocol().equals("https") ?
                 (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
         connection.setReadTimeout(15000); // 15 seconds
-        connection.connect();
-        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            return content;
-        }
         try {
+            connection.connect();
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                return content;
+            }
             InputStreamReader isr = new InputStreamReader(connection.getInputStream());
             BufferedReader in = new BufferedReader(isr);
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
                 if (updatecallback != null) {
                     resultHandler.post(() -> updatecallback.onComplete(content.length()));
                 }
-                content.append(inputLine);
             }
+            isr.close();
         } finally {
             connection.disconnect();
         }
@@ -187,19 +188,21 @@ public class Utils {
                     URL url = new URL(url2.replace(" ", "%20"));
                     HttpURLConnection connection = url.getProtocol().equals("https") ?
                             (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
-                   // connection.setConnectTimeout(5000);
+                    // connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000); // 5 seconds
                     connection.connect();
                     if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                         continue;
                     }
+                    int len = 0;
                     try {
                         OutputStream outputStream =
                                 new FileOutputStream(Page.getLongCacheFileName(context, url2));
-                        int byteRead, len = 0;
-                        while ((byteRead = connection.getInputStream().read()) != -1) {
-                            outputStream.write(byteRead);
-                            len += byteRead;
+                        int byteReadNum;
+                        byte[] buffer = new byte[5000];
+                        while ((byteReadNum = connection.getInputStream().read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, byteReadNum);
+                            len += byteReadNum;
                             if (updatecallback != null) {
                                 int finalLen = len;
                                 resultHandler.post(() -> updatecallback.onComplete(finalLen));
@@ -730,7 +733,7 @@ public class Utils {
                 BEFORE_HIGHLIGHT + "$1" + AFTER_HIGHLIGHT);
     }
 
-    public static boolean contaisText(String s, String s2) {
+    public static boolean containsText(String s, String s2) {
         return (findText(s, s2).length() != s.length());
     }
 

@@ -57,8 +57,13 @@ public class DBHelper extends SQLiteOpenHelper {
         Cursor res = this.getReadableDatabase().rawQuery(
                 "select " + COLUMN_PAGE_NUMBER + " from " + COMPLETED_TABLE_NAME +
                         " where " + COLUMN_TYP + "=" + typ.ordinal(), null);
-        if (!res.moveToFirst()) return 0;
-        return res.getInt(res.getColumnIndex(COLUMN_PAGE_NUMBER));
+        if (!res.moveToFirst()) {
+            res.close();
+            return 0;
+        }
+        int ret = res.getInt(res.getColumnIndex(COLUMN_PAGE_NUMBER));
+        res.close();
+        return ret;
     }
 
     public void setLastIndexPageRead(Page.PageTyp typ, int number) {
@@ -86,7 +91,9 @@ public class DBHelper extends SQLiteOpenHelper {
                 "select " + COLUMN_TOP + " from " + PAGES_TABLE_NAME +
                         " where " + COLUMN_URL + "='" + url + "'", null);
         res.moveToFirst();
-        return res.getInt(res.getColumnIndex(COLUMN_TOP));
+        int ret = res.getInt(res.getColumnIndex(COLUMN_TOP));
+        res.close();
+        return ret;
     }
 
     public void setPageHidden(String url, FragmentConfig.HiddenTexts hidden) {
@@ -134,8 +141,9 @@ public class DBHelper extends SQLiteOpenHelper {
                         " where " + COLUMN_URL + "='" + url + "'", null);
         res.moveToFirst();
 
+        Page p = null;
         if (!res.isAfterLast()) {
-            return new Page(
+            p = new Page(
                     res.getString(res.getColumnIndex(COLUMN_NAME)),
                     res.getString(res.getColumnIndex(COLUMN_AUTHOR)),
                     res.getString(res.getColumnIndex(COLUMN_COMMENTS)),
@@ -144,7 +152,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))],
                     res.getInt(res.getColumnIndex(COLUMN_UPDATED_ON_SERVER)) == 1);
         }
-        return null;
+        res.close();
+        return p;
     }
 
     @SuppressLint("Range")
@@ -226,6 +235,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     res.getInt(res.getColumnIndex(COLUMN_UPDATED_ON_SERVER)) == 1));
             res.moveToNext();
         }
+        res.close();
         return array_list;
     }
 }
