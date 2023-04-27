@@ -114,10 +114,11 @@ public class Fantastyka extends ReadInfo {
             final Handler resultHandler,
             final ThreadPoolExecutor executor,
             final Utils.RepositoryCallback<Integer> readingCallback,
+            final Utils.RepositoryCallback<Void> errorCallback,
             final Utils.RepositoryCallback<String[]> callbackAfterMainFileWithResourceList,
             final Utils.RepositoryCallback<String> callbackAfterEveryImage,
             final Utils.RepositoryCallback<String> completeCallback) {
-        Utils.getTextPage(p.url, readingCallback, result -> {
+        Utils.getTextPage(p.url, errorCallback, readingCallback, result -> {
             String mainPageText = getTextFromSinglePage(result.toString(), p.getCacheFile(context))
                     .replaceAll("<img ", "<img width=\"100%\" ")
                     .replaceAll("http://", "https://");
@@ -139,19 +140,24 @@ public class Fantastyka extends ReadInfo {
                 }
             } else {
                 String finalMainPageText1 = mainPageText;
-                Utils.getBinaryPages(context, pictures, result4 -> {
-                    if (readingCallback != null) {
-                        resultHandler.post(() -> readingCallback.onComplete(result4));
-                    }
-                }, result2 -> {
-                    if (callbackAfterEveryImage != null) {
-                        resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
-                    }
-                }, result3 -> {
-                    if (completeCallback != null) {
-                        resultHandler.post(() -> completeCallback.onComplete(finalMainPageText1));
-                    }
-                }, resultHandler, executor);
+                Utils.getBinaryPages(context, pictures,
+                        result1 -> {
+                            if (errorCallback != null) {
+                                resultHandler.post(() -> errorCallback.onComplete(null));
+                            }
+                        }, result4 -> {
+                            if (readingCallback != null) {
+                                resultHandler.post(() -> readingCallback.onComplete(result4));
+                            }
+                        }, result2 -> {
+                            if (callbackAfterEveryImage != null) {
+                                resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
+                            }
+                        }, result3 -> {
+                            if (completeCallback != null) {
+                                resultHandler.post(() -> completeCallback.onComplete(finalMainPageText1));
+                            }
+                        }, resultHandler, executor);
             }
         }, resultHandler, executor);
     }
@@ -182,7 +188,7 @@ public class Fantastyka extends ReadInfo {
                 }
 
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
-                        + url, null, null).toString();
+                        + url, null, null, null).toString();
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

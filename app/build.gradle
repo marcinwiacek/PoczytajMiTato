@@ -10,7 +10,7 @@ android {
         applicationId "com.mwiacek.poczytaj.mi.tato"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 7
+        versionCode 8
         versionName "2.0.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

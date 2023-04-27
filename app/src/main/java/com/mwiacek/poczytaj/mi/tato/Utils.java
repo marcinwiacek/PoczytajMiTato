@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -126,7 +128,8 @@ public class Utils {
     }
 
     public static StringBuilder getTextPageContent(
-            String address, final RepositoryCallback<Integer> updatecallback,
+            String address, final RepositoryCallback<Void> errorCallback,
+            final RepositoryCallback<Integer> updatecallback,
             final Handler resultHandler) throws Exception {
         StringBuilder content = new StringBuilder();
         if (address.isEmpty()) {
@@ -143,14 +146,23 @@ public class Utils {
             }
             InputStreamReader isr = new InputStreamReader(connection.getInputStream());
             BufferedReader in = new BufferedReader(isr);
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
+            int byteReadNum;
+            char[] buffer = new char[5000];
+            if (updatecallback != null) {
+                resultHandler.post(() -> updatecallback.onComplete(0));
+            }
+            while ((byteReadNum = in.read(buffer)) != -1) {
+                content.append(buffer, 0, byteReadNum);
                 if (updatecallback != null) {
                     resultHandler.post(() -> updatecallback.onComplete(content.length()));
                 }
             }
             isr.close();
+        } catch (IOException e) {
+            if (errorCallback != null) {
+                resultHandler.post(() -> errorCallback.onComplete(null));
+            }
+            return content;
         } finally {
             connection.disconnect();
         }
@@ -159,14 +171,16 @@ public class Utils {
 
     public static void getTextPage(
             final String url,
+            final RepositoryCallback<Void> errorCallback,
             final RepositoryCallback<Integer> updatecallback,
             final RepositoryCallback<StringBuilder> callback,
             final Handler resultHandler,
             final ThreadPoolExecutor executor) {
         executor.execute(() -> {
             try {
-                StringBuilder result = Utils.getTextPageContent(url, updatecallback, resultHandler);
-                if (callback != null) {
+                StringBuilder result = Utils.getTextPageContent(url, errorCallback,
+                        updatecallback, resultHandler);
+                if (result.length() != 0 && callback != null) {
                     resultHandler.post(() -> callback.onComplete(result));
                 }
             } catch (Exception ignore) {
@@ -176,51 +190,56 @@ public class Utils {
 
     public static void getBinaryPages(
             Context context,
-            final ArrayList<String> URL,
-            final RepositoryCallback<Integer> updatecallback,
-            final RepositoryCallback<String> callback,
-            final RepositoryCallback<String> callbackAfterAll,
+            final ArrayList<String> urls,
+            final RepositoryCallback<String> errorCallback,
+            final RepositoryCallback<Integer> fileUpdateCallback,
+            final RepositoryCallback<String> fileCompleteCallback,
+            final RepositoryCallback<String> callbackAfterAllFiles,
             final Handler resultHandler,
             final ThreadPoolExecutor executor) {
         executor.execute(() -> {
-            try {
-                for (String url2 : URL) {
-                    URL url = new URL(url2.replace(" ", "%20"));
-                    HttpURLConnection connection = url.getProtocol().equals("https") ?
-                            (HttpsURLConnection) url.openConnection() : (HttpURLConnection) url.openConnection();
+            for (String url : urls) {
+                int len = 0;
+                HttpURLConnection connection = null;
+                try {
+                    URL url2 = new URL(url.replace(" ", "%20"));
+                    connection = url2.getProtocol().equals("https") ?
+                            (HttpsURLConnection) url2.openConnection() : (HttpURLConnection) url2.openConnection();
                     // connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000); // 5 seconds
                     connection.connect();
                     if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                        continue;
+                        return;
                     }
-                    int len = 0;
-                    try {
-                        OutputStream outputStream =
-                                new FileOutputStream(Page.getLongCacheFileName(context, url2));
-                        int byteReadNum;
-                        byte[] buffer = new byte[5000];
-                        while ((byteReadNum = connection.getInputStream().read(buffer)) != -1) {
-                            outputStream.write(buffer, 0, byteReadNum);
-                            len += byteReadNum;
-                            if (updatecallback != null) {
-                                int finalLen = len;
-                                resultHandler.post(() -> updatecallback.onComplete(finalLen));
-                            }
+                    OutputStream outputStream =
+                            new FileOutputStream(Page.getLongCacheFileName(context, url));
+                    int byteReadNum;
+                    byte[] buffer = new byte[5000];
+                    while ((byteReadNum = connection.getInputStream().read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, byteReadNum);
+                        len += byteReadNum;
+                        if (fileUpdateCallback != null && len != 0) {
+                            int finalLen = len;
+                            resultHandler.post(() -> fileUpdateCallback.onComplete(finalLen));
                         }
-                        outputStream.close();
-                        if (callback != null) {
-                            resultHandler.post(() -> callback.onComplete(url2));
-                        }
-                    } finally {
-                        connection.disconnect();
                     }
+
+                    outputStream.close();
+                    if (fileCompleteCallback != null) {
+                        resultHandler.post(() -> fileCompleteCallback.onComplete(url));
+                    }
+                } catch (IOException e) {
+                    File f0 = new File(Page.getLongCacheFileName(context, url));
+                    f0.delete();
+                    if (errorCallback != null) {
+                        resultHandler.post(() -> errorCallback.onComplete(url));
+                    }
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-                if (callbackAfterAll != null) {
-                    resultHandler.post(() -> callbackAfterAll.onComplete(null));
-                }
-            } catch (Exception ignore) {
-                Log.d("test", "exception in reading binary file");
+            }
+            if (callbackAfterAllFiles != null) {
+                resultHandler.post(() -> callbackAfterAllFiles.onComplete(null));
             }
         });
     }
@@ -237,6 +256,12 @@ public class Utils {
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName());
         downloadmanager.enqueue(request);
+    }
+
+    public static boolean withInternetConnection(Context context) {
+        NetworkInfo network = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE))
+                .getActiveNetworkInfo();
+        return network != null && network.isConnected();
     }
 
     public static void addFileToZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {

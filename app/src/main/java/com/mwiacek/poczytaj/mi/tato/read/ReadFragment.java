@@ -23,6 +23,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.EditText;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -83,6 +84,7 @@ public class ReadFragment extends Fragment {
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
     private SwipeRefreshLayout refresh;
+    private SwipeRefreshLayout refresh2;
     private ViewSwitcher viewSwitcher;
     private WebView webView;
     private SearchView searchView;
@@ -164,15 +166,8 @@ public class ReadFragment extends Fragment {
     }
 
     private void readTextFromInternet(Page p, WebView webView, boolean deleteBefore) {
-        if (deleteBefore) {
-            File f0 = p.getCacheFile(getContext());
-            String fileContent = Utils.readTextFile(f0);
-            for (String s : Utils.findImagesUrlInHTML(fileContent)) {
-                File f = new File(Page.getCacheDirectory(requireContext()) + File.separator + s);
-                f.delete();
-            }
-            f0.delete();
-        }
+        boolean isRefreshing = refresh2.isRefreshing();
+        refresh2.setRefreshing(false);
         if (webView != null) {
             webViewLoadingString = "<div style='word-break: break-all;'><h1>" + p.name + "</h1><p>" +
                     "Postęp 0 bajtów, proszę czekać<p>Czytanie pliku " + p.url;
@@ -182,11 +177,38 @@ public class ReadFragment extends Fragment {
         new Thread(() -> Page.getReadInfo(p.typ).processTextFromSinglePage(requireContext(),
                 p, mainThreadHandler, threadPoolExecutor,
                 updateIndicator -> {
+                    if (updateIndicator == 0) {
+                        if (deleteBefore) {
+                            File f0 = p.getCacheFile(getContext());
+                            String fileContent = Utils.readTextFile(f0);
+                            for (String s : Utils.findImagesUrlInHTML(fileContent)) {
+                                File f = new File(Page.getCacheDirectory(requireContext()) + File.separator + s);
+                                f.delete();
+                            }
+                            f0.delete();
+                        }
+                    }
                     if (webView != null) {
                         webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]* bajtów, proszę czekać<p>",
                                 "Postęp " + updateIndicator + " bajtów, proszę czekać<p>");
                         webView.loadDataWithBaseURL(null,
                                 webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
+                    }
+                },
+                error -> {
+                    Toast.makeText(getContext(), "Błąd czytania. Masz internet?", Toast.LENGTH_LONG).show();
+                    webViewLoadingString = "";
+                    if (isRefreshing) {
+                        File f = p.getCacheFile(requireContext());
+                        if (webView != null) {
+                            webView.loadDataWithBaseURL(null, renderPage(Utils.readTextFile(f)),
+                                    MIME_TYPE, ENCODING, null);
+                        }
+                    } else {
+                        viewSwitcher.showPrevious();
+                        if (webView != null) {
+                            webView.loadDataWithBaseURL(null, "", MIME_TYPE, ENCODING, null);
+                        }
                     }
                 },
                 imageURLListOnBeginning -> {
@@ -209,6 +231,7 @@ public class ReadFragment extends Fragment {
                     if (webView != null) {
                         webViewLoadingString = "";
                     }
+                    refresh2.setRefreshing(false);
                     db.disableUpdatedOnServer(p.url);
                     for (Fragment ff : getParentFragmentManager().getFragments()) {
                         if (ff instanceof ReadFragment) {
@@ -340,12 +363,11 @@ public class ReadFragment extends Fragment {
             }
         });
 
-        SwipeRefreshLayout refresh2 = view.findViewById(R.id.swiperefresh2);
+        refresh2 = view.findViewById(R.id.swiperefresh2);
         refresh2.setOnRefreshListener(() -> {
             Page p = pageListAdapter.getItem(positionInPageList);
             db.setPageTop(p.url, 0);
             readTextFromInternet(p, webView, true);
-            refresh2.setRefreshing(false);
         });
 
         /* Page with list */

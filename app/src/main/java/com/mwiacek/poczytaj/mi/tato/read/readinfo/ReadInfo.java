@@ -15,6 +15,7 @@ public abstract class ReadInfo {
             Context context, Page p, final Handler resultHandler,
             final ThreadPoolExecutor executor,
             final Utils.RepositoryCallback<Integer> readingCallback,
+            final Utils.RepositoryCallback<Void> errorCallback,
             final Utils.RepositoryCallback<String[]> callbackAfterMainFile,
             final Utils.RepositoryCallback<String> callbackAfterEveryImage,
             final Utils.RepositoryCallback<String> completeCallback);
