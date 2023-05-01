@@ -22,7 +22,7 @@ public class Notifications {
     private static void setupOneChannel(Context context, Channels channelName, String description) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelName.name(),
-                    description, NotificationManager.IMPORTANCE_DEFAULT);
+                    description, NotificationManager.IMPORTANCE_LOW);
             channel.setDescription(description);
             Objects.requireNonNull(notificationManager(context)).createNotificationChannel(channel);
         }

@@ -86,6 +86,7 @@ public class FragmentConfig implements Serializable, Cloneable {
     public enum HiddenTexts {
         NONE,
         GREEN,
-        RED
+        RED,
+        AMBER
     }
 }

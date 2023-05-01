@@ -44,6 +44,7 @@ public class Page {
                                final ThreadPoolExecutor executor,
                                final DBHelper mydb, final ArrayList<PageTyp> typ,
                                String tabName, int tabNum, boolean allPages, boolean firstPages,
+                               final Utils.RepositoryCallback<Void> errorCallback,
                                final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage,
                                final Utils.RepositoryCallback<String> callbackOnTheEnd) {
         executor.execute(() -> {
@@ -51,7 +52,7 @@ public class Page {
                 int i = firstPages ? 1 : mydb.getLastIndexPageRead(t);
                 if (!allPages && i == -1) continue;
                 getReadInfo(t).getList(context, resultHandler, mydb, t, tabName, tabNum,
-                        allPages ? 1 : i, allPages ? -1 : i + 2, callbackOnUpdatedPage);
+                        allPages ? 1 : i, allPages ? -1 : i + 2, errorCallback, callbackOnUpdatedPage);
             }
             if (callbackOnTheEnd != null)
                 resultHandler.post(() -> callbackOnTheEnd.onComplete(""));

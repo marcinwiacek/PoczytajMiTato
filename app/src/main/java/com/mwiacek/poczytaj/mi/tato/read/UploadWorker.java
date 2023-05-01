@@ -54,7 +54,7 @@ public class UploadWorker extends ListenableWorker {
                 //fixme - we should update GUI too
                 Page.getReadInfo(t).getList(getApplicationContext(),
                         mainThreadHandler, new DBHelper(getApplicationContext()), t, "", 1,
-                        1, 3, null);
+                        1, 3, null, null);
             }
         }).start();
         return future;

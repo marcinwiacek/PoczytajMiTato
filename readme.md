@@ -5,6 +5,10 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
+Wersja 2.1 - 5.2023
+1. poprawna obsługa sytuacji, gdy brak internetu
+2. zmieniona ważność powiadomień na LOW (nie wibrują)
+
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie
    między zakładkami robione jest przez kliknięcie na nazwie zakładki

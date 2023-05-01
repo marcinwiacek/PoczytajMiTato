@@ -23,7 +23,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.EditText;
-import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -51,6 +50,7 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 import com.mwiacek.poczytaj.mi.tato.MainActivity;
 import com.mwiacek.poczytaj.mi.tato.R;
@@ -196,7 +196,9 @@ public class ReadFragment extends Fragment {
                     }
                 },
                 error -> {
-                    Toast.makeText(getContext(), "Błąd czytania. Masz internet?", Toast.LENGTH_LONG).show();
+                    Snackbar.make(getView(),
+                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show();
+
                     webViewLoadingString = "";
                     if (isRefreshing) {
                         File f = p.getCacheFile(requireContext());
@@ -324,7 +326,12 @@ public class ReadFragment extends Fragment {
         */
         // webView.getSettings().setUseWideViewPort(false);
         // webView.getSettings().setLoadWithOverviewMode(false);
-        // webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        //webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        //webView.setVerticalScrollBarEnabled(true);
+        //webView.setHorizontalScrollBarEnabled(true);
+        //webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        //webView.setScrollbarFadingEnabled(false);
+        webView.setNetworkAvailable(false);
         webView.setWebViewClient(new WebViewClientCompat() {
             private WebResourceResponse shouldIntercept(String url) {
                 for (String extension : Page.SUPPORTED_IMAGE_EXTENSIONS) {
@@ -653,8 +660,10 @@ public class ReadFragment extends Fragment {
                     refresh.setRefreshing(true);
                     Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                             config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
-                            true, false, p -> informAllReadTabsAboutUpdate(p),
-                            result -> refresh.setRefreshing(false));
+                            true, false,
+                            result -> Snackbar.make(getView(),
+                                    "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                            p -> informAllReadTabsAboutUpdate(p), result -> refresh.setRefreshing(false));
                 } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
                     mCreateEPUB.launch(config.tabName);
                 } else if (menuItem.getItemId() == R.string.MENU_IMPORT_EPUB) {
@@ -719,6 +728,8 @@ public class ReadFragment extends Fragment {
                             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                                     config.readInfoForReadFragment, config.tabName,
                                     config.fileNameTabNum, false, false,
+                                    result -> Snackbar.make(getView(),
+                                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
                                     pt -> informAllReadTabsAboutUpdate(pt),
                                     result -> loadingMorePages = false), 0);
                 }
@@ -787,7 +798,9 @@ public class ReadFragment extends Fragment {
             refresh.setRefreshing(true);
             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                     config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
-                    false, true, this::informAllReadTabsAboutUpdate,
+                    false, true, result -> Snackbar.make(getView(),
+                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                    this::informAllReadTabsAboutUpdate,
                     result -> refresh.setRefreshing(false));
         });
 

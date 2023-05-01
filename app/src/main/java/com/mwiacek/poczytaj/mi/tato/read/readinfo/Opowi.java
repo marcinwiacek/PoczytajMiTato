@@ -64,6 +64,7 @@ public class Opowi extends ReadInfo {
                         final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
                         String tabName, int tabNum, int pageStart, int pageStop,
+                        final Utils.RepositoryCallback<Void> errorCallback,
                         final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
@@ -75,8 +76,9 @@ public class Opowi extends ReadInfo {
                                 "Czytanie w zakładce " + tabName + " - strona " + index, tabNum).build());
                 url = "https://www.opowi.pl/opowiadania-fantastyka/" +
                         (index == 1 ? "" : "?str=" + index);
-                String result = Utils.getTextPageContent(url, null, null,
-                        null).toString();
+                String result = Utils.getTextPageContent(url, errorCallback, null,
+                        resultHandler).toString();
+                if (result.isEmpty()) return;
                 int indeks = result.indexOf("<h2>Opowiadania z kategorii: Fantastyka</h2>");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

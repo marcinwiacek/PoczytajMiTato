@@ -165,6 +165,7 @@ public class Fantastyka extends ReadInfo {
     public void getList(final Context context, final Handler resultHandler,
                         final DBHelper mydb, Page.PageTyp typ,
                         String tabName, int tabNum, int pageStart, int pageStop,
+                        final Utils.RepositoryCallback<Void> errorCallback,
                         final Utils.RepositoryCallback<Page.PageTyp> callbackOnUpdatedPage) {
         try {
             String url = "";
@@ -188,7 +189,8 @@ public class Fantastyka extends ReadInfo {
                 }
 
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
-                        + url, null, null, null).toString();
+                        + url, errorCallback, null, resultHandler).toString();
+                if (result.isEmpty()) return;
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

@@ -24,5 +24,6 @@ public abstract class ReadInfo {
                                  final Handler resultHandler,
                                  final DBHelper mydb, Page.PageTyp typ,
                                  String tabName, int tabNum, int pageStart, int pageStop,
+                                 final Utils.RepositoryCallback<Void> errorCallback,
                                  final Utils.RepositoryCallback<Page.PageTyp> callback);
 }
