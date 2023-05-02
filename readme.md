@@ -8,6 +8,8 @@ ich eksport do EPUB i import z tego formatu.
 Wersja 2.1 - 5.2023
 1. poprawna obsługa sytuacji, gdy brak internetu
 2. zmieniona ważność powiadomień na LOW (nie wibrują)
+3. inna obsługa HTML Entity w tytułach
+4. info o punktach na fantastyka.pl
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie

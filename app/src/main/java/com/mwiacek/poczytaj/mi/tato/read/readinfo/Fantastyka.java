@@ -3,6 +3,7 @@ package com.mwiacek.poczytaj.mi.tato.read.readinfo;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
+import android.text.Html;
 
 import com.mwiacek.poczytaj.mi.tato.Notifications;
 import com.mwiacek.poczytaj.mi.tato.Utils;
@@ -48,7 +49,7 @@ public class Fantastyka extends ReadInfo {
 
         indeks = Utils.Szukaj(s, "class=\"tytul\">", indeks);
         indeks2 = s.indexOf("</a>", indeks);
-        String tytul = s.substring(indeks, indeks2).replace("#", "&#35;");
+        String tytul = Html.fromHtml(s.substring(indeks, indeks2)).toString();
         indeks = indeks2;
         indeks = Utils.Szukaj(s, "<div>", indeks);
         if (Utils.Szukaj(s, "<a class=\"konkurs\" href=\"", indeks) != -1) {
@@ -64,6 +65,12 @@ public class Fantastyka extends ReadInfo {
             indeks2 = s.indexOf(" | ", indeks);
             if (!comments.isEmpty()) comments += ", ";
             comments += s.substring(indeks, indeks2).trim();
+        }
+        indeks = Utils.Szukaj(s, "<div class=\"punkty half\" title=\"punkty do biblioteki\">", indeks);
+        if (indeks != -1) {
+            indeks2 = s.indexOf("<div>pkt</div>", indeks);
+            if (!comments.isEmpty()) comments += ", ";
+            comments += s.substring(indeks, indeks2).trim()+" pkt";
         }
 
         int i = 0;
@@ -190,7 +197,10 @@ public class Fantastyka extends ReadInfo {
 
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
                         + url, errorCallback, null, resultHandler).toString();
-                if (result.isEmpty()) return;
+                if (result.isEmpty()) {
+                    Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
+                    return;
+                }
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

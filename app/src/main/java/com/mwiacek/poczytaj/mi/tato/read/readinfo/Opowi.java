@@ -78,7 +78,10 @@ public class Opowi extends ReadInfo {
                         (index == 1 ? "" : "?str=" + index);
                 String result = Utils.getTextPageContent(url, errorCallback, null,
                         resultHandler).toString();
-                if (result.isEmpty()) return;
+                if (result.isEmpty()) {
+                    Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
+                    return;
+                }
                 int indeks = result.indexOf("<h2>Opowiadania z kategorii: Fantastyka</h2>");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {

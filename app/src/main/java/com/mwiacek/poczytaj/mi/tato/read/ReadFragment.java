@@ -79,7 +79,6 @@ public class ReadFragment extends Fragment {
     );
     private final Handler mainThreadHandler = HandlerCompat.createAsync(Looper.getMainLooper());
     private final ViewPagerAdapter topPagerAdapter = MainActivity.getViewPagerAdapter();
-    private final String webViewLoadingStringProgress = "";
     private FragmentConfig config = null;
     private PageListRecyclerViewAdapter pageListAdapter;
     private RecyclerView pageList;
@@ -255,7 +254,10 @@ public class ReadFragment extends Fragment {
                         config.showHiddenTexts == FragmentConfig.HiddenTexts.NONE ?
                                 android.R.color.darker_gray :
                                 (config.showHiddenTexts == FragmentConfig.HiddenTexts.RED ?
-                                        android.R.color.holo_red_dark : android.R.color.holo_green_dark)
+                                        android.R.color.holo_red_dark :
+                                        (config.showHiddenTexts == FragmentConfig.HiddenTexts.GREEN ?
+                                                android.R.color.holo_green_dark :
+                                                android.R.color.holo_orange_dark))
                 ));
     }
 
@@ -267,7 +269,14 @@ public class ReadFragment extends Fragment {
                 page = Utils.findText(page, ts.trim());
             }
         }
-        return "<html><head><body style='text-align:justify'>" +
+        /* font-size: xx-small;
+font-size: x-small;
+font-size: small;
+font-size: medium;
+font-size: large;
+font-size: x-large;
+font-size: xx-large;*/
+        return "<html><head><body style='text-align:justify; font-size: medium;'>" +
                 page.replaceAll("src=\"", "src=\"" + URL_PREFIX) +
                 "</body></html>";
     }
@@ -400,6 +409,9 @@ public class ReadFragment extends Fragment {
                 menu.add(0, R.string.MENU_SHOW_RED, mainIndex++, R.string.MENU_SHOW_RED)
                         .setCheckable(true)
                         .setChecked(config.showHiddenTexts == FragmentConfig.HiddenTexts.RED);
+                menu.add(0, R.string.MENU_SHOW_AMBER, mainIndex++, R.string.MENU_SHOW_AMBER)
+                        .setCheckable(true)
+                        .setChecked(config.showHiddenTexts == FragmentConfig.HiddenTexts.AMBER);
                 menu.add(1, R.string.MENU_IMPORT_EPUB, mainIndex++, R.string.MENU_IMPORT_EPUB);
                 menu.add(1, R.string.MENU_EXPORT_EPUB, mainIndex++, R.string.MENU_EXPORT_EPUB);
                 menu.add(1, R.string.MENU_GET_UNREAD_TEXTS, mainIndex++, R.string.MENU_GET_UNREAD_TEXTS);
@@ -534,6 +546,20 @@ public class ReadFragment extends Fragment {
                 } else if (menuItem.getItemId() == R.string.MENU_SHOW_RED) {
                     config.showHiddenTexts = menuItem.isChecked() ?
                             FragmentConfig.HiddenTexts.RED : FragmentConfig.HiddenTexts.NONE;
+                    setSearchHintColor();
+                    pageListAdapter.update(db, config.showHiddenTexts,
+                            config.readInfoForReadFragment, config.authorFilter,
+                            config.tagFilter);
+                    config.saveToInternalStorage(getContext());
+                    new Handler(Looper.getMainLooper()) {
+                        @Override
+                        public void handleMessage(Message msg) {
+                            onInvalidateMenu();
+                        }
+                    }.sendEmptyMessage(1);
+                } else if (menuItem.getItemId() == R.string.MENU_SHOW_AMBER) {
+                    config.showHiddenTexts = menuItem.isChecked() ?
+                            FragmentConfig.HiddenTexts.AMBER : FragmentConfig.HiddenTexts.NONE;
                     setSearchHintColor();
                     pageListAdapter.update(db, config.showHiddenTexts,
                             config.readInfoForReadFragment, config.authorFilter,

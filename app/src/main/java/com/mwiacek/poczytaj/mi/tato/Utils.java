@@ -6,8 +6,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -98,11 +96,12 @@ public class Utils {
 
     public static void writeTextFile(File f, String s) {
         try {
-            f.createNewFile();
-            FileOutputStream outputStream = new FileOutputStream(f, false);
-            outputStream.write(s.getBytes());
-            outputStream.flush();
-            outputStream.close();
+            if (f.createNewFile()) {
+                FileOutputStream outputStream = new FileOutputStream(f, false);
+                outputStream.write(s.getBytes());
+                outputStream.flush();
+                outputStream.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -147,7 +146,7 @@ public class Utils {
             InputStreamReader isr = new InputStreamReader(connection.getInputStream());
             BufferedReader in = new BufferedReader(isr);
             int byteReadNum;
-            char[] buffer = new char[5000];
+            char[] buffer = new char[1000];
             if (updatecallback != null) {
                 resultHandler.post(() -> updatecallback.onComplete(0));
             }
@@ -229,8 +228,7 @@ public class Utils {
                         resultHandler.post(() -> fileCompleteCallback.onComplete(url));
                     }
                 } catch (IOException e) {
-                    File f0 = new File(Page.getLongCacheFileName(context, url));
-                    f0.delete();
+                    new File(Page.getLongCacheFileName(context, url)).delete();
                     if (errorCallback != null) {
                         resultHandler.post(() -> errorCallback.onComplete(url));
                     }
@@ -250,18 +248,11 @@ public class Utils {
         Uri uri = Uri.parse(url);
         File f = new File("" + uri);
 
-        DownloadManager.Request request = new DownloadManager.Request(uri);
-        request.setTitle(f.getName());
-        request.setDescription(title);
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName());
-        downloadmanager.enqueue(request);
-    }
-
-    public static boolean withInternetConnection(Context context) {
-        NetworkInfo network = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE))
-                .getActiveNetworkInfo();
-        return network != null && network.isConnected();
+        downloadmanager.enqueue(new DownloadManager.Request(uri)
+                .setTitle(f.getName())
+                .setDescription(title)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName()));
     }
 
     public static void addFileToZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {
