@@ -761,6 +761,10 @@ public class Utils {
         void onItemClick(int position);
     }
 
+    public interface OnLongItemClicked {
+        boolean onLongItemClick(int position);
+    }
+
     public static class ItemViewHolder extends RecyclerView.ViewHolder {
         public TextView titleText;
         public TextView authorText;

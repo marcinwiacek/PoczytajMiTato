@@ -2,8 +2,10 @@ package com.mwiacek.poczytaj.mi.tato.read;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.net.Uri;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.BackgroundColorSpan;
@@ -18,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
+import com.mwiacek.poczytaj.mi.tato.MainActivity;
 import com.mwiacek.poczytaj.mi.tato.R;
 import com.mwiacek.poczytaj.mi.tato.Utils;
 
@@ -32,10 +35,18 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
     private boolean showHidden = false;
     private ArrayList<Page> mData = new ArrayList<>();
     private Utils.OnItemClicked mOnClick;
+    private Utils.OnLongItemClicked mOnLongClick;
     private String[] search;
 
     public PageListRecyclerViewAdapter(Context context) {
         this.context = context;
+        mOnLongClick = position -> {
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                                Uri.parse(getItem(position).url));
+            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        MainActivity.getContext().startActivity(browserIntent);
+                        return true;
+                };
     }
 
     private static Spannable getSpannable(Object o, String text, String[] search) {
@@ -176,6 +187,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
             desc = view.findViewById(R.id.taskDesc);
 
             view.setOnClickListener(v -> mOnClick.onItemClick(getAbsoluteAdapterPosition()));
+            view.setOnLongClickListener(v-> mOnLongClick.onLongItemClick(getAbsoluteAdapterPosition()));
         }
     }
 }

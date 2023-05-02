@@ -10,6 +10,9 @@ Wersja 2.1 - 5.2023
 2. zmieniona ważność powiadomień na LOW (nie wibrują)
 3. inna obsługa HTML Entity w tytułach
 4. info o punktach na fantastyka.pl
+5. chowanie Navigation Bar w starszym Androidzie (większa ilość miejsca
+   na ekranie dla aplikacji)
+6. długi klik na pozycji na liście otwiera ją w przeglądarce
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie
