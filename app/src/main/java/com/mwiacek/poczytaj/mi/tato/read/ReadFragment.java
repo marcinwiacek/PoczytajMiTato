@@ -301,6 +301,11 @@ font-size: xx-large;*/
         //  frameLayout = view.findViewById(R.id.frameLayout);
 
         nestedScrollView = view.findViewById(R.id.nestedscroll);
+        nestedScrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener)
+                (v, scrollX, scrollY, oldScrollX, oldScrollY) -> Snackbar.make(getView(),
+                        (int) ((float) scrollY /
+                                (float) (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight()) *
+                                100) + "%", Snackbar.LENGTH_SHORT).show());
 
         webView = view.findViewById(R.id.webview);
         if (((requireContext().getResources().getConfiguration().uiMode &
@@ -373,6 +378,7 @@ font-size: xx-large;*/
             }
 
             @Override
+            @SuppressWarnings("deprecation")
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
                 return shouldIntercept(Uri.parse(url).toString());
                 // return imageLoader.shouldInterceptRequest(Uri.parse(url));

@@ -31,22 +31,22 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
     private final static int REGULAR_VIEW_TYPE_ITEM = 1;
 
     private final Context context;
+    private final Utils.OnLongItemClicked mOnLongClick;
     private boolean allRead = false;
     private boolean showHidden = false;
     private ArrayList<Page> mData = new ArrayList<>();
     private Utils.OnItemClicked mOnClick;
-    private Utils.OnLongItemClicked mOnLongClick;
     private String[] search;
 
     public PageListRecyclerViewAdapter(Context context) {
         this.context = context;
         mOnLongClick = position -> {
-                        Intent browserIntent = new Intent(Intent.ACTION_VIEW,
-                                Uri.parse(getItem(position).url));
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse(getItem(position).url));
             browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        MainActivity.getContext().startActivity(browserIntent);
-                        return true;
-                };
+            MainActivity.getContext().startActivity(browserIntent);
+            return true;
+        };
     }
 
     private static Spannable getSpannable(Object o, String text, String[] search) {
@@ -187,7 +187,7 @@ public class PageListRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerVi
             desc = view.findViewById(R.id.taskDesc);
 
             view.setOnClickListener(v -> mOnClick.onItemClick(getAbsoluteAdapterPosition()));
-            view.setOnLongClickListener(v-> mOnLongClick.onLongItemClick(getAbsoluteAdapterPosition()));
+            view.setOnLongClickListener(v -> mOnLongClick.onLongItemClick(getAbsoluteAdapterPosition()));
         }
     }
 }

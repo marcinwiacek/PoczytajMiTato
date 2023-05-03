@@ -13,6 +13,9 @@ Wersja 2.1 - 5.2023
 5. chowanie Navigation Bar w starszym Androidzie (większa ilość miejsca
    na ekranie dla aplikacji)
 6. długi klik na pozycji na liście otwiera ją w przeglądarce
+7. wyłączenie zbierania domyślnych metryk przez Google (WebView.MetricsOptOut) - 
+   więcej https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#metrics
+8. pokazywanie informacji, jaką część tekstu przeczytano
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie

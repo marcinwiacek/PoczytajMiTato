@@ -21,8 +21,8 @@ public class FragmentConfig implements Serializable, Cloneable {
     /* Read Fragment */
     public ArrayList<Page.PageTyp> readInfoForReadFragment = new ArrayList<>();
     public HiddenTexts showHiddenTexts = HiddenTexts.NONE;
-    public boolean useTOR = false;
-    public boolean getTextsWhenRefreshingIndex = false;
+    // public boolean useTOR = false;
+    // public boolean getTextsWhenRefreshingIndex = false;
     public boolean canDownloadWithWifi = true;
     public boolean canDownloadWithGSM = true;
     public boolean canDownloadInNetworkWithLimit = false;

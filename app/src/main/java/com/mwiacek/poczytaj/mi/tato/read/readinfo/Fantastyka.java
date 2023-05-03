@@ -70,7 +70,7 @@ public class Fantastyka extends ReadInfo {
         if (indeks != -1) {
             indeks2 = s.indexOf("<div>pkt</div>", indeks);
             if (!comments.isEmpty()) comments += ", ";
-            comments += s.substring(indeks, indeks2).trim()+" pkt";
+            comments += s.substring(indeks, indeks2).trim() + " pkt";
         }
 
         int i = 0;

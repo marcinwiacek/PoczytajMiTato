@@ -16,6 +16,7 @@
         android:supportsRtl="true"
         android:resizeableActivity="true"
         android:theme="@style/AppTheme">
+        <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true" />
         <activity
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:name=".MainActivity"

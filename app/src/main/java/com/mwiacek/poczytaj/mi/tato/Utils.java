@@ -12,7 +12,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.OpenableColumns;
 import android.text.Html;
-import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
@@ -243,16 +242,14 @@ public class Utils {
     }
 
     public static void downloadFileWithDownloadManagerAfterGrantingPermission(String url, String title, Context context) {
-        Log.d("test", "downloading");
-        DownloadManager downloadmanager = (DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE);
         Uri uri = Uri.parse(url);
         File f = new File("" + uri);
-
-        downloadmanager.enqueue(new DownloadManager.Request(uri)
-                .setTitle(f.getName())
-                .setDescription(title)
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName()));
+        ((DownloadManager) context.getSystemService(android.content.Context.DOWNLOAD_SERVICE))
+                .enqueue(new DownloadManager.Request(uri)
+                        .setTitle(f.getName())
+                        .setDescription(title)
+                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, f.getName()));
     }
 
     public static void addFileToZipFile(String name, ZipOutputStream out, InputStream f) throws IOException {
@@ -291,6 +288,7 @@ public class Utils {
                 tytul = fileCursor.getString(index);
             }
         }
+        if (fileCursor != null) fileCursor.close();
 
         @SuppressLint("SimpleDateFormat") String d0 = (new SimpleDateFormat("ddMMyyyy HH:mm:ss"))
                 .format(new Date());
