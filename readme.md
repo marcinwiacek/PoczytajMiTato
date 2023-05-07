@@ -23,9 +23,9 @@ Wersja 2.1 - 7.5.2023
    i dojściu do końca tekstu jest on automatycznie przesuwany do pomarańczowych
    (po wyłączeniu opcji, jeżeli ktoś chce ręcznie przesunąć tekst do czerwonych
    lub zielonych, czyli np. dobrych i złych, może robić to ręcznie jak wcześniej)
-10.opcja pozwalająca włączyć blokowanie wyłączania ekranu (po zmianie wymaga
-   restartu apki)
-11.opcja wyboru wielkości czcionki czytania
+10. opcja pozwalająca włączyć blokowanie wyłączania ekranu (po zmianie wymaga
+    restartu apki)
+11. opcja wyboru wielkości czcionki czytania
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie
