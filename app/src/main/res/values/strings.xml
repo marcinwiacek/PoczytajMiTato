@@ -28,6 +28,7 @@
     <string name="MENU_DOWNLOAD_WITHOUT_CHARGER">Pobierz też bez ładowarki</string>
     <string name="MENU_LOCAL_AUTHOR_FILTER">Lokalny filtr na autorów</string>
     <string name="MENU_LOCAL_TAG_FILTER">Lokalny filtr na tagi</string>
+    <string name="NO_INTERNET">Błąd czytania. Masz internet?</string>
     <string-array name="text_size">
         <item>xx-small</item>
         <item>x-small</item>

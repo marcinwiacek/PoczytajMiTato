@@ -199,8 +199,7 @@ public class ReadFragment extends Fragment {
                     }
                 },
                 error -> {
-                    Snackbar.make(getView(),
-                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(getView(), R.string.NO_INTERNET, Snackbar.LENGTH_SHORT).show();
 
                     webViewLoadingString = "";
                     if (isRefreshing) {
@@ -408,7 +407,7 @@ public class ReadFragment extends Fragment {
             Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
                     config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
                     false, true, result -> Snackbar.make(getView(),
-                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                            R.string.NO_INTERNET, Snackbar.LENGTH_SHORT).show(),
                     this::informAllReadTabsAboutUpdate,
                     result -> refresh.setRefreshing(false));
         });
@@ -734,7 +733,7 @@ public class ReadFragment extends Fragment {
                             config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
                             true, false,
                             result -> Snackbar.make(getView(),
-                                    "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                                    R.string.NO_INTERNET, Snackbar.LENGTH_SHORT).show(),
                             p -> informAllReadTabsAboutUpdate(p), result -> refresh.setRefreshing(false));
                 } else if (menuItem.getItemId() == R.string.MENU_EXPORT_EPUB) {
                     mCreateEPUB.launch(config.tabName);
@@ -822,7 +821,7 @@ public class ReadFragment extends Fragment {
                                     config.readInfoForReadFragment, config.tabName,
                                     config.fileNameTabNum, false, false,
                                     result -> Snackbar.make(getView(),
-                                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                                            R.string.NO_INTERNET, Snackbar.LENGTH_SHORT).show(),
                                     pt -> informAllReadTabsAboutUpdate(pt),
                                     result -> loadingMorePages = false), 0);
                 }
