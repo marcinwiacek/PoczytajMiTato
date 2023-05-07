@@ -5,7 +5,7 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
-Wersja 2.1 - 8.5.2023
+Wersja 2.1 - 7.5.2023
 1. poprawna obsługa sytuacji, gdy brak internetu
 2. zmieniona ważność powiadomień na LOW (nie wibrują)
 3. lepsza obsługa HTML Entity w tytułach
@@ -13,7 +13,7 @@ Wersja 2.1 - 8.5.2023
 5. opcja pozwalająca chować Navigation Bar (większa ilość miejsca
    na ekranie dla aplikacji szczególnie w starszym Androidzie) - po jej
    włączeniu Navigation Bar musi być "wysunięty" z dołu ekranu
-   (po zmianie wymaga restartu apki)
+   (opcja po zmianie wymaga restartu apki)
 6. długi klik na pozycji na liście otwiera ją w Chrome (łatwo można np. dodać
    komentarz)
 7. wyłączenie zbierania domyślnych metryk przez Google (WebView.MetricsOptOut) - 
@@ -25,7 +25,7 @@ Wersja 2.1 - 8.5.2023
    lub zielonych, czyli np. dobrych i złych, może robić to ręcznie jak wcześniej)
 10.opcja pozwalająca włączyć blokowanie wyłączania ekranu (po zmianie wymaga
    restartu apki)
-11.opcja wyboru wielkości czcionki
+11.opcja wyboru wielkości czcionki czytania
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie
