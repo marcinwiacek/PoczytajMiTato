@@ -552,12 +552,22 @@ public class ReadFragment extends Fragment {
                     editor.putBoolean(MainActivity.PREF_HIDE_NAVIGATION,
                             !menuItem.isChecked());
                     editor.commit();
-                    //MainActivity.setHiding();
+                    (new AlertDialog.Builder(getContext())
+                            .setIcon(android.R.drawable.ic_dialog_info)
+                            .setMessage("Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.")
+                            .setPositiveButton("OK", (dialog, which) -> System.exit(0)))
+                            .create().show();
+
                 } else if (menuItem.getItemId() == R.string.MENU_DONT_BLOCK_SCREEN) {
                     SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
                     editor.putBoolean(MainActivity.PREF_DONT_BLOCK_SCREEN,
                             !menuItem.isChecked());
                     editor.commit();
+                    (new AlertDialog.Builder(getContext())
+                            .setIcon(android.R.drawable.ic_dialog_info)
+                            .setMessage("Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.")
+                            .setPositiveButton("OK", (dialog, which) -> System.exit(0)))
+                            .create().show();
                 }
                 if (menuItem.isCheckable()) {
                     menuItem.setChecked(!menuItem.isChecked());
@@ -755,6 +765,7 @@ public class ReadFragment extends Fragment {
                                 SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
                                 editor.putString(MainActivity.PREF_TEXT_SIZE, String.valueOf(selectedSize));
                                 editor.commit();
+                                toolbar.invalidateMenu();
                                 dialog.dismiss();
                             })
                             .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss()))

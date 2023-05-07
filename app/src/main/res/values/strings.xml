@@ -12,7 +12,7 @@
     <string name="MENU_USE_TOR">Używaj TOR</string>
     <string name="MENU_WRITE_MAIL_TO_AUTHOR">Napisz maila do autora</string>
     <string name="MENU_READ_TO_ORANGE">Przeczytane do pomarańczowych</string>
-    <string name="MENU_TEXT_SIZE">Czcionka</string>
+    <string name="MENU_TEXT_SIZE">Czcionka czytania</string>
     <string name="MENU_HIDE_ELEMENTS">Chowaj interfejs (restart)</string>
     <string name="MENU_DONT_BLOCK_SCREEN">Nie blokuj ekranu (restart)</string>
     <string name="MENU_GET_UNREAD_TEXTS">Pobierz niepobrane teksty</string>
