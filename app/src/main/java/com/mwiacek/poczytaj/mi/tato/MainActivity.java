@@ -6,6 +6,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -22,9 +23,18 @@ import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
+    public final static String PREF_HIDE_NAVIGATION = "HideNavigation";
+    public final static String PREF_DONT_BLOCK_SCREEN = "DontBlockScreen";
+    public final static String PREF_TEXT_SIZE = "TextSize";
+
     private static ViewPagerAdapter viewPagerAdapter;
     private static MainActivity mContext;
+    private static android.content.SharedPreferences sharedPref;
     private ViewPager2 viewPager;
+
+    public static android.content.SharedPreferences getSharedPref() {
+        return sharedPref;
+    }
 
     public static Context getContext() {
         return mContext.getApplicationContext();
@@ -32,6 +42,18 @@ public class MainActivity extends AppCompatActivity {
 
     public static ViewPagerAdapter getViewPagerAdapter() {
         return viewPagerAdapter;
+    }
+
+    public static void setHiding() {
+        if (getSharedPref().getBoolean(PREF_HIDE_NAVIGATION, false)) {
+            mContext.getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility ->
+                    mContext.getWindow().getDecorView().setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            );
+        }
     }
 
     @Override
@@ -55,7 +77,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        if (getSharedPref().getBoolean(PREF_HIDE_NAVIGATION, false)) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
     }
 
     @SuppressLint("PrivateResource")
@@ -70,24 +94,27 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        MainActivity.mContext = this;
+        MainActivity.sharedPref = getPreferences(MODE_PRIVATE);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.top_layout), (v, windowInsets) -> {
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
             params.topMargin = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
             v.setLayoutParams(params);
             return WindowInsetsCompat.CONSUMED;
         });
-
-        getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
-            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                getWindow().getDecorView().setSystemUiVisibility(
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-                //| View.SYSTEM_UI_FLAG_IMMERSIVE);
-            }
-        });
-
-        MainActivity.mContext = this;
+        setHiding();
+        if (getSharedPref().getBoolean(PREF_DONT_BLOCK_SCREEN, false)) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        }
 
         if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this,

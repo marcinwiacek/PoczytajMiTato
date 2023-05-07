@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 /* Configuration for ReadFragment and SearchFragment */
 public class FragmentConfig implements Serializable, Cloneable {
-    static final long serialVersionUID = 24L; // Version of the structure for serialization
+    static final long serialVersionUID = 25L; // Version of the structure for serialization
     /* Search Fragment */
     public ArrayList<StoreInfo.StoreInfoTyp> storeInfoForSearchFragment = new ArrayList<>();
     /* Read Fragment */
@@ -31,6 +31,7 @@ public class FragmentConfig implements Serializable, Cloneable {
     public boolean canDownloadWithLowBattery = false;
     public boolean canDownloadWithLowStorage = false;
     public boolean canDownloadWithoutCharger = true;
+    public boolean addToOrange = false;
     public String authorFilter = "";
     public String tagFilter = "";
     public int howOftenRefreshTabInHours = -1;

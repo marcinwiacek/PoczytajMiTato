@@ -266,8 +266,7 @@ public class Utils {
     }
 
     public static void addFileToZipFile(String name, ZipOutputStream out, String content) throws IOException {
-        ZipEntry entry = new ZipEntry(name);
-        out.putNextEntry(entry);
+        out.putNextEntry(new ZipEntry(name));
         out.write(content.getBytes());
     }
 

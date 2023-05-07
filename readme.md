@@ -5,17 +5,26 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
-Wersja 2.1 - 5.2023
+Wersja 2.1 - 8.5.2023
 1. poprawna obsługa sytuacji, gdy brak internetu
 2. zmieniona ważność powiadomień na LOW (nie wibrują)
-3. inna obsługa HTML Entity w tytułach
+3. lepsza obsługa HTML Entity w tytułach
 4. info o punktach na fantastyka.pl
-5. chowanie Navigation Bar w starszym Androidzie (większa ilość miejsca
-   na ekranie dla aplikacji)
-6. długi klik na pozycji na liście otwiera ją w przeglądarce
+5. opcja pozwalająca chować Navigation Bar (większa ilość miejsca
+   na ekranie dla aplikacji szczególnie w starszym Androidzie) - po jej
+   włączeniu Navigation Bar musi być "wysunięty" z dołu ekranu
+   (po zmianie wymaga restartu apki)
+6. długi klik na pozycji na liście otwiera ją w Chrome
 7. wyłączenie zbierania domyślnych metryk przez Google (WebView.MetricsOptOut) - 
    więcej https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#metrics
-8. pokazywanie informacji, jaką część tekstu przeczytano
+8. pokazywanie informacji, jaką część tekstu przeczytano (na razie Snackbar)
+9. nowa kategoria pomarańczowa tekstów - po włączeniu opcji w zakładce
+   i dojściu do końca tekstu jest on automatycznie przesuwany do pomarańczowych
+   (po wyłączeniu opcji, jeżeli ktoś chce ręcznie przesunąć tekst do czerwonych
+   lub zielonych, czyli np. dobrych i złych, może robić to ręcznie jak wcześniej)
+10. opcja pozwalająca włączyć blokowanie wyłączania ekranu (po zmianie wymaga
+    restartu apki)
+11. opcja wyboru wielkości czcionki
 
 Wersja 2.0.1 - 4.2023
 1. zablokowanie gestów lewo/prawo w różnych miejscach - przełączanie

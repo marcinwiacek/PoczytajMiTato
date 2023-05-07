@@ -1,6 +1,7 @@
 package com.mwiacek.poczytaj.mi.tato.read;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -28,6 +29,7 @@ import android.widget.ViewSwitcher;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.os.HandlerCompat;
@@ -61,10 +63,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ReadFragment extends Fragment {
     private final static String MIME_TYPE = "text/html; charset=UTF-8";
@@ -269,15 +273,9 @@ public class ReadFragment extends Fragment {
                 page = Utils.findText(page, ts.trim());
             }
         }
-        /* font-size: xx-small;
-font-size: x-small;
-font-size: small;
-font-size: medium;
-font-size: large;
-font-size: x-large;
-font-size: xx-large;*/
-        return "<html><head><body style='text-align:justify; font-size: medium;'>" +
-                page.replaceAll("src=\"", "src=\"" + URL_PREFIX) +
+        return "<html><head><body style='text-align:justify; font-size: " +
+                MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium") +
+                ";'>" + page.replaceAll("src=\"", "src=\"" + URL_PREFIX) +
                 "</body></html>";
     }
 
@@ -298,14 +296,20 @@ font-size: xx-large;*/
         viewSwitcher = view.findViewById(R.id.viewSwitcher2);
 
         /* Page with webview */
-        //  frameLayout = view.findViewById(R.id.frameLayout);
 
         nestedScrollView = view.findViewById(R.id.nestedscroll);
         nestedScrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener)
-                (v, scrollX, scrollY, oldScrollX, oldScrollY) -> Snackbar.make(getView(),
-                        (int) ((float) scrollY /
-                                (float) (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight()) *
-                                100) + "%", Snackbar.LENGTH_SHORT).show());
+                (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                    int percent = (int) ((float) scrollY
+                            / (float) (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight())
+                            * 100);
+                    Snackbar.make(getView(), percent + "%", Snackbar.LENGTH_SHORT).show();
+                    if (config.addToOrange && percent == 100) {
+                        db.setPageHidden(pageListAdapter.getItem(positionInPageList).url,
+                                FragmentConfig.HiddenTexts.AMBER);
+                        informAllReadTabsAboutUpdate(pageListAdapter.getItem(positionInPageList).typ);
+                    }
+                });
 
         webView = view.findViewById(R.id.webview);
         if (((requireContext().getResources().getConfiguration().uiMode &
@@ -394,6 +398,20 @@ font-size: xx-large;*/
 
         /* Page with list */
         refresh = view.findViewById(R.id.swiperefresh);
+        refresh.setOnRefreshListener(() -> {
+            if (config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE
+                    || !searchView.getQuery().toString().isEmpty()) {
+                refresh.setRefreshing(false);
+                return;
+            }
+            refresh.setRefreshing(true);
+            Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
+                    config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
+                    false, true, result -> Snackbar.make(getView(),
+                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
+                    this::informAllReadTabsAboutUpdate,
+                    result -> refresh.setRefreshing(false));
+        });
 
         toolbar = view.findViewById(R.id.toolbar);
         toolbar.addMenuProvider(new MenuProvider() {
@@ -441,6 +459,8 @@ font-size: xx-large;*/
                         .setCheckable(true).setChecked(!config.authorFilter.isEmpty());
                 menu.add(3, R.string.MENU_LOCAL_TAG_FILTER, mainIndex++, R.string.MENU_LOCAL_TAG_FILTER)
                         .setCheckable(true).setChecked(!config.tagFilter.isEmpty());
+                menu.add(3, R.string.MENU_READ_TO_ORANGE, mainIndex, R.string.MENU_READ_TO_ORANGE)
+                        .setCheckable(true).setChecked(!config.addToOrange);
                 menu.add(4, i++, mainIndex++,
                                 "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ?
                                         "x" : config.howOftenRefreshTabInHours) + " godzin")
@@ -473,6 +493,15 @@ font-size: xx-large;*/
                 menu.add(4, R.string.MENU_NETWORK_WITH_LIMIT, mainIndex++, R.string.MENU_NETWORK_WITH_LIMIT)
                         .setCheckable(true).setEnabled(config.howOftenRefreshTabInHours != -1)
                         .setChecked(config.canDownloadInNetworkWithLimit);
+                menu.add(5, R.string.MENU_DONT_BLOCK_SCREEN, mainIndex, R.string.MENU_DONT_BLOCK_SCREEN)
+                        .setCheckable(true)
+                        .setChecked(MainActivity.getSharedPref().getBoolean(MainActivity.PREF_DONT_BLOCK_SCREEN, false));
+                menu.add(5, R.string.MENU_HIDE_ELEMENTS, mainIndex, R.string.MENU_HIDE_ELEMENTS)
+                        .setCheckable(true)
+                        .setChecked(MainActivity.getSharedPref().getBoolean(MainActivity.PREF_HIDE_NAVIGATION, false));
+                menu.add(5, R.string.MENU_TEXT_SIZE, mainIndex, getResources().getString(R.string.MENU_TEXT_SIZE) + ": " +
+                        MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium")
+                );
                 menu.add(5, R.string.MENU_WRITE_MAIL_TO_AUTHOR, mainIndex, R.string.MENU_WRITE_MAIL_TO_AUTHOR);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     menu.setGroupDividerEnabled(true);
@@ -519,6 +548,17 @@ font-size: xx-large;*/
                                 dialog.dismiss();
                             });
                     return false;
+                } else if (menuItem.getItemId() == R.string.MENU_HIDE_ELEMENTS) {
+                    SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
+                    editor.putBoolean(MainActivity.PREF_HIDE_NAVIGATION,
+                            !menuItem.isChecked());
+                    editor.commit();
+                    //MainActivity.setHiding();
+                } else if (menuItem.getItemId() == R.string.MENU_DONT_BLOCK_SCREEN) {
+                    SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
+                    editor.putBoolean(MainActivity.PREF_DONT_BLOCK_SCREEN,
+                            !menuItem.isChecked());
+                    editor.commit();
                 }
                 if (menuItem.isCheckable()) {
                     menuItem.setChecked(!menuItem.isChecked());
@@ -700,7 +740,28 @@ font-size: xx-large;*/
                     mCreateEPUB.launch(config.tabName);
                 } else if (menuItem.getItemId() == R.string.MENU_IMPORT_EPUB) {
                     mImportEPUB.launch(new String[]{Utils.EPUB_MIME_TYPE});
+                } else if (menuItem.getItemId() == R.string.MENU_TEXT_SIZE) {
+                    AtomicReference<String> selectedSize = new AtomicReference<>(MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium"));
+                    (new AlertDialog.Builder(getContext())
+                            .setIcon(android.R.drawable.ic_dialog_info)
+                            .setTitle("Wielkość tekstu podczas czytania")
+                            .setSingleChoiceItems(
+                                    getContext().getResources().getStringArray(R.array.text_size),
+                                    new ArrayList<>(Arrays.asList(getContext().getResources().getStringArray(R.array.text_size)))
+                                            .indexOf(MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium")),
+                                    (dialog, which) ->
+                                            selectedSize.set(
+                                                    getContext().getResources().getStringArray(R.array.text_size)[which]))
+                            .setPositiveButton("OK", (dialog, which) -> {
+                                SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
+                                editor.putString(MainActivity.PREF_TEXT_SIZE, String.valueOf(selectedSize));
+                                editor.commit();
+                                dialog.dismiss();
+                            })
+                            .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss()))
+                            .create().show();
                 }
+
                 return false;
             }
         });
@@ -820,21 +881,6 @@ font-size: xx-large;*/
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
         }).attachToRecyclerView(pageList);
-
-        refresh.setOnRefreshListener(() -> {
-            if (config.showHiddenTexts != FragmentConfig.HiddenTexts.NONE
-                    || !searchView.getQuery().toString().isEmpty()) {
-                refresh.setRefreshing(false);
-                return;
-            }
-            refresh.setRefreshing(true);
-            Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
-                    config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
-                    false, true, result -> Snackbar.make(getView(),
-                            "Błąd czytania. Masz internet?", Snackbar.LENGTH_SHORT).show(),
-                    this::informAllReadTabsAboutUpdate,
-                    result -> refresh.setRefreshing(false));
-        });
 
         searchView = view.findViewById(R.id.mySearch);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

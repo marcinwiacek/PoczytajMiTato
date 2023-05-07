@@ -29,17 +29,16 @@ public class Notifications {
     }
 
     public static void setupNotifications(Context context) {
-        setupOneChannel(context, Channels.CZYTANIE_Z_INTERNETU, "Czytanie plików z Internetu");
+        setupOneChannel(context, Channels.CZYTANIE_Z_INTERNETU, "Czytanie plików z internetu");
         setupOneChannel(context, Channels.ZAPIS_W_URZADZENIU, "Zapis plików w urządzeniu");
     }
 
     public static NotificationCompat.Builder setupNotification(Context context, Channels channel, String text, int tabNum) {
-        Intent intent;
-        intent = new Intent(context, MainActivity.class);
+        Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra("tabNum", tabNum);
-        Intent notificationIntent = new Intent(context, MainActivity.class)
+        /*Intent notificationIntent = new Intent(context, MainActivity.class)
                 .setAction("com.app.action.notification")
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);*/
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
