@@ -459,7 +459,7 @@ public class ReadFragment extends Fragment {
                 menu.add(3, R.string.MENU_LOCAL_TAG_FILTER, mainIndex++, R.string.MENU_LOCAL_TAG_FILTER)
                         .setCheckable(true).setChecked(!config.tagFilter.isEmpty());
                 menu.add(3, R.string.MENU_READ_TO_ORANGE, mainIndex, R.string.MENU_READ_TO_ORANGE)
-                        .setCheckable(true).setChecked(!config.addToOrange);
+                        .setCheckable(true).setChecked(config.addToOrange);
                 menu.add(4, i++, mainIndex++,
                                 "Pobierz co " + (config.howOftenRefreshTabInHours == -1 ?
                                         "x" : config.howOftenRefreshTabInHours) + " godzin")
@@ -651,6 +651,8 @@ public class ReadFragment extends Fragment {
                     config.canDownloadWithLowStorage = menuItem.isChecked();
                 } else if (menuItem.getItemId() == R.string.MENU_NETWORK_WITH_LIMIT) {
                     config.canDownloadInNetworkWithLimit = menuItem.isChecked();
+                } else if (menuItem.getItemId() == R.string.MENU_READ_TO_ORANGE) {
+                    config.addToOrange = menuItem.isChecked();
                 } else if (menuItem.getTitle().toString().startsWith("Pobierz co")) {
                     if (menuItem.isChecked()) {
                         EditText input = new EditText(getContext());
