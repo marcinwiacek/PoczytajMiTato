@@ -7,7 +7,6 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
@@ -30,12 +29,12 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public DBHelper(Context context) {
         super(context, "pages.db", null, 1);
-        Log.d("abc", "creating db object");
+        //Log.d("abc", "creating db object");
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        Log.d("abc", "creating db");
+        //Log.d("abc", "creating db");
         db.execSQL("create table " + PAGES_TABLE_NAME + " " +
                 "(" + COLUMN_TYP + " integer, " + COLUMN_NAME + " text," +
                 COLUMN_AUTHOR + " text, " + COLUMN_DATETIME + " real, " +
@@ -85,7 +84,7 @@ public class DBHelper extends SQLiteOpenHelper {
         this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
                 " set " + COLUMN_TOP + "=" + top +
                 " where " + COLUMN_URL + "='" + url + "'");
-        Log.d("abc", "set page top" + top);
+        //Log.d("abc", "set page top" + top);
     }
 
     @SuppressLint("Range")
@@ -95,7 +94,7 @@ public class DBHelper extends SQLiteOpenHelper {
                         " where " + COLUMN_URL + "='" + url + "'", null);
         res.moveToFirst();
         int ret = res.getInt(res.getColumnIndex(COLUMN_TOP));
-        Log.d("abc", "get page top" + ret);
+        //Log.d("abc", "get page top" + ret);
         res.close();
         return ret;
     }
@@ -135,7 +134,7 @@ public class DBHelper extends SQLiteOpenHelper {
             if (!oldVersionIsDifferent) contentValues.remove(COLUMN_TOP);
             this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
                     COLUMN_URL + "='" + url + "'", null);
-            Log.d("abc", "updating page " + p.url);
+            //Log.d("abc", "updating page " + p.url);
             return oldVersionIsDifferent;
         }
     }
