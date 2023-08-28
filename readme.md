@@ -5,7 +5,7 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
-Wersja 2.2 - 5.9.2023
+Wersja 2.1.1 - 5.9.2023
 1. poprawa błędu z przewijaniem stron
 2. poprawa błędu z odświeżaniem stron
 3. nowy Gradle
