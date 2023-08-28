@@ -74,7 +74,6 @@ public class ReadFragment extends Fragment {
     private final static String MIME_TYPE = "text/html; charset=UTF-8";
     private final static String ENCODING = "UTF-8";
     private final static String URL_PREFIX = "https://mwiacek.com/ffiles/img/";
-    private final static DBHelper db = new DBHelper(MainActivity.getContext());
     private final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),
             Runtime.getRuntime().availableProcessors(),
@@ -108,13 +107,13 @@ public class ReadFragment extends Fragment {
 
     /* Called, when page with concrete url needs to be updated in the list */
     public void onPageUpdate(String url) {
-        pageListAdapter.onPageUpdate(url, db);
+        pageListAdapter.onPageUpdate(url, MainActivity.getDB());
     }
 
     /* Called, when pages with concrete PageTyp need to be updated in the list */
     public void onPageUpdate(Page.PageTyp typ) {
         if (config.readInfoForReadFragment.contains(typ)) {
-            pageListAdapter.update(db, config.showHiddenTexts,
+            pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                     config.readInfoForReadFragment, config.authorFilter,
                     config.tagFilter);
         }
@@ -127,23 +126,23 @@ public class ReadFragment extends Fragment {
     public void onBackPressed() {
         if (!webViewLoadingString.isEmpty()) return;
         if (pageList.isShown()) System.exit(0);
-        db.setPageTop(pageListAdapter.getItem(positionInPageList).url, nestedScrollView.getScrollY());
+        MainActivity.getDB().setPageTop(pageListAdapter.getItem(positionInPageList).url, nestedScrollView.getScrollY());
         viewSwitcher.showPrevious();
-        webView.loadDataWithBaseURL(null, "", MIME_TYPE, ENCODING, null);
+        //webView.loadDataWithBaseURL(null, "", MIME_TYPE, ENCODING, null);
     }
 
     /* Called, when somebody deleted or added tab and we change mode from one to multi-tab mode
        or vice versa
      */
     public void onUpdateLayout(boolean withMargin) {
-        int actionBarSize = (int) requireContext().getTheme().obtainStyledAttributes(
+        int actionBarSize = (int) MainActivity.getContext().getTheme().obtainStyledAttributes(
                 new int[]{android.R.attr.actionBarSize}).getDimension(0, 0);
         if (pageList != null) pageList.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
         //   if (frameLayout!=null) frameLayout.setPadding(0, 0, 0, withMargin ? actionBarSize : 0);
     }
 
     private void setupRefresh() {
-        WorkManager.getInstance(requireContext())
+        WorkManager.getInstance(MainActivity.getContext())
                 .cancelAllWorkByTag("poczytajmitato" + config.fileNameTabNum);
         if (config.howOftenRefreshTabInHours == -1) return;
         Constraints constraints = new Constraints.Builder()
@@ -165,7 +164,7 @@ public class ReadFragment extends Fragment {
                     config.howOftenTryToRefreshTabAfterErrorInMinutes,
                     TimeUnit.MINUTES);
         }
-        WorkManager.getInstance(requireContext()).enqueue(request.build());
+        WorkManager.getInstance(MainActivity.getContext()).enqueue(request.build());
     }
 
     private void readTextFromInternet(Page p, WebView webView, boolean deleteBefore) {
@@ -177,15 +176,15 @@ public class ReadFragment extends Fragment {
             webView.loadDataWithBaseURL(null, webViewLoadingString + "</div>", MIME_TYPE,
                     ENCODING, null);
         }
-        new Thread(() -> Page.getReadInfo(p.typ).processTextFromSinglePage(requireContext(),
+        new Thread(() -> Page.getReadInfo(p.typ).processTextFromSinglePage(MainActivity.getContext(),
                 p, mainThreadHandler, threadPoolExecutor,
                 updateIndicator -> {
                     if (updateIndicator == 0) {
                         if (deleteBefore) {
-                            File f0 = p.getCacheFile(getContext());
+                            File f0 = p.getCacheFile(MainActivity.getContext());
                             String fileContent = Utils.readTextFile(f0);
                             for (String s : Utils.findImagesUrlInHTML(fileContent)) {
-                                File f = new File(Page.getCacheDirectory(requireContext()) + File.separator + s);
+                                File f = new File(Page.getCacheDirectory(MainActivity.getContext()) + File.separator + s);
                                 f.delete();
                             }
                             f0.delete();
@@ -203,7 +202,7 @@ public class ReadFragment extends Fragment {
 
                     webViewLoadingString = "";
                     if (isRefreshing) {
-                        File f = p.getCacheFile(requireContext());
+                        File f = p.getCacheFile(MainActivity.getContext());
                         if (webView != null) {
                             webView.loadDataWithBaseURL(null, renderPage(Utils.readTextFile(f)),
                                     MIME_TYPE, ENCODING, null);
@@ -236,7 +235,7 @@ public class ReadFragment extends Fragment {
                         webViewLoadingString = "";
                     }
                     refresh2.setRefreshing(false);
-                    db.disableUpdatedOnServer(p.url);
+                    MainActivity.getDB().disableUpdatedOnServer(p.url);
                     for (Fragment ff : getParentFragmentManager().getFragments()) {
                         if (ff instanceof ReadFragment) {
                             ((ReadFragment) ff).onPageUpdate(p.url);
@@ -302,16 +301,18 @@ public class ReadFragment extends Fragment {
                     int percent = (int) ((float) scrollY
                             / (float) (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight())
                             * 100);
-                    Snackbar.make(getView(), percent + "%", Snackbar.LENGTH_SHORT).show();
+                    if (percent != 100) {
+                        Snackbar.make(getView(), percent + "%", Snackbar.LENGTH_SHORT).show();
+                    }
                     if (config.addToOrange && percent == 100) {
-                        db.setPageHidden(pageListAdapter.getItem(positionInPageList).url,
+                        MainActivity.getDB().setPageHidden(pageListAdapter.getItem(positionInPageList).url,
                                 FragmentConfig.HiddenTexts.AMBER);
                         informAllReadTabsAboutUpdate(pageListAdapter.getItem(positionInPageList).typ);
                     }
                 });
 
         webView = view.findViewById(R.id.webview);
-        if (((requireContext().getResources().getConfiguration().uiMode &
+        if (((MainActivity.getContext().getResources().getConfiguration().uiMode &
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)) {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_ON);
@@ -338,7 +339,7 @@ public class ReadFragment extends Fragment {
         webView.getSettings().setAllowContentAccess(false);
         /* final WebViewAssetLoader imageLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/ffiles/", new WebViewAssetLoader.InternalStoragePathHandler(
-                        requireContext(), new File(requireContext().getCacheDir(),"ffiles")))
+                        MainActivity.getContext()()(), new File(MainActivity.getContext()()().getCacheDir(),"ffiles")))
                 .setHttpAllowed(false).setDomain("mwiacek.com").build();
         */
         // webView.getSettings().setUseWideViewPort(false);
@@ -356,7 +357,7 @@ public class ReadFragment extends Fragment {
                         try {
                             return new WebResourceResponse(MimeTypeMap.getSingleton()
                                     .getMimeTypeFromExtension("." + extension), null,
-                                    new FileInputStream(Page.getCacheDirectory(requireContext()) +
+                                    new FileInputStream(Page.getCacheDirectory(MainActivity.getContext()) +
                                             File.separator + url.replace(URL_PREFIX, "")));
                         } catch (FileNotFoundException ignore) {
                         }
@@ -367,11 +368,12 @@ public class ReadFragment extends Fragment {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                nestedScrollView.setScrollY(db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
-                nestedScrollView.dispatchNestedScroll(0, 0, 0,
-                        db.getPageTop(pageListAdapter.getItem(positionInPageList).url), null);
-                nestedScrollView.scrollTo(0,
-                        db.getPageTop(pageListAdapter.getItem(positionInPageList).url));
+                int top = MainActivity.getDB().getPageTop(pageListAdapter.getItem(positionInPageList).url);
+                nestedScrollView.post(() -> nestedScrollView.setScrollY(top));
+                // nestedScrollView.setScrollY(top);
+                //   nestedScrollView.dispatchNestedScroll(0, 0, 0,
+                //         top, null);
+                // nestedScrollView.scrollTo(0, top);
             }
 
             @Override
@@ -391,7 +393,7 @@ public class ReadFragment extends Fragment {
         refresh2 = view.findViewById(R.id.swiperefresh2);
         refresh2.setOnRefreshListener(() -> {
             Page p = pageListAdapter.getItem(positionInPageList);
-            db.setPageTop(p.url, 0);
+            MainActivity.getDB().setPageTop(p.url, 0);
             readTextFromInternet(p, webView, true);
         });
 
@@ -404,7 +406,7 @@ public class ReadFragment extends Fragment {
                 return;
             }
             refresh.setRefreshing(true);
-            Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
+            Page.getList(MainActivity.getContext(), mainThreadHandler, threadPoolExecutor, MainActivity.getDB(),
                     config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
                     false, true, result -> Snackbar.make(getView(),
                             R.string.NO_INTERNET, Snackbar.LENGTH_SHORT).show(),
@@ -510,39 +512,39 @@ public class ReadFragment extends Fragment {
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
                 if (menuItem.getItemId() == R.string.MENU_LOCAL_AUTHOR_FILTER) {
-                    EditText input = new EditText(getContext());
+                    EditText input = new EditText(MainActivity.getContext());
                     input.setText(config.authorFilter);
-                    Utils.dialog(requireContext(),
+                    Utils.dialog(MainActivity.getContext(),
                             "Podaj autorów (oddzielonych przecinkiem). " +
                                     "\"not \" na początku autora oznacza zaprzeczenie.", input,
                             (dialog, which) -> {
                                 menuItem.setChecked(!input.getText().toString().isEmpty());
                                 if (!config.authorFilter.equals(input.getText().toString().trim())) {
                                     config.authorFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                                             config.readInfoForReadFragment,
                                             config.authorFilter, config.tagFilter);
                                 }
-                                config.saveToInternalStorage(getContext());
+                                config.saveToInternalStorage(MainActivity.getContext());
                             }, (dialog, which) -> {
                                 dialog.dismiss();
                             });
                     return false;
                 } else if (menuItem.getItemId() == R.string.MENU_LOCAL_TAG_FILTER) {
-                    EditText input = new EditText(getContext());
+                    EditText input = new EditText(MainActivity.getContext());
                     input.setText(config.tagFilter);
-                    Utils.dialog(requireContext(),
+                    Utils.dialog(MainActivity.getContext(),
                             "Podaj tagi (oddzielone przecinkiem). " +
                                     "\"not \" na początku taga oznacza zaprzeczenie.", input,
                             (dialog, which) -> {
                                 menuItem.setChecked(!input.getText().toString().isEmpty());
                                 if (!config.tagFilter.equals(input.getText().toString().trim())) {
                                     config.tagFilter = input.getText().toString().trim();
-                                    pageListAdapter.update(db, config.showHiddenTexts,
+                                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                                             config.readInfoForReadFragment,
                                             config.authorFilter, config.tagFilter);
                                 }
-                                config.saveToInternalStorage(getContext());
+                                config.saveToInternalStorage(MainActivity.getContext());
                             }, (dialog, which) -> {
                                 dialog.dismiss();
                             });
@@ -552,7 +554,7 @@ public class ReadFragment extends Fragment {
                     editor.putBoolean(MainActivity.PREF_HIDE_NAVIGATION,
                             !menuItem.isChecked());
                     editor.commit();
-                    (new AlertDialog.Builder(getContext())
+                    (new AlertDialog.Builder(MainActivity.getContext())
                             .setIcon(android.R.drawable.ic_dialog_info)
                             .setMessage("Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.")
                             .setPositiveButton("OK", (dialog, which) -> System.exit(0)))
@@ -563,7 +565,7 @@ public class ReadFragment extends Fragment {
                     editor.putBoolean(MainActivity.PREF_DONT_BLOCK_SCREEN,
                             !menuItem.isChecked());
                     editor.commit();
-                    (new AlertDialog.Builder(getContext())
+                    (new AlertDialog.Builder(MainActivity.getContext())
                             .setIcon(android.R.drawable.ic_dialog_info)
                             .setMessage("Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.")
                             .setPositiveButton("OK", (dialog, which) -> System.exit(0)))
@@ -579,7 +581,7 @@ public class ReadFragment extends Fragment {
                     } else {
                         config.readInfoForReadFragment.remove(hm.get(s));
                     }
-                    pageListAdapter.update(db, config.showHiddenTexts,
+                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                             config.readInfoForReadFragment, config.authorFilter,
                             config.tagFilter);
                     break;
@@ -588,10 +590,10 @@ public class ReadFragment extends Fragment {
                     config.showHiddenTexts = menuItem.isChecked() ?
                             FragmentConfig.HiddenTexts.GREEN : FragmentConfig.HiddenTexts.NONE;
                     setSearchHintColor();
-                    pageListAdapter.update(db, config.showHiddenTexts,
+                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                             config.readInfoForReadFragment, config.authorFilter,
                             config.tagFilter);
-                    config.saveToInternalStorage(getContext());
+                    config.saveToInternalStorage(MainActivity.getContext());
                     new Handler(Looper.getMainLooper()) {
                         @Override
                         public void handleMessage(Message msg) {
@@ -602,10 +604,10 @@ public class ReadFragment extends Fragment {
                     config.showHiddenTexts = menuItem.isChecked() ?
                             FragmentConfig.HiddenTexts.RED : FragmentConfig.HiddenTexts.NONE;
                     setSearchHintColor();
-                    pageListAdapter.update(db, config.showHiddenTexts,
+                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                             config.readInfoForReadFragment, config.authorFilter,
                             config.tagFilter);
-                    config.saveToInternalStorage(getContext());
+                    config.saveToInternalStorage(MainActivity.getContext());
                     new Handler(Looper.getMainLooper()) {
                         @Override
                         public void handleMessage(Message msg) {
@@ -616,10 +618,10 @@ public class ReadFragment extends Fragment {
                     config.showHiddenTexts = menuItem.isChecked() ?
                             FragmentConfig.HiddenTexts.AMBER : FragmentConfig.HiddenTexts.NONE;
                     setSearchHintColor();
-                    pageListAdapter.update(db, config.showHiddenTexts,
+                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                             config.readInfoForReadFragment, config.authorFilter,
                             config.tagFilter);
-                    config.saveToInternalStorage(getContext());
+                    config.saveToInternalStorage(MainActivity.getContext());
                     new Handler(Looper.getMainLooper()) {
                         @Override
                         public void handleMessage(Message msg) {
@@ -655,21 +657,21 @@ public class ReadFragment extends Fragment {
                     config.addToOrange = menuItem.isChecked();
                 } else if (menuItem.getTitle().toString().startsWith("Pobierz co")) {
                     if (menuItem.isChecked()) {
-                        EditText input = new EditText(getContext());
+                        EditText input = new EditText(MainActivity.getContext());
                         input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        Utils.dialog(requireContext(),
+                        Utils.dialog(MainActivity.getContext(),
                                 "Co ile godzin zakładka ma być odświeżana (24 = 1 dzień, " +
                                         "48 = 2 dni, 168 = tydzień, etc.)", input,
                                 (dialog, which) -> {
                                     config.howOftenRefreshTabInHours =
                                             Integer.parseInt(String.valueOf(input.getText()));
                                     setupRefresh();
-                                    config.saveToInternalStorage(getContext());
+                                    config.saveToInternalStorage(MainActivity.getContext());
                                 }, (dialog, which) -> {
                                     dialog.dismiss();
                                     config.howOftenRefreshTabInHours = -1;
                                     setupRefresh();
-                                    config.saveToInternalStorage(getContext());
+                                    config.saveToInternalStorage(MainActivity.getContext());
                                 });
                     } else {
                         config.howOftenRefreshTabInHours = -1;
@@ -677,30 +679,30 @@ public class ReadFragment extends Fragment {
                     }
                 } else if (menuItem.getTitle().toString().startsWith("Przy błędzie co ")) {
                     if (menuItem.isChecked()) {
-                        EditText input = new EditText(getContext());
+                        EditText input = new EditText(MainActivity.getContext());
                         input.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                        Utils.dialog(requireContext(),
+                        Utils.dialog(MainActivity.getContext(),
                                 "Co ile minut próbować pobrać indeks po pierwszym niepowodzeniu",
                                 input, (dialog, which) -> {
                                     config.howOftenTryToRefreshTabAfterErrorInMinutes =
                                             Integer.parseInt(String.valueOf(input.getText()));
-                                    config.saveToInternalStorage(getContext());
+                                    config.saveToInternalStorage(MainActivity.getContext());
                                 }, (dialog, which) -> {
                                     dialog.dismiss();
                                     config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
-                                    config.saveToInternalStorage(getContext());
+                                    config.saveToInternalStorage(MainActivity.getContext());
                                 });
                     } else {
                         config.howOftenTryToRefreshTabAfterErrorInMinutes = -1;
                     }
                 }
                 if (menuItem.isCheckable()) {
-                    config.saveToInternalStorage(getContext());
+                    config.saveToInternalStorage(MainActivity.getContext());
                     return true;
                 }
                 if (menuItem.getItemId() == R.string.MENU_CLONE_TAB) {
-                    EditText input = new EditText(getContext());
-                    Utils.dialog(requireContext(), "Nazwa nowej zakładki", input,
+                    EditText input = new EditText(MainActivity.getContext());
+                    Utils.dialog(MainActivity.getContext(), "Nazwa nowej zakładki", input,
                             (dialog, which) -> {
                                 try {
                                     topPagerAdapter.addTab(config, input.getText().toString());
@@ -709,27 +711,27 @@ public class ReadFragment extends Fragment {
                                 }
                             }, (dialog, which) -> dialog.dismiss());
                 } else if (menuItem.getItemId() == R.string.MENU_CHANGE_TAB_NAME) {
-                    EditText input = new EditText(getContext());
+                    EditText input = new EditText(MainActivity.getContext());
                     input.setText(config.tabName);
-                    Utils.dialog(requireContext(), "Nowa nazwa zakładki " +
+                    Utils.dialog(MainActivity.getContext(), "Nowa nazwa zakładki " +
                                     config.tabName, input,
                             (dialog, which) -> {
                                 if (!input.getText().toString().equals(config.tabName)) {
                                     config.tabName = input.getText().toString();
-                                    config.saveToInternalStorage(getContext());
+                                    config.saveToInternalStorage(MainActivity.getContext());
                                     topPagerAdapter.notifyDataSetChanged();
                                 }
                             }, (dialog, which) -> dialog.dismiss());
                 } else if (menuItem.getItemId() == R.string.MENU_DELETE_TAB) {
-                    Utils.dialog(requireContext(), "Czy chcesz usunąć zakładkę " +
+                    Utils.dialog(MainActivity.getContext(), "Czy chcesz usunąć zakładkę " +
                                     config.tabName + "?",
                             null, (dialog, which) -> topPagerAdapter.deleteTab(config),
                             (dialog, which) -> dialog.dismiss());
                 } else if (menuItem.getItemId() == R.string.MENU_WRITE_MAIL_TO_AUTHOR) {
-                    Utils.contactMe(getContext());
+                    Utils.contactMe(MainActivity.getContext());
                 } else if (menuItem.getItemId() == R.string.MENU_GET_UNREAD_TEXTS) {
                     for (Page p : pageListAdapter.getAllItems()) {
-                        File f = p.getCacheFile(getContext());
+                        File f = p.getCacheFile(MainActivity.getContext());
                         if (f.exists()) {
                             continue;
                         }
@@ -741,7 +743,7 @@ public class ReadFragment extends Fragment {
                     }
                 } else if (menuItem.getItemId() == R.string.MENU_GET_ALL_INDEX_PAGES) {
                     refresh.setRefreshing(true);
-                    Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
+                    Page.getList(MainActivity.getContext(), mainThreadHandler, threadPoolExecutor, MainActivity.getDB(),
                             config.readInfoForReadFragment, config.tabName, config.fileNameTabNum,
                             true, false,
                             result -> Snackbar.make(getView(),
@@ -753,16 +755,16 @@ public class ReadFragment extends Fragment {
                     mImportEPUB.launch(new String[]{Utils.EPUB_MIME_TYPE});
                 } else if (menuItem.getItemId() == R.string.MENU_TEXT_SIZE) {
                     AtomicReference<String> selectedSize = new AtomicReference<>(MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium"));
-                    (new AlertDialog.Builder(getContext())
+                    (new AlertDialog.Builder(MainActivity.getContext())
                             .setIcon(android.R.drawable.ic_dialog_info)
                             .setTitle("Wielkość tekstu podczas czytania")
                             .setSingleChoiceItems(
-                                    getContext().getResources().getStringArray(R.array.text_size),
-                                    new ArrayList<>(Arrays.asList(getContext().getResources().getStringArray(R.array.text_size)))
+                                    MainActivity.getContext().getResources().getStringArray(R.array.text_size),
+                                    new ArrayList<>(Arrays.asList(MainActivity.getContext().getResources().getStringArray(R.array.text_size)))
                                             .indexOf(MainActivity.getSharedPref().getString(MainActivity.PREF_TEXT_SIZE, "medium")),
                                     (dialog, which) ->
                                             selectedSize.set(
-                                                    getContext().getResources().getStringArray(R.array.text_size)[which]))
+                                                    MainActivity.getContext().getResources().getStringArray(R.array.text_size)[which]))
                             .setPositiveButton("OK", (dialog, which) -> {
                                 SharedPreferences.Editor editor = MainActivity.getSharedPref().edit();
                                 editor.putString(MainActivity.PREF_TEXT_SIZE, String.valueOf(selectedSize));
@@ -778,14 +780,14 @@ public class ReadFragment extends Fragment {
             }
         });
 
-        pageListAdapter = new PageListRecyclerViewAdapter(requireContext());
+        pageListAdapter = new PageListRecyclerViewAdapter(MainActivity.getContext());
         pageListAdapter.setOnClick(position -> {
             Page p = pageListAdapter.getItem(position);
-            File f = p.getCacheFile(requireContext());
+            File f = p.getCacheFile(MainActivity.getContext());
             positionInPageList = position;
             if (f.exists()) {
                 if (p.updatedOnServer) {
-                    Utils.dialog(requireContext(),
+                    Utils.dialog(MainActivity.getContext(),
                             "Na serwerze może być nowa wersja tekstu. Czy chcesz odświeżyć?",
                             null,
                             (dialog, which) -> {
@@ -808,7 +810,7 @@ public class ReadFragment extends Fragment {
 
         pageList = view.findViewById(R.id.pagesRecyclerView);
         pageList.setAdapter(pageListAdapter);
-        pageList.addItemDecoration(new DividerItemDecoration(requireContext(),
+        pageList.addItemDecoration(new DividerItemDecoration(MainActivity.getContext(),
                 DividerItemDecoration.VERTICAL));
         pageList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -830,7 +832,7 @@ public class ReadFragment extends Fragment {
                                 pageListAdapter.getItemCount() - 7) {
                     loadingMorePages = true;
                     new Handler().postDelayed(() ->
-                            Page.getList(getContext(), mainThreadHandler, threadPoolExecutor, db,
+                            Page.getList(MainActivity.getContext(), mainThreadHandler, threadPoolExecutor, MainActivity.getDB(),
                                     config.readInfoForReadFragment, config.tabName,
                                     config.fileNameTabNum, false, false,
                                     result -> Snackbar.make(getView(),
@@ -841,7 +843,7 @@ public class ReadFragment extends Fragment {
             }
         });
 
-        pageListAdapter.update(db, config.showHiddenTexts, config.readInfoForReadFragment,
+        pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts, config.readInfoForReadFragment,
                 config.authorFilter, config.tagFilter);
 
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
@@ -856,7 +858,7 @@ public class ReadFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 Page p = pageListAdapter.getItem(viewHolder.getAbsoluteAdapterPosition());
-                db.setPageHidden(p.url, config.showHiddenTexts == FragmentConfig.HiddenTexts.NONE ?
+                MainActivity.getDB().setPageHidden(p.url, config.showHiddenTexts == FragmentConfig.HiddenTexts.NONE ?
                         (direction == ItemTouchHelper.RIGHT ? FragmentConfig.HiddenTexts.GREEN :
                                 FragmentConfig.HiddenTexts.RED) :
                         (direction == ItemTouchHelper.RIGHT ? FragmentConfig.HiddenTexts.NONE :
@@ -900,10 +902,10 @@ public class ReadFragment extends Fragment {
             public boolean onQueryTextSubmit(String query) {
                 ArrayList<Page> list = new ArrayList<>();
                 String[] toSearch = query.trim().split(" ");
-                for (Page p : db.getAllPages(config.showHiddenTexts,
+                for (Page p : MainActivity.getDB().getAllPages(config.showHiddenTexts,
                         config.readInfoForReadFragment, config.authorFilter,
                         config.tagFilter)) {
-                    File f = p.getCacheFile(getContext());
+                    File f = p.getCacheFile(MainActivity.getContext());
                     for (String ts : toSearch) {
                         if (Utils.containsText(p.name, ts.trim()) ||
                                 Utils.containsText(p.tags, ts.trim()) ||
@@ -935,7 +937,7 @@ public class ReadFragment extends Fragment {
         searchView.findViewById(androidx.appcompat.R.id.search_close_btn).setOnClickListener(v -> {
             searchView.setQuery("", true);
             searchView.clearFocus();
-            pageListAdapter.update(db, config.showHiddenTexts,
+            pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                     config.readInfoForReadFragment,
                     config.authorFilter, config.tagFilter);
         });
@@ -943,14 +945,14 @@ public class ReadFragment extends Fragment {
 
         mCreateEPUB = registerForActivityResult(
                 new ActivityResultContracts.CreateDocument(Utils.EPUB_MIME_TYPE),
-                uri -> Utils.createEPUB(getContext(), uri, pageListAdapter.getAllItems(),
+                uri -> Utils.createEPUB(MainActivity.getContext(), uri, pageListAdapter.getAllItems(),
                         config.readInfoForReadFragment));
 
         mImportEPUB = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(),
                 uri -> {
-                    Utils.importEPUB(requireContext(), uri, db);
-                    pageListAdapter.update(db, config.showHiddenTexts,
+                    Utils.importEPUB(MainActivity.getContext(), uri, MainActivity.getDB());
+                    pageListAdapter.update(MainActivity.getDB(), config.showHiddenTexts,
                             config.readInfoForReadFragment,
                             config.authorFilter, config.tagFilter);
                 });

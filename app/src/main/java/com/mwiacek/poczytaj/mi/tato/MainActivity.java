@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -17,6 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.mwiacek.poczytaj.mi.tato.read.DBHelper;
 import com.mwiacek.poczytaj.mi.tato.read.Page;
 import com.mwiacek.poczytaj.mi.tato.read.ReadFragment;
 import com.mwiacek.poczytaj.mi.tato.search.SearchFragment;
@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     public final static String PREF_HIDE_NAVIGATION = "HideNavigation";
     public final static String PREF_DONT_BLOCK_SCREEN = "DontBlockScreen";
     public final static String PREF_TEXT_SIZE = "TextSize";
+    private static DBHelper db;
 
     private static ViewPagerAdapter viewPagerAdapter;
     private static MainActivity mContext;
@@ -35,6 +36,10 @@ public class MainActivity extends AppCompatActivity {
 
     public static android.content.SharedPreferences getSharedPref() {
         return sharedPref;
+    }
+
+    public static DBHelper getDB() {
+        return db;
     }
 
     public static Context getContext() {
@@ -97,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
         MainActivity.mContext = this;
         MainActivity.sharedPref = getPreferences(MODE_PRIVATE);
+        MainActivity.db = new DBHelper(this);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.top_layout), (v, windowInsets) -> {
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();

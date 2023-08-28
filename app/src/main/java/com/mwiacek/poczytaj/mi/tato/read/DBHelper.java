@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import com.mwiacek.poczytaj.mi.tato.FragmentConfig;
 
@@ -14,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class DBHelper extends SQLiteOpenHelper {
-
     private final static String COMPLETED_TABLE_NAME = "completed";
     private final static String PAGES_TABLE_NAME = "pages";
     private final static String COLUMN_NAME = "name";
@@ -30,10 +30,12 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public DBHelper(Context context) {
         super(context, "pages.db", null, 1);
+        Log.d("abc", "creating db object");
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        Log.d("abc", "creating db");
         db.execSQL("create table " + PAGES_TABLE_NAME + " " +
                 "(" + COLUMN_TYP + " integer, " + COLUMN_NAME + " text," +
                 COLUMN_AUTHOR + " text, " + COLUMN_DATETIME + " real, " +
@@ -54,7 +56,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @SuppressLint("Range")
     public int getLastIndexPageRead(Page.PageTyp typ) {
-        Cursor res = this.getReadableDatabase().rawQuery(
+        Cursor res = this.getWritableDatabase().rawQuery(
                 "select " + COLUMN_PAGE_NUMBER + " from " + COMPLETED_TABLE_NAME +
                         " where " + COLUMN_TYP + "=" + typ.ordinal(), null);
         if (!res.moveToFirst()) {
@@ -83,15 +85,17 @@ public class DBHelper extends SQLiteOpenHelper {
         this.getWritableDatabase().execSQL("update " + PAGES_TABLE_NAME +
                 " set " + COLUMN_TOP + "=" + top +
                 " where " + COLUMN_URL + "='" + url + "'");
+        Log.d("abc", "set page top" + top);
     }
 
     @SuppressLint("Range")
     public int getPageTop(String url) {
-        Cursor res = this.getReadableDatabase().rawQuery(
+        Cursor res = this.getWritableDatabase().rawQuery(
                 "select " + COLUMN_TOP + " from " + PAGES_TABLE_NAME +
                         " where " + COLUMN_URL + "='" + url + "'", null);
         res.moveToFirst();
         int ret = res.getInt(res.getColumnIndex(COLUMN_TOP));
+        Log.d("abc", "get page top" + ret);
         res.close();
         return ret;
     }
@@ -128,15 +132,17 @@ public class DBHelper extends SQLiteOpenHelper {
             boolean oldVersionIsDifferent = !p.name.equals(name) || !p.author.equals(author) ||
                     !p.tags.equals(comments) || !d.equals(p.dt);
             contentValues.put(COLUMN_UPDATED_ON_SERVER, oldVersionIsDifferent ? 1 : 0);
+            if (!oldVersionIsDifferent) contentValues.remove(COLUMN_TOP);
             this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
                     COLUMN_URL + "='" + url + "'", null);
+            Log.d("abc", "updating page " + p.url);
             return oldVersionIsDifferent;
         }
     }
 
     @SuppressLint("Range")
     public Page getPage(String url) {
-        Cursor res = this.getReadableDatabase().rawQuery(
+        Cursor res = this.getWritableDatabase().rawQuery(
                 "select * from " + PAGES_TABLE_NAME +
                         " where " + COLUMN_URL + "='" + url + "'", null);
         res.moveToFirst();
@@ -173,7 +179,7 @@ public class DBHelper extends SQLiteOpenHelper {
         String[] tags = null;
         if (!tagFilter.isEmpty()) tags = tagFilter.toLowerCase().split(",");
 
-        Cursor res = this.getReadableDatabase().rawQuery(
+        Cursor res = this.getWritableDatabase().rawQuery(
                 "select * from " + PAGES_TABLE_NAME +
                         " where " + COLUMN_HIDDEN + "=" + hidden.ordinal() +
                         " and " + COLUMN_TYP + " IN (" + types + ") " +
