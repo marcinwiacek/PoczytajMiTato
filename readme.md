@@ -5,6 +5,11 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
+Wersja 2.2 - 5.9.2023
+1. poprawa błędu z przewijaniem stron
+2. poprawa błędu z odświeżaniem stron
+3. nowy Gradle
+
 Wersja 2.1 - 7.5.2023
 1. poprawna obsługa sytuacji, gdy brak internetu
 2. zmieniona ważność powiadomień na LOW (nie wibrują)
