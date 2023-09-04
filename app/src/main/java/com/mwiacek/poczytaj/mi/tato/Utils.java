@@ -140,6 +140,9 @@ public class Utils {
         try {
             connection.connect();
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                if (errorCallback != null) {
+                    resultHandler.post(() -> errorCallback.onComplete(null));
+                }
                 return content;
             }
             InputStreamReader isr = new InputStreamReader(connection.getInputStream());

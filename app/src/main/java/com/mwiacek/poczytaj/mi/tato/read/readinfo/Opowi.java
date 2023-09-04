@@ -53,7 +53,6 @@ public class Opowi extends ReadInfo {
             int index = result.indexOf("<div id=\"content\" class=\"novel  \">");
             int index2 = result.indexOf("<div class=\"clear\"></div></div>", index);
             String mainPageText = result.substring(index, index2);
-            Utils.writeTextFile(p.getCacheFile(context), mainPageText);
             if (completeCallback != null) {
                 resultHandler.post(() -> completeCallback.onComplete(mainPageText));
             }

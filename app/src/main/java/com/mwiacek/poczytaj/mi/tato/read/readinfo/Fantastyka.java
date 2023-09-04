@@ -96,24 +96,32 @@ public class Fantastyka extends ReadInfo {
 
     private static String getTextFromSinglePage(String result, File f) {
         int index = result.indexOf("<section class=\"opko no-headline\">");
-        index = result.indexOf("<article>", index) + 9;
-        int index2 = result.indexOf("<span class=\"koniec\">Koniec</span>", index);
-        return result.substring(index, index2)
-                .replaceAll("<br>", "<br />")
-                .replaceAll("<hr>", "<hr />")
-                .replaceAll("</p>", "")
-                .replaceAll("<p />&nbsp; <p />", "<p />")
-                .replaceAll("<p /><p />", "<p />")
-                .replaceAll("<p /><p />", "<p />")
-                .replaceAll("<br /><br />", "<br />")
-                .replaceAll("<hr /><p />", "<hr />")
-                .replaceAll("&nbsp;", " ")
-                .replaceAll("\t\t", "\t")
-                .replaceAll("  ", " ")
-                .replaceAll(" <p ", "<p ")
-                .replaceAll("<p /> <hr />", "<hr />")
-                .replaceAll("<p>", "<p />")
-                .replaceAll("&oacute;", "ó");
+        if (index > 0) {
+            index = result.indexOf("<article>", index) + 9;
+        }
+        int index2 = 0;
+        if (index > 0) {
+            index2 = result.indexOf("<span class=\"koniec\">Koniec</span>", index);
+        }
+        if (index > 0 && index2 > 0) {
+            return result.substring(index, index2)
+                    .replaceAll("<br>", "<br />")
+                    .replaceAll("<hr>", "<hr />")
+                    .replaceAll("</p>", "")
+                    .replaceAll("<p />&nbsp; <p />", "<p />")
+                    .replaceAll("<p /><p />", "<p />")
+                    .replaceAll("<p /><p />", "<p />")
+                    .replaceAll("<br /><br />", "<br />")
+                    .replaceAll("<hr /><p />", "<hr />")
+                    .replaceAll("&nbsp;", " ")
+                    .replaceAll("\t\t", "\t")
+                    .replaceAll("  ", " ")
+                    .replaceAll(" <p ", "<p ")
+                    .replaceAll("<p /> <hr />", "<hr />")
+                    .replaceAll("<p>", "<p />")
+                    .replaceAll("&oacute;", "ó");
+        }
+        return "";
     }
 
     public void processTextFromSinglePage(
@@ -129,42 +137,47 @@ public class Fantastyka extends ReadInfo {
             String mainPageText = getTextFromSinglePage(result.toString(), p.getCacheFile(context))
                     .replaceAll("<img ", "<img width=\"100%\" ")
                     .replaceAll("http://", "https://");
-            ArrayList<String> pictures = Utils.findImagesUrlInHTML(mainPageText);
-            for (int i = 0; i < pictures.size(); i++) {
-                mainPageText = mainPageText.replace(pictures.get(i),
-                        Page.getShortCacheFileName(pictures.get(i)));
-            }
-            Utils.writeTextFile(p.getCacheFile(context), mainPageText);
-            if (callbackAfterMainFileWithResourceList != null) {
-                resultHandler.post(() -> callbackAfterMainFileWithResourceList.onComplete(
-                        pictures.isEmpty() ?
-                                new String[]{} : pictures.toArray(new String[0])));
-            }
-            if (pictures.isEmpty()) {
-                if (completeCallback != null) {
-                    String finalMainPageText = mainPageText;
-                    resultHandler.post(() -> completeCallback.onComplete(finalMainPageText));
+            if (!mainPageText.isEmpty()) {
+                ArrayList<String> pictures = Utils.findImagesUrlInHTML(mainPageText);
+                for (int i = 0; i < pictures.size(); i++) {
+                    mainPageText = mainPageText.replace(pictures.get(i),
+                            Page.getShortCacheFileName(pictures.get(i)));
+                }
+                if (callbackAfterMainFileWithResourceList != null) {
+                    resultHandler.post(() -> callbackAfterMainFileWithResourceList.onComplete(
+                            pictures.isEmpty() ?
+                                    new String[]{} : pictures.toArray(new String[0])));
+                }
+                if (pictures.isEmpty()) {
+                    if (completeCallback != null) {
+                        String finalMainPageText = mainPageText;
+                        resultHandler.post(() -> completeCallback.onComplete(finalMainPageText));
+                    }
+                } else {
+                    String finalMainPageText1 = mainPageText;
+                    Utils.getBinaryPages(context, pictures,
+                            result1 -> {
+                                if (errorCallback != null) {
+                                    resultHandler.post(() -> errorCallback.onComplete(null));
+                                }
+                            }, result4 -> {
+                                if (readingCallback != null) {
+                                    resultHandler.post(() -> readingCallback.onComplete(result4));
+                                }
+                            }, result2 -> {
+                                if (callbackAfterEveryImage != null) {
+                                    resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
+                                }
+                            }, result3 -> {
+                                if (completeCallback != null) {
+                                    resultHandler.post(() -> completeCallback.onComplete(finalMainPageText1));
+                                }
+                            }, resultHandler, executor);
                 }
             } else {
-                String finalMainPageText1 = mainPageText;
-                Utils.getBinaryPages(context, pictures,
-                        result1 -> {
-                            if (errorCallback != null) {
-                                resultHandler.post(() -> errorCallback.onComplete(null));
-                            }
-                        }, result4 -> {
-                            if (readingCallback != null) {
-                                resultHandler.post(() -> readingCallback.onComplete(result4));
-                            }
-                        }, result2 -> {
-                            if (callbackAfterEveryImage != null) {
-                                resultHandler.post(() -> callbackAfterEveryImage.onComplete(result2));
-                            }
-                        }, result3 -> {
-                            if (completeCallback != null) {
-                                resultHandler.post(() -> completeCallback.onComplete(finalMainPageText1));
-                            }
-                        }, resultHandler, executor);
+                if (completeCallback != null) {
+                    resultHandler.post(() -> completeCallback.onComplete(""));
+                }
             }
         }, resultHandler, executor);
     }

@@ -5,6 +5,10 @@ ich eksport do EPUB i import z tego formatu.
 ![Screen1](Screenshot_20230425_004637.png)
 ![Screen2](Screenshot_20230425_004903.png)
 
+Wersja 2.1.2 - 9.2023
+1. gdy plik nie istnieje, fantastyka.pl zwraca stronę główną. Poprawna obsługa
+   tej sytuacji
+
 Wersja 2.1.1 - 29.8.2023
 1. poprawa błędu z przewijaniem stron
 2. poprawa błędu z odświeżaniem stron

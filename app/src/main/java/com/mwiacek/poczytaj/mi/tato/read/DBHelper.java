@@ -125,7 +125,7 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_UPDATED_ON_SERVER, 0);
 
         Page p = getPage(url);
-        if (p!=null) {
+        if (p != null) {
             boolean oldVersionIsDifferent = !p.name.equals(name) || !p.author.equals(author) ||
                     !p.tags.equals(comments) || !d.equals(p.dt);
             contentValues.put(COLUMN_UPDATED_ON_SERVER, oldVersionIsDifferent ? 1 : 0);

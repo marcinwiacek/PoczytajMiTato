@@ -179,17 +179,6 @@ public class ReadFragment extends Fragment {
         new Thread(() -> Page.getReadInfo(p.typ).processTextFromSinglePage(MainActivity.getContext(),
                 p, mainThreadHandler, threadPoolExecutor,
                 updateIndicator -> {
-                    if (updateIndicator == 0) {
-                        if (deleteBefore) {
-                            File f0 = p.getCacheFile(MainActivity.getContext());
-                            String fileContent = Utils.readTextFile(f0);
-                            for (String s : Utils.findImagesUrlInHTML(fileContent)) {
-                                File f = new File(Page.getCacheDirectory(MainActivity.getContext()) + File.separator + s);
-                                f.delete();
-                            }
-                            f0.delete();
-                        }
-                    }
                     if (webView != null) {
                         webViewLoadingString = webViewLoadingString.replaceAll("Postęp [0-9]* bajtów, proszę czekać<p>",
                                 "Postęp " + updateIndicator + " bajtów, proszę czekać<p>");
@@ -242,9 +231,43 @@ public class ReadFragment extends Fragment {
                         }
                     }
                     if (webView != null) {
-                        webView.loadDataWithBaseURL(null, renderPage(mainPageContentOnTheEnd),
-                                MIME_TYPE, ENCODING, null
-                        );
+                        if (mainPageContentOnTheEnd.isEmpty()) {
+                            Snackbar.make(getView(), R.string.NO_FILE, Snackbar.LENGTH_SHORT).show();
+                            File f0 = p.getCacheFile(MainActivity.getContext());
+                            if (f0.exists()) {
+                                webView.loadDataWithBaseURL(null, renderPage(Utils.readTextFile(f0)),
+                                        MIME_TYPE, ENCODING, null
+                                );
+                            } else {
+                                viewSwitcher.showPrevious();
+                                if (webView != null) {
+                                    webView.loadDataWithBaseURL(null, "", MIME_TYPE, ENCODING, null);
+                                }
+                            }
+                        } else {
+                            File f0 = p.getCacheFile(MainActivity.getContext());
+                            if (deleteBefore && f0.exists()) {
+                                String fileContent = Utils.readTextFile(f0);
+                                Boolean del = true;
+                                for (String s : Utils.findImagesUrlInHTML(fileContent)) {
+                                    for (String s2 : Utils.findImagesUrlInHTML(mainPageContentOnTheEnd)) {
+                                        if (s.equals(s2)) {
+                                            del = false;
+                                            break;
+                                        }
+                                    }
+                                    if (del) {
+                                        File f = new File(Page.getCacheDirectory(MainActivity.getContext()) + File.separator + s);
+                                        f.delete();
+                                    }
+                                }
+                                f0.delete();
+                            }
+                            Utils.writeTextFile(p.getCacheFile(MainActivity.getContext()), mainPageContentOnTheEnd);
+                            webView.loadDataWithBaseURL(null, renderPage(mainPageContentOnTheEnd),
+                                    MIME_TYPE, ENCODING, null
+                            );
+                        }
                     }
                 }
         )).start();
@@ -368,12 +391,14 @@ public class ReadFragment extends Fragment {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                int top = MainActivity.getDB().getPageTop(pageListAdapter.getItem(positionInPageList).url);
-                nestedScrollView.post(() -> nestedScrollView.setScrollY(top));
-                // nestedScrollView.setScrollY(top);
-                //   nestedScrollView.dispatchNestedScroll(0, 0, 0,
-                //         top, null);
-                // nestedScrollView.scrollTo(0, top);
+                if (pageListAdapter.getItem(positionInPageList) != null) {
+                    int top = MainActivity.getDB().getPageTop(pageListAdapter.getItem(positionInPageList).url);
+                    nestedScrollView.post(() -> nestedScrollView.setScrollY(top));
+                    // nestedScrollView.setScrollY(top);
+                    //   nestedScrollView.dispatchNestedScroll(0, 0, 0,
+                    //         top, null);
+                    // nestedScrollView.scrollTo(0, top);
+                }
             }
 
             @Override
@@ -785,6 +810,7 @@ public class ReadFragment extends Fragment {
             Page p = pageListAdapter.getItem(position);
             File f = p.getCacheFile(MainActivity.getContext());
             positionInPageList = position;
+            viewSwitcher.showNext();
             if (f.exists()) {
                 if (p.updatedOnServer) {
                     Utils.dialog(MainActivity.getContext(),
@@ -805,7 +831,6 @@ public class ReadFragment extends Fragment {
             } else {
                 readTextFromInternet(p, webView, false);
             }
-            viewSwitcher.showNext();
         });
 
         pageList = view.findViewById(R.id.pagesRecyclerView);
