@@ -545,7 +545,7 @@ public class ReadFragment extends Fragment {
                 if (menuItem.getItemId() == R.string.MENU_LOCAL_AUTHOR_FILTER) {
                     EditText input = new EditText(MainActivity.getContext());
                     input.setText(config.authorFilter);
-                    Utils.dialog(MainActivity.getContext(),
+                    Utils.dialog(getContext(),
                             "Podaj autorów (oddzielonych przecinkiem). " +
                                     "\"not \" na początku autora oznacza zaprzeczenie.", input,
                             (dialog, which) -> {
@@ -564,7 +564,7 @@ public class ReadFragment extends Fragment {
                 } else if (menuItem.getItemId() == R.string.MENU_LOCAL_TAG_FILTER) {
                     EditText input = new EditText(MainActivity.getContext());
                     input.setText(config.tagFilter);
-                    Utils.dialog(MainActivity.getContext(),
+                    Utils.dialog(getContext(),
                             "Podaj tagi (oddzielone przecinkiem). " +
                                     "\"not \" na początku taga oznacza zaprzeczenie.", input,
                             (dialog, which) -> {

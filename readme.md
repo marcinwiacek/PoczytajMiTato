@@ -7,6 +7,7 @@ Dostępna w Google Play: https://play.google.com/store/apps/details?id=com.mwiac
 Wersja 2.1.2 - 9.2023
 1. gdy plik nie istnieje, fantastyka.pl zwraca stronę główną.
    Poprawna (a na pewno lepsza) obsługa tej sytuacji.
+2. poprawka z context
 
 Wersja 2.1.1 - 29.8.2023
 1. poprawa błędu z przewijaniem stron
