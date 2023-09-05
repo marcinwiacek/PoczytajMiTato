@@ -97,6 +97,7 @@ public class ReadFragment extends Fragment {
     private int positionInPageList;
     private String webViewLoadingString = "";
     private boolean loadingMorePages = false;
+    private Snackbar snack = null;
 
     public ReadFragment() {
     }
@@ -212,14 +213,16 @@ public class ReadFragment extends Fragment {
                         webView.loadDataWithBaseURL(null,
                                 webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
                     }
-                }, imageUrlInAfterReadingTheMiddle -> {
+                },
+                imageUrlInAfterReadingTheMiddle -> {
                     if (webView != null) {
                         webViewLoadingString = webViewLoadingString.replace(imageUrlInAfterReadingTheMiddle,
                                 imageUrlInAfterReadingTheMiddle + "<br>OK");
                         webView.loadDataWithBaseURL(null,
                                 webViewLoadingString + "</div>", MIME_TYPE, ENCODING, null);
                     }
-                }, mainPageContentOnTheEnd -> {
+                },
+                mainPageContentOnTheEnd -> {
                     if (webView != null) {
                         webViewLoadingString = "";
                     }
@@ -324,8 +327,11 @@ public class ReadFragment extends Fragment {
                     int percent = (int) ((float) scrollY
                             / (float) (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight())
                             * 100);
-                    if (percent != 100) {
-                        Snackbar.make(getView(), percent + "%", Snackbar.LENGTH_SHORT).show();
+                    if (percent != 100 && percent > 1) {
+                        snack = Snackbar.make(getView(), percent + "%", Snackbar.LENGTH_SHORT);
+                        snack.show();
+                    } else {
+                        if (snack!=null) snack.dismiss();
                     }
                     if (config.addToOrange && percent == 100) {
                         MainActivity.getDB().setPageHidden(pageListAdapter.getItem(positionInPageList).url,
