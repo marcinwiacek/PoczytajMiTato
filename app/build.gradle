@@ -9,8 +9,8 @@ android {
         minSdkVersion 21
         compileSdkVersion = 34
         targetSdkVersion 33
-        versionCode 10
-        versionName "2.1.1"
+        versionCode 11
+        versionName "2.1.2"
         buildToolsVersion = '33.0.1'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

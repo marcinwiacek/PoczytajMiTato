@@ -4,7 +4,7 @@ ich eksport do EPUB i import z tego formatu.
 
 Dostępna w Google Play: https://play.google.com/store/apps/details?id=com.mwiacek.poczytaj.mi.tato
 
-Wersja 2.1.2 - 9.2023
+Wersja 2.1.2 - 7.9.2023
 1. gdy plik nie istnieje, fantastyka.pl zwraca stronę główną.
    Poprawna (a na pewno lepsza) obsługa tej sytuacji.
 2. poprawka z context
