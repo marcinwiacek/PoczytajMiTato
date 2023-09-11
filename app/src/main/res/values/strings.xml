@@ -20,17 +20,17 @@
     <string name="MENU_GET_ALL_INDEX_PAGES">Pobierz cały indeks</string>
     <string name="MENU_GET_TEXTS_WITH_INDEX">Pobierz indeks i teksty razem</string>
     <string name="MENU_NETWORK_WITH_LIMIT">Sieć może być z limitem danym</string>
-    <string name="MENU_DOWNLOAD_ON_WIFI">Pobierz na Wifi</string>
-    <string name="MENU_DOWNLOAD_ON_GSM">Pobierz na GSM</string>
-    <string name="MENU_DOWNLOAD_ON_OTHER_NET">Pobierz na innej sieci</string>
+    <string name="MENU_DOWNLOAD_ON_WIFI">Pobierz przez Wifi</string>
+    <string name="MENU_DOWNLOAD_ON_GSM">Pobierz przez GSM</string>
+    <string name="MENU_DOWNLOAD_ON_OTHER_NET">Pobierz w innej sieci</string>
     <string name="MENU_DOWNLOAD_WITH_LOW_BATTERY">Pobierz też przy niskiej baterii</string>
     <string name="MENU_DOWNLOAD_WITH_LOW_STORAGE">Pobierz też, gdy mało miejsca</string>
     <string name="MENU_DOWNLOAD_WITHOUT_CHARGER">Pobierz też bez ładowarki</string>
     <string name="MENU_LOCAL_AUTHOR_FILTER">Lokalny filtr na autorów</string>
     <string name="MENU_LOCAL_TAG_FILTER">Lokalny filtr na tagi</string>
     <string name="NO_INTERNET">Błąd czytania. Masz internet?</string>
-    <string name="RESTART">Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.</string>
     <string name="NO_FILE">Błąd czytania. Brak pliku na serwerze?</string>
+    <string name="RESTART">Wymaga restartu apki. Będzie teraz zamknięta i musisz ją sam ponownie wystartować.</string>
     <string-array name="text_size">
         <item>xx-small</item>
         <item>x-small</item>
