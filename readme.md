@@ -8,6 +8,7 @@ Wersja 2.1.3 - 12.9.2023
 1. poprawka błędu, gdy tekst został przeniesiony do biblioteki
    (obecnie jest ignorowany w poczekalni)
 2. dalsze poprawki z context
+3. inna informacja o zapisie pliku EPUB
 
 Wersja 2.1.2 - 7.9.2023
 1. gdy plik nie istnieje, fantastyka.pl zwraca stronę główną.

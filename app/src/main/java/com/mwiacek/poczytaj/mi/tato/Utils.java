@@ -504,18 +504,29 @@ public class Utils {
             if (intent.resolveActivity(context.getPackageManager()) == null) {
                 intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + EPUB_MIME_TYPE));
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (intent.resolveActivity(context.getPackageManager()) != null &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 builder.setContentText("Zapisano plik " + tytul)
                         .setContentIntent(PendingIntent.getActivity(context, 0, intent,
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ?
                                         PendingIntent.FLAG_MUTABLE : 0))
                         .setSubText("Kliknij, żeby otworzyć");
                 Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
+            } else {
+                Notifications.notificationManager(context).cancel(2);
+                (new AlertDialog.Builder(context)
+                        .setIcon(android.R.drawable.ic_dialog_info)
+                        .setMessage("Zapisano plik " + tytul)
+                        .setPositiveButton("OK", null))
+                        .create().show();
             }
         } catch (Exception e) {
-            builder.setContentText("Błąd zapisu pliku EPUB");
-            Objects.requireNonNull(Notifications.notificationManager(context)).notify(2, builder.build());
-            e.printStackTrace();
+            Notifications.notificationManager(context).cancel(2);
+            (new AlertDialog.Builder(context)
+                    .setIcon(android.R.drawable.ic_dialog_info)
+                    .setMessage("Błąd zapisu pliku EPUB")
+                    .setPositiveButton("OK", null))
+                    .create().show();
         }
     }
 
