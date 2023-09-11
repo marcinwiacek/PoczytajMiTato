@@ -29,6 +29,7 @@
     <string name="MENU_LOCAL_AUTHOR_FILTER">Lokalny filtr na autorów</string>
     <string name="MENU_LOCAL_TAG_FILTER">Lokalny filtr na tagi</string>
     <string name="NO_INTERNET">Błąd czytania. Masz internet?</string>
+    <string name="RESTART">Wymaga restartu apki. Będzie ona teraz zamknięta i musisz ją wystartować.</string>
     <string name="NO_FILE">Błąd czytania. Brak pliku na serwerze?</string>
     <string-array name="text_size">
         <item>xx-small</item>

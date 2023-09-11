@@ -118,7 +118,7 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_NAME, name);
         contentValues.put(COLUMN_AUTHOR, author);
         contentValues.put(COLUMN_COMMENTS, comments);
-        contentValues.put(COLUMN_URL, url);
+        //  contentValues.put(COLUMN_URL, url);
         contentValues.put(COLUMN_TOP, 0);
         contentValues.put(COLUMN_DATETIME, d.getTime());
         contentValues.put(COLUMN_HIDDEN, FragmentConfig.HiddenTexts.NONE.ordinal());
@@ -127,20 +127,21 @@ public class DBHelper extends SQLiteOpenHelper {
         Page p = getPage(url);
         if (p != null) {
             boolean oldVersionIsDifferent = !p.name.equals(name) || !p.author.equals(author) ||
-                    !p.tags.equals(comments) || !d.equals(p.dt) || typ!=p.typ;
+                    !p.tags.equals(comments) || !d.equals(p.dt);
             contentValues.put(COLUMN_UPDATED_ON_SERVER, oldVersionIsDifferent ? 1 : 0);
             //Log.d("abc", "mamy page " + p.url + " " + typ.ordinal());
-            if (oldVersionIsDifferent) {
+            if (oldVersionIsDifferent || typ != p.typ) {
+                //Log.d("abc", "updating page " + p.url + " " + p.name+" "+typ);
                 contentValues.remove(COLUMN_TOP);
                 this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
                         COLUMN_URL + "='" + url + "'", null);
-                //Log.d("abc", "updating page " + p.url + " " + typ.ordinal());
             }
             return oldVersionIsDifferent;
         }
+        //Log.d("abc", "creating page " + url+ " "+name+" "+typ);
         //Log.d("abc", "nie ma " + url);
+        contentValues.put(COLUMN_URL, url);
         this.getWritableDatabase().insertOrThrow(PAGES_TABLE_NAME, null, contentValues);
-        //Log.d("abc", "creating page " + url+ " "+typ.ordinal());
         return true;
     }
 

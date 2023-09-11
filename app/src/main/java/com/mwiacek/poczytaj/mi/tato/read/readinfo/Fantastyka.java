@@ -21,6 +21,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class Fantastyka extends ReadInfo {
 
     private static boolean processOneListEntry(String s, DBHelper mydb, Page.PageTyp typ) {
+        if (s.contains("title=\"opowiadanie w bibliotece\"") && typ != Page.PageTyp.FANTASTYKA_BIBLIOTEKA)
+            return false;
+
         int indeks = Utils.Szukaj(s, "<div class=\"autor\">", 0);
         indeks = Utils.Szukaj(s, ">", indeks);
         int indeks2 = s.indexOf(":</a>", indeks);
@@ -207,19 +210,22 @@ public class Fantastyka extends ReadInfo {
                     url = "/opowiadania/archiwum/d" +
                             (index == 1 ? "" : "/" + index);
                 }
-
+                //Log.d("abc","reading url "+"https://www.fantastyka.pl" + url);
                 String result = Utils.getTextPageContent("https://www.fantastyka.pl"
                         + url, errorCallback, null, resultHandler).toString();
                 if (result.isEmpty()) {
                     Objects.requireNonNull(Notifications.notificationManager(context)).cancel(typ.ordinal());
                     return;
                 }
+                //Log.d("abc",result);
                 int indeks = result.indexOf("<article style=\"margin-top: 4px;\">");
                 boolean haveNewEntryOnThisPage = false;
                 while (true) {
                     indeks = result.indexOf("<div class=\"lista\">", indeks);
                     int indeks2 = result.indexOf("<div class=\"clear linia\"></div>", indeks);
                     if (indeks == -1 || indeks2 == -1) break;
+                    //Log.d("abc",indeks+" "+indeks2);
+                    //Log.d("abc",result.substring(indeks, indeks2));
                     if (processOneListEntry(result.substring(indeks, indeks2), mydb, typ)) {
                         haveNewEntry = true;
                         haveNewEntryOnThisPage = true;
