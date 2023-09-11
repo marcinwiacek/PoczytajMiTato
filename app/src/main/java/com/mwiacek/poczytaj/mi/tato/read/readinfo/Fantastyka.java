@@ -89,7 +89,7 @@ public class Fantastyka extends ReadInfo {
             e.printStackTrace();
         }
 
-        //  Log.i("MY2", "'" + tytul + "'" + author + "'" + comments + "'" + url + "'" + date);
+        //Log.i("MY2", "'" + tytul + "'" + author + "'" + comments + "'" + url + "'" + date);
         assert date != null;
         return mydb.insertOrUpdatePage(typ, tytul, author, comments, url, date);
     }

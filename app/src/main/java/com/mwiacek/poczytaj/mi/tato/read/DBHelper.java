@@ -121,17 +121,17 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(COLUMN_URL, url);
         contentValues.put(COLUMN_TOP, 0);
         contentValues.put(COLUMN_DATETIME, d.getTime());
-        contentValues.put(COLUMN_HIDDEN, 0);
+        contentValues.put(COLUMN_HIDDEN, FragmentConfig.HiddenTexts.NONE.ordinal());
         contentValues.put(COLUMN_UPDATED_ON_SERVER, 0);
 
         Page p = getPage(url);
         if (p != null) {
             boolean oldVersionIsDifferent = !p.name.equals(name) || !p.author.equals(author) ||
-                    !p.tags.equals(comments) || !d.equals(p.dt);
+                    !p.tags.equals(comments) || !d.equals(p.dt) || typ!=p.typ;
             contentValues.put(COLUMN_UPDATED_ON_SERVER, oldVersionIsDifferent ? 1 : 0);
             //Log.d("abc", "mamy page " + p.url + " " + typ.ordinal());
             if (oldVersionIsDifferent) {
-//                contentValues.remove(COLUMN_TOP);
+                contentValues.remove(COLUMN_TOP);
                 this.getWritableDatabase().update(PAGES_TABLE_NAME, contentValues,
                         COLUMN_URL + "='" + url + "'", null);
                 //Log.d("abc", "updating page " + p.url + " " + typ.ordinal());
@@ -191,6 +191,8 @@ public class DBHelper extends SQLiteOpenHelper {
         res.moveToFirst();
 
         while (!res.isAfterLast()) {
+            //Log.d("abc","Processing "+res.getString(res.getColumnIndex(COLUMN_NAME))+" "
+            //        +Page.PageTyp.values()[res.getInt(res.getColumnIndex(COLUMN_TYP))]);
             if (authors != null) {
                 boolean ok = false;
                 for (String s : authors) {
